@@ -37,3 +37,12 @@ type Pair struct {
 	CreatedBlock     int64            `json:"createdBlock"`
 	CreatedTimestamp uint64           `json:"createdTimestamp"`
 }
+
+//easyjson:json
+type TrackerResponse struct {
+	Data struct {
+		Amount   string `json:"amount"`
+		Base     string `json:"base"`
+		Currency string `json:"currency"`
+	} `json:"data"`
+}

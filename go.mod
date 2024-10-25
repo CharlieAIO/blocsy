@@ -3,9 +3,11 @@ module defi-intel
 go 1.21.6
 
 require (
+	github.com/goccy/go-json v0.10.3
 	github.com/jackc/pgx/v5 v5.7.1
 	github.com/jmoiron/sqlx v1.4.0
 	github.com/joho/godotenv v1.5.1
+	github.com/patrickmn/go-cache v2.1.0+incompatible
 	go.mongodb.org/mongo-driver v1.17.1
 )
 
