@@ -1,5 +1,15 @@
 package types
 
+type AppError string
+
+func (e AppError) Error() string {
+	return string(e)
+}
+
+const (
+	TokenNotFound AppError = "token not found"
+)
+
 //easyjson:json
 type Token struct {
 	Name             string `json:"name"`
