@@ -1,6 +1,7 @@
 package solana
 
 import (
+	"defi-intel/cmd/api/websocket"
 	"defi-intel/internal/types"
 	solClient "github.com/blocto/solana-go-sdk/client"
 	"github.com/streadway/amqp"
@@ -34,7 +35,7 @@ type TxHandler struct {
 
 	Wg        sync.WaitGroup
 	TxChan    chan types.SolanaBlockTx
-	Websocket *websocket.WebSocketServer //type defined in cmd/api/websocket/main.go (import when finished)
+	Websocket *websocket.WebSocketServer
 }
 
 type BackfillService struct {
@@ -48,6 +49,7 @@ type SolanaQueueHandler struct {
 	conn      *amqp.Connection
 	ch        *amqp.Channel
 	mu        sync.Mutex
+	pRepo     SwapsRepo
 }
 
 type Node struct {

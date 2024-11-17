@@ -7,6 +7,13 @@ import (
 )
 
 //easyjson:json
+type BlockData struct {
+	Transactions []SolanaTx `json:"transactions"`
+	Timestamp    int64      `json:"blockTime"`
+	Block        uint64     `json:"block"`
+}
+
+//easyjson:json
 type SolanaBlockTx struct {
 	Tx        SolanaTx `json:"tx"`
 	Block     uint64   `json:"block"`
