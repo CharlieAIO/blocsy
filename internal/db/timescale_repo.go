@@ -2,6 +2,7 @@ package db
 
 import (
 	"context"
+	"defi-intel/internal/types"
 	"fmt"
 	"github.com/jmoiron/sqlx"
 	"log"
@@ -15,6 +16,54 @@ func NewTimescaleRepository(db *sqlx.DB) *TimescaleRepository {
 	return &TimescaleRepository{
 		db: db,
 	}
+}
+
+func (repo *TimescaleRepository) MarkBlockProcessed(ctx context.Context, blockNumber int) error {
+	const query = `INSERT INTO "processed_block" ("blockNumber") VALUES ($1) ON CONFLICT DO NOTHING;`
+
+	if _, err := repo.db.ExecContext(ctx, query, blockNumber); err != nil {
+		return fmt.Errorf("cannot mark block as processed: %w", err)
+	}
+
+	return nil
+}
+
+func (repo *TimescaleRepository) InsertSwaps(ctx context.Context, swaps []types.SwapLog) error {
+	tx, err := repo.db.BeginTxx(ctx, nil)
+	if err != nil {
+		return fmt.Errorf("cannot begin transaction: %w", err)
+	}
+
+	const query = `INSERT INTO "swap_log_new" (id, wallet, network, exchange, "blockNumber", "blockHash", timestamp, type, "amountOut", "amountIn", price, pair, "logIndex", processed)
+	VALUES (:id, :wallet, :network, :exchange, :blockNumber, :blockHash, :timestamp, :type, :amountOut, :amountIn, :price, :pair, :logIndex, :processed)
+	ON CONFLICT (id, pair, type, "amountOut", "amountIn", timestamp, "blockNumber") DO NOTHING;`
+
+	for _, swap := range swaps {
+		if _, err := tx.NamedExecContext(ctx, query, swap); err != nil {
+			if rbErr := tx.Rollback(); rbErr != nil {
+				return fmt.Errorf("cannot rollback transaction: %w", rbErr)
+			}
+			return fmt.Errorf("cannot insert swap: %w", err)
+		}
+	}
+
+	if err := tx.Commit(); err != nil {
+		return fmt.Errorf("cannot commit transaction: %w", err)
+	}
+
+	return nil
+}
+
+func (repo *TimescaleRepository) DeleteSwapsUsingTx(ctx context.Context, signature string) error {
+	var query = fmt.Sprintf(`DELETE FROM "swap_log_new" WHERE id = '%s'`, signature)
+	log.Println("Deleting swaps using tx: ", signature, query)
+
+	if _, err := repo.db.ExecContext(ctx, query); err != nil {
+		return fmt.Errorf("cannot delete swap: %w", err)
+	}
+
+	return nil
+
 }
 
 func CreateProcessedBlocksTable(ctx context.Context, db *sqlx.DB) {
