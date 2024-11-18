@@ -98,7 +98,7 @@ func (qh *SolanaQueueHandler) ListenToSolanaQueue(ctx context.Context) {
 	}
 
 	err := qh.ch.Qos(
-		10,
+		1000,
 		0,
 		false,
 	)
