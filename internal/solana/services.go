@@ -42,6 +42,7 @@ type BackfillService struct {
 	solSvc       *SolanaService
 	pRepo        SwapsRepo
 	queueHandler *SolanaQueueHandler
+	nodeUrls     []*Node
 }
 
 type SolanaQueueHandler struct {

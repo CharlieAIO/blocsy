@@ -5,13 +5,28 @@ import (
 	"defi-intel/internal/types"
 	"fmt"
 	"log"
+	"os"
+	"strings"
 )
 
 func NewBackfillService(solSvc *SolanaService, pRepo SwapsRepo, qHandler *SolanaQueueHandler) *BackfillService {
+
+	var nodes []*Node
+
+	if os.Getenv("SOL_HTTPS_BACKFILL_NODES") != "" {
+		nodeUrls := strings.Split(os.Getenv("SOL_HTTPS_BACKFILL_NODES"), ",")
+		for i, url := range nodeUrls {
+			nodes = append(nodes, NewNode(fmt.Sprintf("node %d", i), url))
+		}
+	} else {
+		log.Fatalf("No nodes provided for backfill")
+	}
+
 	return &BackfillService{
 		solSvc:       solSvc,
 		queueHandler: qHandler,
 		pRepo:        pRepo,
+		nodeUrls:     nodes,
 	}
 }
 
@@ -27,10 +42,8 @@ func (bs *BackfillService) HandleBackFill(ctx context.Context, startBlock int, t
 		toBlock = int(slot)
 	}
 
-	var nodes []*Node
-
 	for i := startBlock; i <= toBlock; i++ {
-		n := nodes[i%4]
+		n := bs.nodeUrls[i%(len(bs.nodeUrls))]
 		block, err := n.GetBlockMessage(context.Background(), i)
 		if err != nil {
 			log.Fatalf("Error getting transaction: %v", err)
