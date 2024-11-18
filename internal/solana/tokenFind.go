@@ -8,10 +8,10 @@ import (
 	"strconv"
 )
 
-func NewTokenFinder(cache TockenCache, solCli *SolanaService, repo TokensRepo) *TokenFinder {
+func NewTokenFinder(cache TockenCache, solSvc *SolanaService, repo TokensRepo) *TokenFinder {
 	return &TokenFinder{
 		cache:  cache,
-		solCli: solCli,
+		solSvc: solSvc,
 		repo:   repo,
 	}
 }
@@ -49,14 +49,14 @@ func (tf *TokenFinder) lookupToken(ctx context.Context, address string) (*types.
 	if address == "" {
 		return nil, fmt.Errorf("address is empty")
 	}
-	metadata, err := tf.solCli.GetMetadata(ctx, address)
+	metadata, err := tf.solSvc.GetMetadata(ctx, address)
 
 	var (
 		name, symbol string
 		decimals     uint8
 		supply       int64
 	)
-	if metadata != nil && err != nil {
+	if metadata == nil || err != nil {
 		return nil, fmt.Errorf("failed to get token metadata %w", err)
 	} else {
 		name = metadata.Data.Name
@@ -64,7 +64,7 @@ func (tf *TokenFinder) lookupToken(ctx context.Context, address string) (*types.
 		//isMutable := metadata.IsMutable
 		//updateAuthority := metadata.UpdateAuthority
 
-		tokenData, err := tf.solCli.GetTokenSupplyAndContext(ctx, address)
+		tokenData, err := tf.solSvc.GetTokenSupplyAndContext(ctx, address)
 		if err != nil {
 			return nil, fmt.Errorf("failed to get token supply and context: %w", err)
 		}
