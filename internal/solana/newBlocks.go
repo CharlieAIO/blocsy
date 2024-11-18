@@ -34,16 +34,16 @@ func subscribeToBlocks(client *websocket.Conn) error {
 type SolanaBlockListener struct {
 	solanaSockerURL    string
 	lastProcessedBlock int
-	solCli             *SolanaService
+	solSvc             *SolanaService
 	pRepo              SwapsRepo
 	queueHandler       *SolanaQueueHandler
 	errorMutex         sync.Mutex
 }
 
-func NewBlockListener(solanaSockerURL string, solCli *SolanaService, pRepo SwapsRepo, qHandler *SolanaQueueHandler) *SolanaBlockListener {
+func NewBlockListener(solanaSockerURL string, solSvc *SolanaService, pRepo SwapsRepo, qHandler *SolanaQueueHandler) *SolanaBlockListener {
 	return &SolanaBlockListener{
 		solanaSockerURL: solanaSockerURL,
-		solCli:          solCli,
+		solSvc:          solSvc,
 		pRepo:           pRepo,
 		queueHandler:    qHandler,
 	}
@@ -142,7 +142,7 @@ func (s *SolanaBlockListener) processMessage(ctx context.Context, message []byte
 		*firstNewBlock = slot
 
 		if s.lastProcessedBlock != 0 {
-			bf := NewBackfillService(s.solCli, s.pRepo, s.queueHandler)
+			bf := NewBackfillService(s.solSvc, s.pRepo, s.queueHandler)
 
 			startBlock := s.lastProcessedBlock + 1
 			endBlock := *firstNewBlock - 1
@@ -167,8 +167,6 @@ func (s *SolanaBlockListener) processMessage(ctx context.Context, message []byte
 		timestamp = *block.BlockTime
 	}
 
-	log.Printf("Block %d has %d transactions", slot, len(block.Transactions))
-
 	s.lastProcessedBlock = slot
 	go func() {
 		s.HandleBlock(block.Transactions, timestamp, uint64(slot))
@@ -188,6 +186,7 @@ func (s *SolanaBlockListener) HandleBlock(blockTransactions []types.SolanaTx, bl
 		toProcess = append(toProcess, blockTransactions[i])
 
 	}
+	log.Printf("Block %d has %d transactions to process", block, len(toProcess))
 
 	s.queueHandler.AddToSolanaQueue(types.BlockData{
 		Transactions: toProcess,

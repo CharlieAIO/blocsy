@@ -11,12 +11,12 @@ import (
 )
 
 type SolanaService struct {
-	cli *solClient.Client
+	client *solClient.Client
 }
 
 type TokenFinder struct {
 	cache  TockenCache
-	solCli *SolanaService
+	solSvc *SolanaService
 	repo   TokensRepo
 }
 
@@ -29,7 +29,7 @@ type PairsService struct {
 
 type TxHandler struct {
 	sh     *SwapHandler
-	solCli *SolanaService
+	solSvc *SolanaService
 	repo   TokensAndPairsRepo
 	pRepo  SwapsRepo
 
@@ -39,7 +39,7 @@ type TxHandler struct {
 }
 
 type BackfillService struct {
-	solCli       *SolanaService
+	solSvc       *SolanaService
 	pRepo        SwapsRepo
 	queueHandler *SolanaQueueHandler
 }

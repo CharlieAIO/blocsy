@@ -40,9 +40,9 @@ func solanaListener(ctx context.Context, pRepo *db.TimescaleRepository) {
 	// Ensure we have a WSS URL instead of HTTP
 	url = strings.Replace(url, "https://", "wss://", 1)
 
-	solCli := solana.NewSolanaService(ctx)
+	solSvc := solana.NewSolanaService(ctx)
 	queueHandler := solana.NewSolanaQueueHandler(nil, nil)
-	sbl := solana.NewBlockListener(url, solCli, pRepo, queueHandler)
+	sbl := solana.NewBlockListener(url, solSvc, pRepo, queueHandler)
 
 	go func() {
 		log.Println("Listening for new blocks (solana)...")

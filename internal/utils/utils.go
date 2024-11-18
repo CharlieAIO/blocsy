@@ -90,7 +90,6 @@ func GetDBConnection(ctx context.Context) (*sqlx.DB, error) {
 		return nil, fmt.Errorf("failed to set application name: %w", err)
 	}
 
-	db.CreateDataPointTable(ctx, dbx)
 	db.CreateSwapsTable(ctx, dbx)
 	db.CreateProcessedBlocksTable(ctx, dbx)
 	return dbx, nil

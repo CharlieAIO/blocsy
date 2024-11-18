@@ -6,10 +6,10 @@ import (
 	"defi-intel/internal/types"
 )
 
-func NewTxHandler(sh *SwapHandler, solCli *SolanaService, repo TokensAndPairsRepo, pRepo SwapsRepo, websocket *websocket.WebSocketServer) *TxHandler {
+func NewTxHandler(sh *SwapHandler, solSvc *SolanaService, repo TokensAndPairsRepo, pRepo SwapsRepo, websocket *websocket.WebSocketServer) *TxHandler {
 	return &TxHandler{
 		sh:     sh,
-		solCli: solCli,
+		solSvc: solSvc,
 		repo:   repo,
 		pRepo:  pRepo,
 

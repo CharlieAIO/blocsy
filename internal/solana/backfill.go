@@ -7,9 +7,9 @@ import (
 	"log"
 )
 
-func NewBackfillService(solCli *SolanaService, pRepo SwapsRepo, qHandler *SolanaQueueHandler) *BackfillService {
+func NewBackfillService(solSvc *SolanaService, pRepo SwapsRepo, qHandler *SolanaQueueHandler) *BackfillService {
 	return &BackfillService{
-		solCli:       solCli,
+		solSvc:       solSvc,
 		queueHandler: qHandler,
 		pRepo:        pRepo,
 	}
@@ -20,7 +20,7 @@ func (bs *BackfillService) HandleBackFill(ctx context.Context, startBlock int, t
 	defer log.Printf("Backfill completed")
 
 	if toBlock == 0 {
-		slot, err := bs.solCli.GetSlot(ctx)
+		slot, err := bs.solSvc.GetSlot(ctx)
 		if err != nil {
 			return fmt.Errorf("failed to get slot: %w", err)
 		}

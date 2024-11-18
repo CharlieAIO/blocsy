@@ -54,13 +54,13 @@ func main() {
 }
 
 func solanaTxHandler(ctx context.Context, c *cache.Cache, mRepo *db.MongoRepository, pRepo *db.TimescaleRepository, websocketServer *websocket.WebSocketServer) {
-	solCli := solana.NewSolanaService(ctx)
+	solSvc := solana.NewSolanaService(ctx)
 
-	tf := solana.NewTokenFinder(c, solCli, mRepo)
-	pf := solana.NewPairsService(c, tf, solCli, mRepo)
+	tf := solana.NewTokenFinder(c, solSvc, mRepo)
+	pf := solana.NewPairsService(c, tf, solSvc, mRepo)
 	sh := solana.NewSwapHandler(tf, pf)
 
-	txHandler := solana.NewTxHandler(sh, solCli, mRepo, pRepo, websocketServer)
+	txHandler := solana.NewTxHandler(sh, solSvc, mRepo, pRepo, websocketServer)
 
 	queueHandler := solana.NewSolanaQueueHandler(txHandler, pRepo)
 

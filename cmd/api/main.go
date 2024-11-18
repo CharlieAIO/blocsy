@@ -38,7 +38,7 @@ func main() {
 
 	defer dbx.Close()
 
-	solCli := solana.NewSolanaService(ctx)
+	solSvc := solana.NewSolanaService(ctx)
 
 	pt := trackers.NewPriceTracker()
 	go pt.Run(ctx)
@@ -47,8 +47,8 @@ func main() {
 	mRepo := db.NewMongoRepository(mCli)
 	swapsRepo := db.NewTimescaleRepository(dbx)
 
-	tf := solana.NewTokenFinder(c, solCli, mRepo)
-	pf := solana.NewPairsService(c, tf, solCli, mRepo)
+	tf := solana.NewTokenFinder(c, solSvc, mRepo)
+	pf := solana.NewPairsService(c, tf, solSvc, mRepo)
 
 	handler := routes.NewHandler(pt, tf, pf, swapsRepo).GetHttpHandler()
 

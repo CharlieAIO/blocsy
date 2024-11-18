@@ -18,14 +18,14 @@ import (
 func NewSolanaService(ctx context.Context) *SolanaService {
 	endpoint := os.Getenv("SOL_HTTPS")
 
-	cli := solClient.NewClient(endpoint)
+	solCli := solClient.NewClient(endpoint)
 
-	if _, err := cli.GetVersion(ctx); err != nil {
+	if _, err := solCli.GetVersion(ctx); err != nil {
 		log.Fatalf("failed to version info, err: %v", err)
 	}
 
 	return &SolanaService{
-		cli: cli,
+		client: solCli,
 	}
 }
 
@@ -79,7 +79,7 @@ func (s *SolanaService) GetMetadata(ctx context.Context, token string) (*tokenme
 }
 
 func (s *SolanaService) GetAccountInfo(ctx context.Context, base58Addr string) (solClient.AccountInfo, error) {
-	ai, err := s.cli.GetAccountInfo(ctx, base58Addr)
+	ai, err := s.client.GetAccountInfo(ctx, base58Addr)
 	if err != nil {
 		return solClient.AccountInfo{}, fmt.Errorf("failed to get account info: %w", err)
 	}
@@ -88,7 +88,7 @@ func (s *SolanaService) GetAccountInfo(ctx context.Context, base58Addr string) (
 }
 
 func (s *SolanaService) GetSlot(ctx context.Context) (uint64, error) {
-	slot, err := s.cli.GetSlot(ctx)
+	slot, err := s.client.GetSlot(ctx)
 	if err != nil {
 		return 0, fmt.Errorf("failed to get slot: %w", err)
 	}
@@ -97,7 +97,7 @@ func (s *SolanaService) GetSlot(ctx context.Context) (uint64, error) {
 }
 
 func (s *SolanaService) GetTokenSupplyAndContext(ctx context.Context, address string) (rpc.ValueWithContext[solClient.TokenAmount], error) {
-	ts, err := s.cli.GetTokenSupplyAndContext(ctx, address)
+	ts, err := s.client.GetTokenSupplyAndContext(ctx, address)
 	if err != nil {
 		return rpc.ValueWithContext[solClient.TokenAmount]{}, fmt.Errorf("failed to get token supply and context: %w", err)
 	}
