@@ -19,7 +19,7 @@ type Cache struct {
 
 func NewCache() *Cache {
 	return &Cache{
-		cache: cache.New(20*time.Second, 40*time.Second),
+		cache: cache.New(60*time.Second, 40*time.Second),
 	}
 }
 
