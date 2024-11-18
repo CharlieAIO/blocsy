@@ -1,7 +1,7 @@
 package dex
 
 import (
-	"defi-intel/internal/types"
+	"blocsy/internal/types"
 	"encoding/base64"
 	"encoding/binary"
 	"fmt"

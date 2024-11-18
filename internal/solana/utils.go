@@ -1,7 +1,7 @@
 package solana
 
 import (
-	"defi-intel/internal/types"
+	"blocsy/internal/types"
 	"fmt"
 )
 

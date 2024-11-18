@@ -1,9 +1,9 @@
 package utils
 
 import (
+	"blocsy/internal/db"
 	"context"
 	"database/sql"
-	"defi-intel/internal/db"
 	"fmt"
 	"github.com/joho/godotenv"
 	"go.mongodb.org/mongo-driver/mongo"

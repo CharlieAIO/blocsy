@@ -1,10 +1,10 @@
 package main
 
 import (
+	"blocsy/internal/db"
+	"blocsy/internal/solana"
+	"blocsy/internal/utils"
 	"context"
-	"defi-intel/internal/db"
-	"defi-intel/internal/solana"
-	"defi-intel/internal/utils"
 	"log"
 	"os"
 	"os/signal"

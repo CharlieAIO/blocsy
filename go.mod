@@ -1,4 +1,4 @@
-module defi-intel
+module blocsy
 
 go 1.21.6
 

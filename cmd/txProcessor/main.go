@@ -1,12 +1,12 @@
 package main
 
 import (
+	"blocsy/cmd/api/websocket"
+	"blocsy/internal/cache"
+	"blocsy/internal/db"
+	"blocsy/internal/solana"
+	"blocsy/internal/utils"
 	"context"
-	"defi-intel/cmd/api/websocket"
-	"defi-intel/internal/cache"
-	"defi-intel/internal/db"
-	"defi-intel/internal/solana"
-	"defi-intel/internal/utils"
 	"log"
 	"os"
 	"os/signal"

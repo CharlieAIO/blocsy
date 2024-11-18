@@ -1,8 +1,8 @@
 package solana
 
 import (
-	"defi-intel/cmd/api/websocket"
-	"defi-intel/internal/types"
+	"blocsy/cmd/api/websocket"
+	"blocsy/internal/types"
 	solClient "github.com/blocto/solana-go-sdk/client"
 	"github.com/streadway/amqp"
 	"net/http"

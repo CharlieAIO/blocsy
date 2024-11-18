@@ -1,8 +1,8 @@
 package trackers
 
 import (
+	"blocsy/internal/types"
 	"context"
-	"defi-intel/internal/types"
 	"encoding/json"
 	"fmt"
 	"log"

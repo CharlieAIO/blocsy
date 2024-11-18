@@ -1,8 +1,8 @@
 package db
 
 import (
+	"blocsy/internal/types"
 	"context"
-	"defi-intel/internal/types"
 	"fmt"
 	"github.com/jmoiron/sqlx"
 	"log"
@@ -10,7 +10,7 @@ import (
 )
 
 const (
-	swapLogTable = "swap_log_new"
+	swapLogTable = "swap_log"
 	blocksTable  = "processed_block"
 )
 

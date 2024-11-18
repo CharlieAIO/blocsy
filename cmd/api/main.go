@@ -1,13 +1,13 @@
 package main
 
 import (
+	"blocsy/cmd/api/routes"
+	"blocsy/internal/cache"
+	"blocsy/internal/db"
+	"blocsy/internal/solana"
+	"blocsy/internal/trackers"
+	"blocsy/internal/utils"
 	"context"
-	"defi-intel/cmd/api/routes"
-	"defi-intel/internal/cache"
-	"defi-intel/internal/db"
-	"defi-intel/internal/solana"
-	"defi-intel/internal/trackers"
-	"defi-intel/internal/utils"
 	"log"
 	"net/http"
 	"os"

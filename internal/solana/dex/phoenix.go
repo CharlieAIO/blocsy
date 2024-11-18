@@ -1,7 +1,7 @@
 package dex
 
 import (
-	"defi-intel/internal/types"
+	"blocsy/internal/types"
 )
 
 func HandlePhoenixSwaps(innerIndex int, ixIndex int, transfers []types.SolTransfer) (types.SolSwap, int) {

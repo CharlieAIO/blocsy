@@ -1,9 +1,9 @@
 package db
 
 import (
+	"blocsy/internal/solana"
+	"blocsy/internal/types"
 	"context"
-	"defi-intel/internal/solana"
-	"defi-intel/internal/types"
 	"fmt"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"

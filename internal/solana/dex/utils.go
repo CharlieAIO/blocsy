@@ -1,6 +1,6 @@
 package dex
 
-import "defi-intel/internal/types"
+import "blocsy/internal/types"
 
 func FindTransfer(transfers []types.SolTransfer, innerIndex int, ixIndex int) (*types.SolTransfer, bool) {
 	for i := range transfers {

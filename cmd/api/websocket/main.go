@@ -1,8 +1,8 @@
 package websocket
 
 import (
-	"defi-intel/cmd/api/routes"
-	"defi-intel/internal/types"
+	"blocsy/cmd/api/routes"
+	"blocsy/internal/types"
 	"github.com/go-chi/chi/v5"
 	"github.com/goccy/go-json"
 	"github.com/gorilla/websocket"

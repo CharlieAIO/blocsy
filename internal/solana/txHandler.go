@@ -1,9 +1,9 @@
 package solana
 
 import (
+	"blocsy/cmd/api/websocket"
+	"blocsy/internal/types"
 	"context"
-	"defi-intel/cmd/api/websocket"
-	"defi-intel/internal/types"
 )
 
 func NewTxHandler(sh *SwapHandler, solSvc *SolanaService, repo TokensAndPairsRepo, pRepo SwapsRepo, websocket *websocket.WebSocketServer) *TxHandler {

@@ -1,7 +1,7 @@
 package solana
 
 import (
-	"defi-intel/internal/types"
+	"blocsy/internal/types"
 	"github.com/blocto/solana-go-sdk/common"
 	"math/big"
 	"strconv"

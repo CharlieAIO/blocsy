@@ -1,8 +1,8 @@
 package solana
 
 import (
+	"blocsy/internal/types"
 	"context"
-	"defi-intel/internal/types"
 	"fmt"
 	"log"
 	"os"

@@ -1,9 +1,9 @@
 package solana
 
 import (
+	"blocsy/internal/solana/dex"
+	"blocsy/internal/types"
 	"context"
-	"defi-intel/internal/solana/dex"
-	"defi-intel/internal/types"
 	"errors"
 	"log"
 	"math"

@@ -1,7 +1,7 @@
 package cache
 
 import (
-	"defi-intel/internal/types"
+	"blocsy/internal/types"
 	"time"
 
 	"github.com/patrickmn/go-cache"

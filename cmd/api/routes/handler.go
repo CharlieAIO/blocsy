@@ -1,8 +1,8 @@
 package routes
 
 import (
+	"blocsy/internal/types"
 	"context"
-	"defi-intel/internal/types"
 	"github.com/go-chi/chi/v5"
 	"github.com/gorilla/websocket"
 	"net/http"
