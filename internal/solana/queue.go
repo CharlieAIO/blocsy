@@ -14,7 +14,7 @@ import (
 
 var (
 	queueName  = "solana-tx"
-	numWorkers = 500
+	numWorkers = 750
 )
 
 func NewSolanaQueueHandler(txHandler *TxHandler, pRepo SwapsRepo) *SolanaQueueHandler {
@@ -95,6 +95,15 @@ func (qh *SolanaQueueHandler) ListenToSolanaQueue(ctx context.Context) {
 	for i := 0; i < numWorkers; i++ {
 		workerWg.Add(1)
 		go qh.solanaWorker(ctx, &workerWg, blockChan)
+	}
+
+	err := qh.ch.Qos(
+		10,
+		0,
+		false,
+	)
+	if err != nil {
+		log.Fatalf("Failed to set QoS: %v", err)
 	}
 
 	q, err := qh.ch.QueueDeclare(
