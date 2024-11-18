@@ -225,6 +225,12 @@ func (qh *SolanaQueueHandler) solanaWorker(ctx context.Context, wg *sync.WaitGro
 				swaps = append(swaps, _swaps...)
 			}
 
+			err = qh.insertBatch(ctx, swaps)
+			if err != nil {
+				log.Printf("Failed to insert swaps: %v", err)
+				return
+			}
+
 			err = x.Ack(false)
 			if err != nil {
 				log.Printf("Failed to ack message: %v", err)
