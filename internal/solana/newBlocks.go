@@ -4,11 +4,11 @@ import (
 	"context"
 	"defi-intel/internal/types"
 	"fmt"
+	"github.com/gorilla/websocket"
 	"github.com/mailru/easyjson"
 	"log"
+	"sync"
 	"time"
-
-	"github.com/gorilla/websocket"
 )
 
 func subscribeToBlocks(client *websocket.Conn) error {
@@ -37,6 +37,7 @@ type SolanaBlockListener struct {
 	solCli             *SolanaService
 	pRepo              SwapsRepo
 	queueHandler       *SolanaQueueHandler
+	errorMutex         sync.Mutex
 }
 
 func NewBlockListener(solanaSockerURL string, solCli *SolanaService, pRepo SwapsRepo, qHandler *SolanaQueueHandler) *SolanaBlockListener {
@@ -49,16 +50,16 @@ func NewBlockListener(solanaSockerURL string, solCli *SolanaService, pRepo Swaps
 }
 
 func (s *SolanaBlockListener) Listen(ctx context.Context) error {
+	ctx, cancel := context.WithCancel(ctx)
+	defer cancel()
+
 	var firstNewBlock int = 0
 	var errorOccurred bool = false
 
 	for {
-		// Exit the function if the context is done
 		if ctx.Err() != nil {
 			return nil
 		}
-
-		time.Sleep(1 * time.Second)
 
 		client, _, err := websocket.DefaultDialer.Dial(s.solanaSockerURL, nil)
 		if err != nil {
@@ -67,13 +68,16 @@ func (s *SolanaBlockListener) Listen(ctx context.Context) error {
 			continue
 		}
 
+		client.SetPingHandler(func(appData string) error {
+			log.Println("Received ping, sending pong")
+			return client.WriteControl(websocket.PongMessage, []byte(appData), time.Now().Add(time.Second))
+		})
+
+		go s.keepAlive(ctx, client)
+
 		if err := subscribeToBlocks(client); err != nil {
 			log.Printf("subscribeToBlocks error: %v; retrying in 5 seconds...", err)
-			err = client.Close()
-			if err != nil {
-				continue
-			}
-
+			_ = client.Close()
 			time.Sleep(5 * time.Second)
 			errorOccurred = true
 			continue
@@ -84,9 +88,8 @@ func (s *SolanaBlockListener) Listen(ctx context.Context) error {
 			errorOccurred = true
 		}
 
-		if err := client.Close(); err != nil {
-			continue
-		}
+		_ = client.Close()
+		time.Sleep(1 * time.Second)
 	}
 }
 
@@ -96,7 +99,7 @@ func (s *SolanaBlockListener) readMessages(ctx context.Context, client *websocke
 			return nil
 		}
 
-		if err := client.SetReadDeadline(time.Now().Add(30 * time.Second)); err != nil {
+		if err := client.SetReadDeadline(time.Now().Add(10 * time.Second)); err != nil {
 			return fmt.Errorf("SetReadDeadline error: %w", err)
 		}
 
@@ -115,7 +118,6 @@ func (s *SolanaBlockListener) processMessage(ctx context.Context, message []byte
 
 	var blockMessage types.WSBlockMessage
 	if err := easyjson.Unmarshal(message, &blockMessage); err != nil {
-		//SaveErrorMessageToFile(message)
 		return fmt.Errorf("Error decoding message: %w", err)
 	}
 
@@ -134,19 +136,30 @@ func (s *SolanaBlockListener) processMessage(ctx context.Context, message []byte
 		slot = *blockMessage.Params.Result.Value.Slot
 	}
 
+	s.errorMutex.Lock()
 	if *errorOccurred {
+		*errorOccurred = false
 		*firstNewBlock = slot
-		*errorOccurred = false // Reset the error flag
 
 		if s.lastProcessedBlock != 0 {
 			bf := NewBackfillService(s.solCli, s.pRepo, s.queueHandler)
-			go func() {
-				err := bf.HandleBackFill(ctx, s.lastProcessedBlock+1, *firstNewBlock-1)
+
+			startBlock := s.lastProcessedBlock + 1
+			endBlock := *firstNewBlock - 1
+
+			s.errorMutex.Unlock()
+
+			go func(start, end int) {
+				err := bf.HandleBackFill(ctx, start, end)
 				if err != nil {
 					log.Printf("HandleBackFill error: %v", err)
 				}
-			}()
+			}(startBlock, endBlock)
+		} else {
+			s.errorMutex.Unlock()
 		}
+	} else {
+		s.errorMutex.Unlock()
 	}
 
 	timestamp := time.Now().Unix()
@@ -157,28 +170,45 @@ func (s *SolanaBlockListener) processMessage(ctx context.Context, message []byte
 	log.Printf("Block %d has %d transactions", slot, len(block.Transactions))
 
 	s.lastProcessedBlock = slot
-	s.HandleBlock(block.Transactions, timestamp, uint64(slot))
+	go func() {
+		s.HandleBlock(block.Transactions, timestamp, uint64(slot))
+	}()
 	_ = s.pRepo.MarkBlockProcessed(ctx, slot)
 
 	return nil
 }
 
 func (s *SolanaBlockListener) HandleBlock(blockTransactions []types.SolanaTx, blockTime int64, block uint64) {
-	for i := range blockTransactions {
-		allNull := true
-		for j := 0; j < len(blockTransactions[i].Meta.Err.InstructionError) && !allNull; j++ {
-			allNull = blockTransactions[i].Meta.Err.InstructionError[j] == nil
-		}
 
-		if !allNull {
+	toProcess := make([]types.SolanaTx, 0)
+	for i := range blockTransactions {
+		if !validateTX(&blockTransactions[i]) {
 			continue
 		}
+		toProcess = append(toProcess, blockTransactions[i])
 
-		s.queueHandler.AddToSolanaQueue(context.Background(), types.SolanaBlockTx{
-			Tx:        blockTransactions[i],
-			Block:     block,
-			Timestamp: blockTime,
-		})
+	}
 
+	s.queueHandler.AddToSolanaQueue(types.BlockData{
+		Transactions: toProcess,
+		Block:        block,
+		Timestamp:    blockTime,
+	})
+}
+
+func (s *SolanaBlockListener) keepAlive(ctx context.Context, client *websocket.Conn) {
+	ticker := time.NewTicker(15 * time.Second)
+	defer ticker.Stop()
+
+	for {
+		select {
+		case <-ticker.C:
+			if err := client.WriteControl(websocket.PingMessage, []byte{}, time.Now().Add(5*time.Second)); err != nil {
+				log.Printf("Error sending ping: %v", err)
+				return
+			}
+		case <-ctx.Done():
+			return
+		}
 	}
 }
