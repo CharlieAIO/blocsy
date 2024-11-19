@@ -102,17 +102,17 @@ func (s *SolanaBlockListener) readMessages(ctx context.Context, client *websocke
 			return nil
 		}
 
-		if err := client.SetReadDeadline(time.Now().Add(10 * time.Second)); err != nil {
+		if err := client.SetReadDeadline(time.Now().Add(25 * time.Second)); err != nil {
 			return fmt.Errorf("SetReadDeadline error: %w", err)
 		}
 
 		_, message, err := client.ReadMessage()
 		if err != nil {
-			return fmt.Errorf("Error reading message: %w", err)
+			return fmt.Errorf("error reading message: %w", err)
 		}
 
 		if err := s.processMessage(ctx, message, firstNewBlock, errorOccurred); err != nil {
-			return fmt.Errorf("Error processing message: %w", err)
+			return fmt.Errorf("error processing message: %w", err)
 		}
 	}
 }
@@ -199,7 +199,7 @@ func (s *SolanaBlockListener) HandleBlock(blockTransactions []types.SolanaTx, bl
 }
 
 func (s *SolanaBlockListener) keepAlive(ctx context.Context, client *websocket.Conn, connectionOpen *bool) {
-	ticker := time.NewTicker(15 * time.Second)
+	ticker := time.NewTicker(10 * time.Second)
 	defer ticker.Stop()
 
 	for {
