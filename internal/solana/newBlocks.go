@@ -68,15 +68,17 @@ func (s *SolanaBlockListener) Listen(ctx context.Context) error {
 			continue
 		}
 
+		connectionOpen := true
 		client.SetPingHandler(func(appData string) error {
 			log.Println("Received ping, sending pong")
 			return client.WriteControl(websocket.PongMessage, []byte(appData), time.Now().Add(time.Second))
 		})
 
-		go s.keepAlive(ctx, client)
+		go s.keepAlive(ctx, client, &connectionOpen)
 
 		if err := subscribeToBlocks(client); err != nil {
 			log.Printf("subscribeToBlocks error: %v; retrying in 5 seconds...", err)
+			connectionOpen = false
 			_ = client.Close()
 			time.Sleep(5 * time.Second)
 			errorOccurred = true
@@ -88,6 +90,7 @@ func (s *SolanaBlockListener) Listen(ctx context.Context) error {
 			errorOccurred = true
 		}
 
+		connectionOpen = false
 		_ = client.Close()
 		time.Sleep(1 * time.Second)
 	}
@@ -195,13 +198,16 @@ func (s *SolanaBlockListener) HandleBlock(blockTransactions []types.SolanaTx, bl
 	})
 }
 
-func (s *SolanaBlockListener) keepAlive(ctx context.Context, client *websocket.Conn) {
+func (s *SolanaBlockListener) keepAlive(ctx context.Context, client *websocket.Conn, connectionOpen *bool) {
 	ticker := time.NewTicker(15 * time.Second)
 	defer ticker.Stop()
 
 	for {
 		select {
 		case <-ticker.C:
+			if !*connectionOpen {
+				return
+			}
 			if err := client.WriteControl(websocket.PingMessage, []byte{}, time.Now().Add(5*time.Second)); err != nil {
 				log.Printf("Error sending ping: %v", err)
 				return
