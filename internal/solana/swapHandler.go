@@ -47,7 +47,7 @@ func (sh *SwapHandler) HandleSwaps(ctx context.Context, transfers []types.SolTra
 			if len(accounts) != 11 {
 				continue
 			}
-			if accountKeys[accounts[0]] != TOKEN_PROGRAM {
+			if len(accountKeys) > accounts[0] && accountKeys[accounts[0]] != TOKEN_PROGRAM {
 				continue
 			}
 			source = "ORCA"
