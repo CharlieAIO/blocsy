@@ -87,14 +87,20 @@ func (qh *SolanaQueueHandler) adjustWorkers(queueSize int) {
 	switch {
 	case queueSize > 1500:
 		newNumWorkers = 2500
+		qh.setPrefetch(2000)
 	case queueSize > 1000:
 		newNumWorkers = 2000
+		qh.setPrefetch(1500)
 	case queueSize > 750:
 		newNumWorkers = 1500
+		qh.setPrefetch(1400)
 	case queueSize > 500:
 		newNumWorkers = 1000
+		qh.setPrefetch(1200)
 	default:
 		newNumWorkers = 750
+		qh.setPrefetch(1000)
+
 	}
 
 	qh.mu.Lock()
@@ -131,6 +137,17 @@ func (qh *SolanaQueueHandler) reconnect() bool {
 	return false
 }
 
+func (qh *SolanaQueueHandler) setPrefetch(value int) {
+	err := qh.ch.Qos(
+		value,
+		0,
+		false,
+	)
+	if err != nil {
+		log.Printf("Failed to set QoS: %v", err)
+	}
+}
+
 func (qh *SolanaQueueHandler) ListenToSolanaQueue(ctx context.Context) {
 	blocked := qh.conn.NotifyBlocked(make(chan amqp.Blocking))
 	go func() {
@@ -150,14 +167,7 @@ func (qh *SolanaQueueHandler) ListenToSolanaQueue(ctx context.Context) {
 		qh.startWorker(i, ctx)
 	}
 
-	err := qh.ch.Qos(
-		1000,
-		0,
-		false,
-	)
-	if err != nil {
-		log.Fatalf("Failed to set QoS: %v", err)
-	}
+	qh.setPrefetch(1000)
 
 	q, err := qh.ch.QueueDeclare(
 		queueName,
