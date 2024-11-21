@@ -1,37 +1,12 @@
 package routes
 
 import (
-	"blocsy/internal/types"
-	"context"
 	"github.com/go-chi/chi/v5"
-	"github.com/gorilla/websocket"
 	"net/http"
 	"time"
 
 	"github.com/go-chi/chi/v5/middleware"
 )
-
-type SolanaTokenFinder interface {
-	FindToken(ctx context.Context, address string) (*types.Token, error)
-}
-
-type SolanaPairFinder interface {
-	FindPair(ctx context.Context, address string) (*types.Pair, *types.QuoteToken, error)
-}
-
-type PriceTrackers interface {
-	GetUSDPrice(symbol string) float64
-}
-
-type SwapsRepo interface {
-	GetAllWalletSwaps(ctx context.Context, wallet string) ([]types.SwapLog, error)
-	GetSwapsOnDate(ctx context.Context, wallet string, startDate time.Time) ([]types.SwapLog, error)
-}
-
-type Client struct {
-	conn    *websocket.Conn
-	wallets map[string]bool
-}
 
 type Handler struct {
 	pricer      PriceTrackers
@@ -61,12 +36,12 @@ func (h *Handler) GetHttpHandler() http.Handler {
 	r.Route("/v1", func(r chi.Router) {
 		r.Use(APIKeyMiddleware)
 		r.Use(RateLimitMiddleware)
+
+		r.Get("/pair/{pair}", h.PairLookupHandler)
+
+		r.Get("/pnl-aggregated/{wallet}", h.AggregatedPnlHandler)
+		r.Get("/pnl/{wallet}", h.PnlHandler)
 	})
-
-	r.Get("/pair/{pair}", h.PairLookupHandler)
-
-	r.Get("/pnl-aggregated/{wallet}", h.AggregatedPnlHandler)
-	r.Get("/pnl/{wallet}", h.PnlHandler)
 
 	return r
 }
