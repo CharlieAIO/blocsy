@@ -7,6 +7,7 @@ import (
 	"github.com/jmoiron/sqlx"
 	"log"
 	"strings"
+	"time"
 )
 
 const (
@@ -111,6 +112,37 @@ func (repo *TimescaleRepository) DeleteSwapsUsingTx(ctx context.Context, signatu
 
 	return nil
 
+}
+
+func (repo *TimescaleRepository) GetAllWalletSwaps(ctx context.Context, wallet string) ([]types.SwapLog, error) {
+
+	var query = fmt.Sprintf(`SELECT * FROM "%s" WHERE wallet = $1;`, swapLogTable)
+
+	var swaps []types.SwapLog
+
+	if err := repo.db.SelectContext(ctx, &swaps, query, wallet); err != nil {
+		return nil, fmt.Errorf("cannot get all wallet swaps: %w", err)
+	}
+
+	return swaps, nil
+}
+
+func (repo *TimescaleRepository) GetSwapsOnDate(ctx context.Context, wallet string, startDate time.Time) ([]types.SwapLog, error) {
+	formattedStartDate := startDate.Format("2006-01-02")
+
+	var query = fmt.Sprintf(`
+		SELECT * FROM "%s" 
+		WHERE "wallet" = $1 
+		AND DATE(timestamp) >= $2
+		ORDER BY "timestamp" ASC;
+	`, swapLogTable)
+
+	var swaps []types.SwapLog
+	if err := repo.db.SelectContext(ctx, &swaps, query, wallet, formattedStartDate); err != nil {
+		return nil, fmt.Errorf("cannot get swaps: %w", err)
+	}
+
+	return swaps, nil
 }
 
 //=============================================== Create Tables  =======================================================

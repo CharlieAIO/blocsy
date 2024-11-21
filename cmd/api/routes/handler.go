@@ -23,7 +23,10 @@ type PriceTrackers interface {
 	GetUSDPrice(symbol string) float64
 }
 
-type SwapsRepo interface{}
+type SwapsRepo interface {
+	GetAllWalletSwaps(ctx context.Context, wallet string) ([]types.SwapLog, error)
+	GetSwapsOnDate(ctx context.Context, wallet string, startDate time.Time) ([]types.SwapLog, error)
+}
 
 type Client struct {
 	conn    *websocket.Conn
@@ -59,6 +62,11 @@ func (h *Handler) GetHttpHandler() http.Handler {
 		r.Use(APIKeyMiddleware)
 		r.Use(RateLimitMiddleware)
 	})
+
+	r.Get("/pair/{pair}", h.PairLookupHandler)
+
+	r.Get("/pnl-aggregated/{wallet}", h.AggregatedPnlHandler)
+	r.Get("/pnl/{wallet}", h.PnlHandler)
 
 	return r
 }
