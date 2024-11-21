@@ -189,11 +189,11 @@ func (sh *SwapHandler) HandleSwaps(ctx context.Context, transfers []types.SolTra
 
 		price := 0.0
 		if action == "BUY" {
-			priceFloat := new(big.Float).Quo(amountInFloat, amountOutFloat)
+			priceFloat := new(big.Float).Quo(amountOutFloat, amountInFloat)
 			// price = priceFloat.Text('f', -1)
 			price, _ = priceFloat.Float64()
 		} else {
-			priceFloat := new(big.Float).Quo(amountOutFloat, amountInFloat)
+			priceFloat := new(big.Float).Quo(amountInFloat, amountOutFloat)
 			// price = priceFloat.Text('f', -1)
 			price, _ = priceFloat.Float64()
 		}

@@ -264,10 +264,10 @@ func (h *Handler) AggregatedPnlHandler(w http.ResponseWriter, r *http.Request) {
 			} else {
 				_, qt, err := h.pairFinder.FindPair(ctx, pair)
 				if err != nil {
-					log.Println("Error finding pair:", err)
-					return
+					quoteTokenSymbol = "SOL"
+				} else {
+					quoteTokenSymbol = qt.Symbol
 				}
-				quoteTokenSymbol = qt.Symbol
 			}
 
 			if quoteTokenSymbol == "" {
@@ -291,25 +291,35 @@ func (h *Handler) AggregatedPnlHandler(w http.ResponseWriter, r *http.Request) {
 
 			totalBuyAmount, totalBuyValue := 0.0, 0.0
 			totalSellAmount, totalSellValue := 0.0, 0.0
+			//price := 0.0
 
 			for _, swap := range swapLogs {
 				if swap.Type == "BUY" {
 					totalBuyAmount += swap.AmountOut
-					totalBuyValue += swap.AmountOut * swap.Price
 				} else if swap.Type == "SELL" {
 					totalSellAmount += swap.AmountIn
-					totalSellValue += swap.AmountIn * swap.Price
 				}
 			}
 
+			totalBuyValue = totalBuyAmount * usdPrice
+			totalSellValue = totalSellAmount * usdPrice
+
 			realizedPNL := totalSellValue - totalBuyValue
 			unrealizedPNL := 0.0
-			remainingAmount := 0.0
+			remainingAmount := totalBuyAmount - totalSellAmount
 
-			if totalBuyAmount > totalSellAmount {
-				remainingAmount = totalBuyAmount - totalSellAmount
+			if remainingAmount > 0 {
 				unrealizedPNL = remainingAmount * usdPrice
 			}
+
+			//		log.Printf(`
+			//	[DEBUG] Pair: %s
+			//	QuoteToken: %s, USDPrice: %.2f, price: %.8f
+			//	TotalBuyAmount: %.2f, TotalBuyValue: %.2f
+			//	TotalSellAmount: %.2f, TotalSellValue: %.2f
+			//	RealizedPnL: %.2f, UnrealizedPnL: %.2f
+			//	RemainingAmount: %.2f
+			//`, pair, quoteTokenSymbol, usdPrice, price, totalBuyAmount, totalBuyValue, totalSellAmount, totalSellValue, realizedPNL, unrealizedPNL, remainingAmount)
 
 			mu.Lock()
 			defer mu.Unlock()
@@ -326,7 +336,7 @@ func (h *Handler) AggregatedPnlHandler(w http.ResponseWriter, r *http.Request) {
 			}
 
 			if remainingAmount > 0 && totalBuyValue > 0 {
-				pnlResults.UnrealizedROI += (unrealizedPNL / (remainingAmount * usdPrice)) * 100
+				pnlResults.UnrealizedROI += (unrealizedPNL / (remainingAmount)) * 100
 			}
 
 			tokensTraded[pair] = true
@@ -340,7 +350,6 @@ func (h *Handler) AggregatedPnlHandler(w http.ResponseWriter, r *http.Request) {
 		pnlResults.WinRate = (float64(winCount) / float64(pnlResults.TokensTraded)) * 100
 	}
 
-	// Send response
 	response := map[string]interface{}{
 		"results": pnlResults,
 	}
