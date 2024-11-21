@@ -3,6 +3,7 @@ package solana
 import (
 	"blocsy/cmd/api/websocket"
 	"blocsy/internal/types"
+	"context"
 	solClient "github.com/blocto/solana-go-sdk/client"
 	"github.com/streadway/amqp"
 	"net/http"
@@ -51,6 +52,13 @@ type SolanaQueueHandler struct {
 	ch        *amqp.Channel
 	mu        sync.Mutex
 	pRepo     SwapsRepo
+
+	ctx context.Context
+
+	rabbitChan chan amqp.Delivery
+	workerWg   sync.WaitGroup
+	workers    int
+	workerPool map[int]context.CancelFunc
 }
 
 type Node struct {

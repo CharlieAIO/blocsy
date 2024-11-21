@@ -8,7 +8,6 @@ import (
 	"log"
 	"os"
 	"runtime"
-	"sync"
 	"time"
 )
 
@@ -21,6 +20,7 @@ func NewSolanaQueueHandler(txHandler *TxHandler, pRepo SwapsRepo) *SolanaQueueHa
 	qh := &SolanaQueueHandler{
 		txHandler: txHandler,
 		pRepo:     pRepo,
+		workers:   750,
 	}
 	qh.connectToRabbitMQ()
 
@@ -61,6 +61,59 @@ func (qh *SolanaQueueHandler) Close() {
 	}
 }
 
+func (qh *SolanaQueueHandler) monitorQueue(ctx context.Context) {
+	ticker := time.NewTicker(10 * time.Second)
+	defer ticker.Stop()
+
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case <-ticker.C:
+			queue, err := qh.ch.QueueInspect(queueName)
+			if err != nil {
+				log.Printf("Failed to inspect queue: %v", err)
+				continue
+			}
+
+			qh.adjustWorkers(queue.Messages)
+		}
+	}
+}
+
+func (qh *SolanaQueueHandler) adjustWorkers(queueSize int) {
+	var newNumWorkers int
+
+	switch {
+	case queueSize > 1500:
+		newNumWorkers = 2500
+	case queueSize > 1000:
+		newNumWorkers = 2000
+	case queueSize > 750:
+		newNumWorkers = 1500
+	case queueSize > 500:
+		newNumWorkers = 1000
+	default:
+		newNumWorkers = 750
+	}
+
+	qh.mu.Lock()
+	currentWorkers := len(qh.workerPool)
+	qh.mu.Unlock()
+
+	if newNumWorkers > currentWorkers {
+		for i := currentWorkers; i < newNumWorkers; i++ {
+			qh.startWorker(i, qh.ctx)
+		}
+		log.Printf("Increased workers from %d to %d", currentWorkers, newNumWorkers)
+	} else if newNumWorkers < currentWorkers {
+		for i := currentWorkers - 1; i >= newNumWorkers; i-- {
+			qh.stopWorker(i)
+		}
+		log.Printf("Decreased workers from %d to %d", currentWorkers, newNumWorkers)
+	}
+}
+
 func (qh *SolanaQueueHandler) reconnect() bool {
 	qh.Close()
 	backoff := time.Second
@@ -77,6 +130,7 @@ func (qh *SolanaQueueHandler) reconnect() bool {
 	log.Println("Failed to reconnect to RabbitMQ after multiple attempts")
 	return false
 }
+
 func (qh *SolanaQueueHandler) ListenToSolanaQueue(ctx context.Context) {
 	blocked := qh.conn.NotifyBlocked(make(chan amqp.Blocking))
 	go func() {
@@ -89,12 +143,11 @@ func (qh *SolanaQueueHandler) ListenToSolanaQueue(ctx context.Context) {
 		}
 	}()
 
-	blockChan := make(chan amqp.Delivery, numWorkers)
-	var workerWg sync.WaitGroup
+	qh.rabbitChan = make(chan amqp.Delivery, qh.workers)
+	qh.workerPool = make(map[int]context.CancelFunc)
 
-	for i := 0; i < numWorkers; i++ {
-		workerWg.Add(1)
-		go qh.solanaWorker(ctx, &workerWg, blockChan)
+	for i := 0; i < qh.workers; i++ {
+		qh.startWorker(i, ctx)
 	}
 
 	err := qh.ch.Qos(
@@ -137,15 +190,41 @@ func (qh *SolanaQueueHandler) ListenToSolanaQueue(ctx context.Context) {
 			case <-ctx.Done():
 				return
 			default:
-				blockChan <- d
+				qh.rabbitChan <- d
 			}
 		}
-		close(blockChan)
+		close(qh.rabbitChan)
 	}()
+	go qh.monitorQueue(ctx)
 
-	workerWg.Wait()
+	qh.workerWg.Wait()
 
 	runtime.GC()
+}
+
+func (qh *SolanaQueueHandler) startWorker(workerID int, parentCtx context.Context) {
+	ctx, cancel := context.WithCancel(parentCtx)
+	qh.mu.Lock()
+	qh.workerPool[workerID] = cancel
+	qh.mu.Unlock()
+
+	qh.workerWg.Add(1)
+	go func() {
+		defer qh.workerWg.Done()
+		qh.solanaWorker(ctx)
+	}()
+	log.Printf("Worker %d started", workerID)
+}
+
+func (qh *SolanaQueueHandler) stopWorker(workerID int) {
+	qh.mu.Lock()
+	defer qh.mu.Unlock()
+
+	if cancel, exists := qh.workerPool[workerID]; exists {
+		cancel()
+		delete(qh.workerPool, workerID)
+		log.Printf("Worker %d stopped", workerID)
+	}
 }
 
 func (qh *SolanaQueueHandler) AddToSolanaQueue(blockData types.BlockData) {
@@ -194,11 +273,11 @@ func (qh *SolanaQueueHandler) AddToSolanaQueue(blockData types.BlockData) {
 	}
 }
 
-func (qh *SolanaQueueHandler) solanaWorker(ctx context.Context, wg *sync.WaitGroup, rabbitChan <-chan amqp.Delivery) {
-	defer wg.Done()
+func (qh *SolanaQueueHandler) solanaWorker(ctx context.Context) {
+	defer qh.workerWg.Done()
 	for {
 		select {
-		case x, ok := <-rabbitChan:
+		case x, ok := <-qh.rabbitChan:
 			if !ok {
 				log.Println("Channel closed")
 				return
