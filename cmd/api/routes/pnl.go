@@ -241,9 +241,10 @@ func (h *Handler) AggregatedPnlHandler(w http.ResponseWriter, r *http.Request) {
 	pairSwaps := make(map[string][]types.SwapLog)
 	tokensTraded := make(map[string]bool)
 	winCount := 0
+
 	var mu sync.Mutex
 	var wg sync.WaitGroup
-	sem := make(chan struct{}, 100) // Limit  goroutines to 100
+	sem := make(chan struct{}, 100) // Limit to 100 goroutines
 
 	for _, swap := range swaps {
 		pairSwaps[swap.Pair] = append(pairSwaps[swap.Pair], swap)
@@ -257,46 +258,39 @@ func (h *Handler) AggregatedPnlHandler(w http.ResponseWriter, r *http.Request) {
 			defer wg.Done()
 			defer func() { <-sem }()
 
-			quoteTokenSymbol := ""
+			var quoteTokenSymbol string
 			if swapLogs[0].Exchange == "PUMPFUN" {
 				quoteTokenSymbol = "SOL"
-				mu.Lock()
-				tokensTraded[pair] = true
-				mu.Unlock()
 			} else {
-				pairLookup, qt, err := h.pairFinder.FindPair(ctx, pair)
+				_, qt, err := h.pairFinder.FindPair(ctx, pair)
 				if err != nil {
 					log.Println("Error finding pair:", err)
 					return
 				}
 				quoteTokenSymbol = qt.Symbol
-				mu.Lock()
-				tokensTraded[pairLookup.Token] = true
-				mu.Unlock()
 			}
 
 			if quoteTokenSymbol == "" {
+				log.Printf("No quote token symbol for pair: %s", pair)
 				return
 			}
 
-			usdPrice := 0.0
 			mu.Lock()
-			if price, ok := priceCache[quoteTokenSymbol]; !ok {
+			usdPrice, ok := priceCache[quoteTokenSymbol]
+			if !ok {
 				usdPrice = h.pricer.GetUSDPrice(quoteTokenSymbol)
-				priceCache[quoteTokenSymbol] = usdPrice
-			} else {
-				usdPrice = price
+				if usdPrice > 0 {
+					priceCache[quoteTokenSymbol] = usdPrice
+				} else {
+					log.Printf("Missing price for token: %s", quoteTokenSymbol)
+					mu.Unlock()
+					return
+				}
 			}
 			mu.Unlock()
 
-			if usdPrice == 0 {
-				return
-			}
-
-			totalBuyAmount := 0.0
-			totalBuyValue := 0.0
-			totalSellAmount := 0.0
-			totalSellValue := 0.0
+			totalBuyAmount, totalBuyValue := 0.0, 0.0
+			totalSellAmount, totalSellValue := 0.0, 0.0
 
 			for _, swap := range swapLogs {
 				if swap.Type == "BUY" {
@@ -309,23 +303,23 @@ func (h *Handler) AggregatedPnlHandler(w http.ResponseWriter, r *http.Request) {
 			}
 
 			realizedPNL := totalSellValue - totalBuyValue
-			unrealizedPNL := float64(0)
-			remainingAmount := float64(0)
+			unrealizedPNL := 0.0
+			remainingAmount := 0.0
 
 			if totalBuyAmount > totalSellAmount {
 				remainingAmount = totalBuyAmount - totalSellAmount
 				unrealizedPNL = remainingAmount * usdPrice
-			} else {
-				unrealizedPNL = 0
 			}
 
 			mu.Lock()
+			defer mu.Unlock()
+
 			pnlResults.RealizedPnLUSD += realizedPNL
 			pnlResults.UnrealizedPnLUSD += unrealizedPNL
-
 			if realizedPNL > 0 {
 				winCount++
 			}
+			totalBuyValue += totalBuyValue
 
 			if totalBuyValue > 0 {
 				pnlResults.RealizedROI += (realizedPNL / totalBuyValue) * 100
@@ -333,13 +327,9 @@ func (h *Handler) AggregatedPnlHandler(w http.ResponseWriter, r *http.Request) {
 
 			if remainingAmount > 0 && totalBuyValue > 0 {
 				pnlResults.UnrealizedROI += (unrealizedPNL / (remainingAmount * usdPrice)) * 100
-			} else {
-				pnlResults.UnrealizedROI = 0
 			}
-			mu.Unlock()
 
-			//log.Printf("Pair: %s, TotalBuyValue: %f, TotalSellValue: %f, RealizedPNL: %f, UnrealizedPNL: %f", pair, totalBuyValue, totalSellValue, realizedPNL, unrealizedPNL)
-
+			tokensTraded[pair] = true
 		}(pair, swapLogs)
 	}
 
@@ -350,12 +340,12 @@ func (h *Handler) AggregatedPnlHandler(w http.ResponseWriter, r *http.Request) {
 		pnlResults.WinRate = (float64(winCount) / float64(pnlResults.TokensTraded)) * 100
 	}
 
+	// Send response
 	response := map[string]interface{}{
 		"results": pnlResults,
 	}
 	w.Header().Set("Content-Type", "application/json")
 	if err := json.NewEncoder(w).Encode(response); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
 	}
 }
