@@ -82,8 +82,6 @@ services:
       - my_network
     ports:
       - "8080:8080"
-    depends_on:
-      - rabbitmq
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8080"]
       interval: 30s
@@ -112,7 +110,7 @@ services:
       - my_network
     restart: always
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:15672"]
+      test: ["CMD", "rabbitmq-diagnostics", "ping"]
       interval: 30s
       timeout: 10s
       retries: 5

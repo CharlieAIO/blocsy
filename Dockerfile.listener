@@ -16,6 +16,9 @@ FROM alpine:3.19
 
 WORKDIR /app
 
+# Install curl
+RUN apk add --no-cache curl
+
 COPY --from=builder /app/app .
 
 
