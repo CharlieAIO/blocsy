@@ -24,6 +24,11 @@ func NewHandler(pricer PriceTrackers, tokenFinder SolanaTokenFinder, pairFinder 
 	}
 }
 
+func HealthCheckHandler(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte("OK"))
+}
+
 func (h *Handler) GetHttpHandler() http.Handler {
 	r := chi.NewRouter()
 	r.Use(middleware.RequestID)
@@ -32,6 +37,8 @@ func (h *Handler) GetHttpHandler() http.Handler {
 	r.Use(middleware.Recoverer)
 
 	r.Use(middleware.Timeout(120 * time.Second))
+
+	r.Get("/health", HealthCheckHandler)
 
 	r.Route("/v1", func(r chi.Router) {
 		r.Use(APIKeyMiddleware)
