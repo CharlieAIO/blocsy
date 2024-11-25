@@ -23,6 +23,9 @@ type PNLInfo struct {
 }
 
 type AggregatedPnL struct {
+	PnLUSD float64 `json:"pnlUSD"`
+	ROI    float64 `json:"roi"`
+
 	RealizedPnLUSD   float64 `json:"realizedPnLUSD"`
 	RealizedROI      float64 `json:"realizedROI"`
 	UnrealizedPnLUSD float64 `json:"unrealizedPnLUSD"`

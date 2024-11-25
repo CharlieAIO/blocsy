@@ -262,12 +262,16 @@ func (h *Handler) AggregatedPnlHandler(w http.ResponseWriter, r *http.Request) {
 			if swapLogs[0].Exchange == "PUMPFUN" {
 				quoteTokenSymbol = "SOL"
 			} else {
+				start := time.Now()
+
 				_, qt, err := h.pairFinder.FindPair(ctx, pair)
 				if err != nil {
 					quoteTokenSymbol = "SOL"
 				} else {
 					quoteTokenSymbol = qt.Symbol
 				}
+				log.Printf("%s | findPair took %s", pair, time.Since(start))
+
 			}
 
 			if quoteTokenSymbol == "" {
@@ -335,8 +339,14 @@ func (h *Handler) AggregatedPnlHandler(w http.ResponseWriter, r *http.Request) {
 				pnlResults.RealizedROI += (realizedPNL / totalBuyValue) * 100
 			}
 
-			if remainingAmount > 0 && totalBuyValue > 0 {
-				pnlResults.UnrealizedROI += (unrealizedPNL / (remainingAmount)) * 100
+			remainingCost := totalBuyValue - totalSellValue
+			if remainingCost > 0 {
+				pnlResults.UnrealizedROI += (unrealizedPNL / remainingCost) * 100
+			}
+
+			pnlResults.PnLUSD = pnlResults.RealizedPnLUSD + pnlResults.UnrealizedPnLUSD
+			if pnlResults.PnLUSD > 0 {
+				pnlResults.ROI = (pnlResults.PnLUSD / totalBuyValue) * 100
 			}
 
 			tokensTraded[pair] = true
