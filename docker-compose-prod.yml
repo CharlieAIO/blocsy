@@ -98,8 +98,6 @@ services:
   backfill:
     restart: unless-stopped
     image: backfill:latest
-    ports:
-      - "6060:6060"
     build:
       context: .
       dockerfile: Dockerfile.backfill
