@@ -160,6 +160,7 @@ func (qh *SolanaQueueHandler) ListenToSolanaQueue(ctx context.Context) {
 		}
 	}()
 
+	qh.ctx = ctx
 	qh.rabbitChan = make(chan amqp.Delivery, qh.workers)
 	qh.workerPool = make(map[int]context.CancelFunc)
 
