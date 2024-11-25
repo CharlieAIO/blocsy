@@ -153,7 +153,7 @@ func (s *SolanaBlockListener) processMessage(ctx context.Context, message []byte
 			s.errorMutex.Unlock()
 
 			go func(start, end int) {
-				err := bf.HandleBackFill(ctx, start, end)
+				err := bf.HandleBackFill(ctx, start, end, false)
 				if err != nil {
 					log.Printf("HandleBackFill error: %v", err)
 				}

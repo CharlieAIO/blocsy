@@ -30,7 +30,7 @@ func NewBackfillService(solSvc *SolanaService, pRepo SwapsRepo, qHandler *Solana
 	}
 }
 
-func (bs *BackfillService) HandleBackFill(ctx context.Context, startBlock int, toBlock int) error {
+func (bs *BackfillService) HandleBackFill(ctx context.Context, startBlock int, toBlock int, ignoreWS bool) error {
 	log.Printf("Handling Backfill %d --> %d", startBlock, toBlock)
 	defer log.Printf("Backfill completed")
 
@@ -62,6 +62,7 @@ func (bs *BackfillService) HandleBackFill(ctx context.Context, startBlock int, t
 			Transactions: block.Result.Transactions,
 			Block:        uint64(i),
 			Timestamp:    block.Result.BlockTime,
+			IgnoreWS:     ignoreWS,
 		})
 
 	}

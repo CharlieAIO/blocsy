@@ -317,7 +317,7 @@ func (qh *SolanaQueueHandler) solanaWorker(ctx context.Context) {
 
 			swaps := make([]types.SwapLog, 0)
 			for _, tx := range blockData.Transactions {
-				_swaps, err := qh.txHandler.ProcessTransaction(ctx, &tx, blockData.Timestamp, blockData.Block)
+				_swaps, err := qh.txHandler.ProcessTransaction(ctx, &tx, blockData.Timestamp, blockData.Block, blockData.IgnoreWS)
 				if err != nil {
 					continue
 				}

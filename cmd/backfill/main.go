@@ -76,7 +76,7 @@ func main() {
 			go func() {
 				defer wg.Done()
 				for blockRange := range blockRanges {
-					err := backfillService.HandleBackFill(ctx, blockRange[0], blockRange[1])
+					err := backfillService.HandleBackFill(ctx, blockRange[0], blockRange[1], true)
 					if err != nil {
 						log.Printf("Error handling backfill for block range %v: %v", blockRange, err)
 					}

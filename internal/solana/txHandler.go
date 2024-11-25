@@ -18,10 +18,10 @@ func NewTxHandler(sh *SwapHandler, solSvc *SolanaService, repo TokensAndPairsRep
 
 }
 
-func (t *TxHandler) ProcessTransaction(ctx context.Context, tx *types.SolanaTx, timestamp int64, block uint64) ([]types.SwapLog, error) {
+func (t *TxHandler) ProcessTransaction(ctx context.Context, tx *types.SolanaTx, timestamp int64, block uint64, ignoreWS bool) ([]types.SwapLog, error) {
 	transfers := GetAllTransfers(tx)
 	swaps := t.sh.HandleSwaps(ctx, transfers, tx, timestamp, block)
-	if t.Websocket != nil {
+	if t.Websocket != nil && !ignoreWS {
 		go func() {
 			t.Websocket.BroadcastSwaps(swaps)
 		}()

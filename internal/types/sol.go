@@ -11,6 +11,7 @@ type BlockData struct {
 	Transactions []SolanaTx `json:"transactions"`
 	Timestamp    int64      `json:"blockTime"`
 	Block        uint64     `json:"block"`
+	IgnoreWS     bool       `json:"ignoreWS"`
 }
 
 //easyjson:json
