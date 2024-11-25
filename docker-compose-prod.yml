@@ -95,6 +95,28 @@ services:
         reservations:
           memory: 256m
 
+  backfill:
+    restart: unless-stopped
+    image: backfill:latest
+    ports:
+      - "6060:6060"
+    build:
+      context: .
+      dockerfile: Dockerfile.backfill
+    env_file:
+      - .env
+    networks:
+      - my_network
+    depends_on:
+      - rabbitmq
+    deploy:
+      resources:
+        limits:
+          memory: 1g
+          cpus: "0.5"
+        reservations:
+          memory: 512m
+
   rabbitmq:
     image: rabbitmq:3-management
     ports:

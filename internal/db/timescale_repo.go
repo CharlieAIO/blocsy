@@ -145,6 +145,36 @@ func (repo *TimescaleRepository) GetSwapsOnDate(ctx context.Context, wallet stri
 	return swaps, nil
 }
 
+func (repo *TimescaleRepository) FindMissingBlocks(ctx context.Context) ([][]int, error) {
+	var query = fmt.Sprintf(`SELECT DISTINCT "blockNumber" FROM "%s" ORDER BY "blockNumber";`, blocksTable)
+
+	var blockNumbers []int
+	if err := repo.db.SelectContext(ctx, &blockNumbers, query); err != nil {
+		return nil, fmt.Errorf("cannot get block numbers: %w", err)
+	}
+
+	if len(blockNumbers) == 0 {
+		return nil, nil
+	}
+
+	if blockNumbers[0] == 0 {
+		blockNumbers = blockNumbers[1:]
+	}
+
+	var missingBlockRanges [][]int
+	for i := 1; i < len(blockNumbers); i++ {
+		gap := blockNumbers[i] - blockNumbers[i-1] - 1
+		if gap > 0 {
+			missingBlockRanges = append(missingBlockRanges, []int{
+				blockNumbers[i-1] + 1,
+				blockNumbers[i] - 1,
+			})
+		}
+	}
+
+	return missingBlockRanges, nil
+}
+
 //=============================================== Create Tables  =======================================================
 
 func CreateProcessedBlocksTable(ctx context.Context, db *sqlx.DB) {

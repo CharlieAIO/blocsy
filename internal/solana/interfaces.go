@@ -40,6 +40,7 @@ type SwapsRepo interface {
 	MarkBlockProcessed(ctx context.Context, blockNumber int) error
 	InsertSwaps(ctx context.Context, swap []types.SwapLog) error
 	DeleteSwapsUsingTx(ctx context.Context, signature string) error
+	FindMissingBlocks(ctx context.Context) ([][]int, error)
 }
 
 type SolanaTokenFinder interface {
