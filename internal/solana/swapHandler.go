@@ -19,14 +19,19 @@ func NewSwapHandler(tf SolanaTokenFinder, pf SolanaPairFinder) *SwapHandler {
 }
 
 func (sh *SwapHandler) HandleSwaps(ctx context.Context, transfers []types.SolTransfer, tx *types.SolanaTx, timestamp int64, block uint64) []types.SwapLog {
+	if !validateTX(tx) {
+		return []types.SwapLog{}
+	}
 	swaps := make([]types.SolSwap, 0)
-	source := ""
+	source := "UNKNOWN"
 	accountKeys := getAllAccountKeys(tx)
-	for index, instruction := range tx.Transaction.Message.Instructions {
-		innerInstructions, innerIdx := FindInnerIx(tx.Meta.InnerInstructions, index)
-		accounts := instruction.Accounts
 
-		s := types.SolSwap{}
+	innerswaps := 0
+	instructionswaps := 0
+
+	for index, instruction := range tx.Transaction.Message.Instructions {
+		accounts := instruction.Accounts
+		innerInstructions, innerIdx := FindInnerIx(tx.Meta.InnerInstructions, index)
 
 		if len(accountKeys)-1 < instruction.ProgramIdIndex {
 			continue
@@ -34,78 +39,22 @@ func (sh *SwapHandler) HandleSwaps(ctx context.Context, transfers []types.SolTra
 
 		programId := accountKeys[instruction.ProgramIdIndex]
 
-		if programId == RAYDIUM_LIQ_POOL_V4 {
-			if len(accounts) != 18 && len(accounts) != 17 {
-				continue
-			}
-			source = "RAYDIUM"
-			s, _ = dex.HandleRaydiumSwaps(tx, innerIdx, -1, transfers)
-			if len(accounts) >= 2 && (len(accountKeys)-1) >= accounts[1] {
-				s.Pair = accountKeys[accounts[1]]
-			}
-		} else if programId == ORCA_WHIRL_PROGRAM_ID {
-			if len(accounts) != 11 {
-				continue
-			}
-			if len(accountKeys) > accounts[0] && accountKeys[accounts[0]] != TOKEN_PROGRAM {
-				continue
-			}
-			source = "ORCA"
-			s, _ = dex.HandleOrcaSwaps(tx, innerIdx, -1, transfers)
-			if len(accounts) >= 3 && (len(accountKeys)-1) >= accounts[2] {
-				s.Pair = accountKeys[accounts[2]]
-			}
-		} else if programId == FLUXBEAM_PROGRAM {
-			source = "FLUXBEAM"
-			s, _ = dex.HandleFluxbeamSwaps(tx, innerIdx, -1, transfers)
-			if len(accounts) >= 1 && (len(accountKeys)-1) >= accounts[0] {
-				s.Pair = accountKeys[accounts[0]]
-			}
-		} else if programId == METEORA_DLMM_PROGRAM {
-			if len(accounts) != 18 {
-				continue
-			}
-			source = "METEORA"
-			s, _ = dex.HandleMeteoraSwaps(tx, innerIdx, -1, transfers)
-			if len(accounts) >= 1 && (len(accountKeys)-1) >= accounts[0] {
-				s.Pair = accountKeys[accounts[0]]
-			}
-		} else if programId == METEORA_POOLS_PROGRAM {
-			source = "METEORA"
-			s, _ = dex.HandleMeteoraSwaps(tx, innerIdx, -1, transfers)
-			if len(accounts) >= 1 && (len(accountKeys)-1) >= accounts[0] {
-				s.Pair = accountKeys[accounts[0]]
-			}
-		} else if programId == PUMPFUN {
-			source = "PUMPFUN"
-			s, _ = dex.HandlePumpFunSwaps(tx, innerIdx, -1, transfers)
-			if len(accounts) >= 3 && (len(accountKeys)-1) >= accounts[3] {
-				s.Pair = accountKeys[accounts[3]]
-			}
+		swap, _ := processInstruction(tx, accountKeys, programId, accounts, innerIdx, -1, transfers)
+		if swap.Pair != "" || swap.TokenOut != "" || swap.TokenIn != "" {
+			swaps = append(swaps, swap)
+			instructionswaps++
 		} else {
-			if programId == JUPITER_V6_AGGREGATOR {
-				source = "JUPITER"
-			}
-			if programId == RAYDIUM_AMM_ROUTING {
-				source = "RAYDIUM_ROUTING"
-			}
-
-			s_ := CheckInnerTx(tx, transfers, innerInstructions, innerIdx)
-			swaps = append(swaps, s_...)
+			innerSwaps := CheckInnerTx(tx, transfers, innerInstructions, innerIdx)
+			swaps = append(swaps, innerSwaps...)
+			innerswaps += len(innerSwaps)
 		}
 
-		if s.TokenOut != "" || s.TokenIn != "" {
-			swaps = append(swaps, s)
-		}
-
-	}
-	if source == "" {
-		source = "UNKNOWN"
 	}
 
 	builtSwaps := make([]types.SwapLog, 0)
 	for _, swap := range swaps {
 		if swap.Wallet == "" || swap.Pair == "" {
+			log.Printf("missing ... swap: %+v", swap)
 			continue
 		}
 		action := ""
@@ -169,11 +118,9 @@ func (sh *SwapHandler) HandleSwaps(ctx context.Context, transfers []types.SolTra
 		price := 0.0
 		if action == "BUY" {
 			priceFloat := new(big.Float).Quo(amountOutFloat, amountInFloat)
-			// price = priceFloat.Text('f', -1)
 			price, _ = priceFloat.Float64()
 		} else {
 			priceFloat := new(big.Float).Quo(amountInFloat, amountOutFloat)
-			// price = priceFloat.Text('f', -1)
 			price, _ = priceFloat.Float64()
 		}
 
@@ -194,11 +141,6 @@ func (sh *SwapHandler) HandleSwaps(ctx context.Context, transfers []types.SolTra
 			Processed:   false,
 		}
 		builtSwaps = append(builtSwaps, s)
-
-		//if err := sh.sRepo.InsertSwap(ctx, s); err != nil {
-		//	log.Println("Error inserting swap:", err)
-		//	continue
-		//}
 	}
 
 	return builtSwaps
@@ -206,16 +148,27 @@ func (sh *SwapHandler) HandleSwaps(ctx context.Context, transfers []types.SolTra
 
 func CheckInnerTx(tx *types.SolanaTx, transfers []types.SolTransfer, instructions []types.Instruction, innerIndex int) []types.SolSwap {
 	swaps := make([]types.SolSwap, 0)
+	accountKeys := getAllAccountKeys(tx)
 
 	for index := 0; index < len(instructions); index++ {
 		ix := instructions[index]
-		s, indexIncrement := HandleTxSwap(ix, tx, innerIndex, index, transfers)
-		if s != nil {
-			if s.TokenOut == "" || s.TokenIn == "" {
-				continue
-			}
-			swaps = append(swaps, *s)
+		indexIncrement := 0
+		accounts := ix.Accounts
+		programId := accountKeys[ix.ProgramIdIndex]
+
+		if len(accounts) < 4 && ix.Data == "" {
+			continue
 		}
+
+		if len(accountKeys)-1 < ix.ProgramIdIndex {
+			continue
+		}
+
+		s, indexIncrement := processInstruction(tx, accountKeys, programId, accounts, innerIndex, index, transfers)
+		if s.Pair == "" || s.TokenOut == "" || s.TokenIn == "" {
+			continue
+		}
+		swaps = append(swaps, s)
 		index += indexIncrement
 
 	}
@@ -223,72 +176,58 @@ func CheckInnerTx(tx *types.SolanaTx, transfers []types.SolTransfer, instruction
 
 }
 
-func HandleTxSwap(ix types.Instruction, tx *types.SolanaTx, innerIndex int, index int, transfers []types.SolTransfer) (*types.SolSwap, int) {
-	s := types.SolSwap{}
-	indexIncrement := 0
-	accounts := ix.Accounts
-	accountKeys := getAllAccountKeys(tx)
-
-	if len(accounts) < 4 && ix.Data == "" {
-		return nil, indexIncrement
+func processInstruction(tx *types.SolanaTx, accountKeys []string, programId string, accounts []int, innerIndex int, index int, transfers []types.SolTransfer) (types.SolSwap, int) {
+	type handlerFunc func(*types.SolanaTx, int, int, []types.SolTransfer) (types.SolSwap, int)
+	handlers := map[string]handlerFunc{
+		RAYDIUM_LIQ_POOL_V4:   dex.HandleRaydiumSwaps,
+		ORCA_WHIRL_PROGRAM_ID: dex.HandleOrcaSwaps,
+		METEORA_DLMM_PROGRAM:  dex.HandleMeteoraSwaps,
+		METEORA_POOLS_PROGRAM: dex.HandleMeteoraSwaps,
+		FLUXBEAM_PROGRAM:      dex.HandleFluxbeamSwaps,
+		PUMPFUN:               dex.HandlePumpFunSwaps,
 	}
 
-	if len(accountKeys)-1 < ix.ProgramIdIndex {
-		return nil, indexIncrement
+	handler, exists := handlers[programId]
+	if !exists {
+		return types.SolSwap{}, 0
 	}
 
-	programId := accountKeys[ix.ProgramIdIndex]
+	if programId == ORCA_WHIRL_PROGRAM_ID {
+		if len(accounts) != 11 || accountKeys[accounts[0]] != TOKEN_PROGRAM {
+			return types.SolSwap{}, 0
+		}
+	} else if programId == RAYDIUM_LIQ_POOL_V4 && len(accounts) != 18 && len(accounts) != 17 {
+		return types.SolSwap{}, 0
+	} else if programId == METEORA_DLMM_PROGRAM && len(accounts) != 18 {
+		return types.SolSwap{}, 0
+	}
 
+	s, indexIncrement := handler(tx, innerIndex, index, transfers)
+
+	setPairField(&s, programId, accounts, accountKeys)
+
+	return s, indexIncrement
+}
+
+func setPairField(s *types.SolSwap, programId string, accounts []int, accountKeys []string) {
 	switch programId {
 	case ORCA_WHIRL_PROGRAM_ID:
-		if len(accounts) != 11 {
-			return nil, indexIncrement
-		}
-		if accountKeys[accounts[0]] != TOKEN_PROGRAM {
-			return nil, indexIncrement
-		}
-		s, indexIncrement = dex.HandleOrcaSwaps(tx, innerIndex, index, transfers)
-		if len(accounts) >= 3 && (len(accountKeys)-1) >= accounts[2] {
+		if len(accounts) >= 3 && len(accountKeys) > accounts[2] {
 			s.Pair = accountKeys[accounts[2]]
 		}
 	case RAYDIUM_LIQ_POOL_V4:
-		if len(accounts) != 18 && len(accounts) != 17 {
-			return nil, indexIncrement
-		}
-		s, indexIncrement = dex.HandleRaydiumSwaps(tx, innerIndex, index, transfers)
-		if len(accounts) >= 2 && (len(accountKeys)-1) >= accounts[1] {
+		if len(accounts) >= 2 && len(accountKeys) > accounts[1] {
 			s.Pair = accountKeys[accounts[1]]
 		}
-	case RAYDIUM_CONCENTRATED_LIQ:
-		return &s, indexIncrement
-	case METEORA_DLMM_PROGRAM:
-		if len(accounts) != 18 {
-			return nil, indexIncrement
-		}
-		s, indexIncrement = dex.HandleMeteoraSwaps(tx, innerIndex, index, transfers)
-		if len(accounts) >= 1 && (len(accountKeys)-1) >= accounts[0] {
-			s.Pair = accountKeys[accounts[0]]
-		}
-	case METEORA_POOLS_PROGRAM:
-		s, indexIncrement = dex.HandleMeteoraSwaps(tx, innerIndex, index, transfers)
-		if len(accounts) >= 1 && (len(accountKeys)-1) >= accounts[0] {
-			s.Pair = accountKeys[accounts[0]]
-		}
-	case FLUXBEAM_PROGRAM:
-		s, indexIncrement = dex.HandleFluxbeamSwaps(tx, innerIndex, index, transfers)
-		if len(accounts) >= 1 && (len(accountKeys)-1) >= accounts[0] {
+	case METEORA_DLMM_PROGRAM, METEORA_POOLS_PROGRAM, FLUXBEAM_PROGRAM:
+		if len(accounts) >= 1 && len(accountKeys) > accounts[0] {
 			s.Pair = accountKeys[accounts[0]]
 		}
 	case PUMPFUN:
-		s, indexIncrement = dex.HandlePumpFunSwaps(tx, innerIndex, index, transfers)
-		if len(accounts) >= 3 && (len(accountKeys)-1) >= accounts[3] {
-			s.Pair = accountKeys[accounts[3]] //bonding curve
+		if len(accounts) >= 3 && len(accountKeys) > accounts[3] {
+			s.Pair = accountKeys[accounts[3]]
 		}
-	default:
-		return nil, indexIncrement
 	}
-
-	return &s, indexIncrement
 }
 
 func FindInnerIx(instructions []types.InnerInstruction, idxMatch int) ([]types.Instruction, int) {

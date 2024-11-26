@@ -183,7 +183,7 @@ func (s *SolanaBlockListener) HandleBlock(blockTransactions []types.SolanaTx, bl
 
 	toProcess := make([]types.SolanaTx, 0)
 	for i := range blockTransactions {
-		if !validateTX(&blockTransactions[i]) {
+		if blockTransactions[i].Meta.Err != nil || !validateTX(&blockTransactions[i]) {
 			continue
 		}
 		toProcess = append(toProcess, blockTransactions[i])

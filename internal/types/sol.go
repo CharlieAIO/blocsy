@@ -29,7 +29,7 @@ type SolanaTx struct {
 
 //easyjson:json
 type TransactionMeta struct {
-	Err               TransactionError   `json:"err"`
+	Err               *TransactionError  `json:"err,omitempty"`
 	Fee               int64              `json:"fee"`
 	InnerInstructions []InnerInstruction `json:"innerInstructions,omitempty"`
 	LogMessages       []string           `json:"logMessages,omitempty"`
