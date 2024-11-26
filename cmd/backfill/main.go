@@ -45,7 +45,7 @@ func main() {
 	queueHandler := solana.NewSolanaQueueHandler(nil, nil)
 	backfillService := solana.NewBackfillService(solCli, pRepo, queueHandler)
 
-	numWorkers := 2
+	numWorkers := 1
 
 	for {
 		blocks, err := pRepo.FindMissingBlocks(ctx)

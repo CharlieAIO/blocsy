@@ -87,19 +87,14 @@ func (qh *SolanaQueueHandler) adjustWorkers(queueSize int) {
 	switch {
 	case queueSize > 1500:
 		newNumWorkers = 2500
-		qh.setPrefetch(2000)
 	case queueSize > 1000:
 		newNumWorkers = 2000
-		qh.setPrefetch(1500)
 	case queueSize > 750:
 		newNumWorkers = 1500
-		qh.setPrefetch(1400)
 	case queueSize > 500:
 		newNumWorkers = 1000
-		qh.setPrefetch(1200)
 	default:
 		newNumWorkers = 750
-		qh.setPrefetch(1000)
 
 	}
 
@@ -168,7 +163,7 @@ func (qh *SolanaQueueHandler) ListenToSolanaQueue(ctx context.Context) {
 		qh.startWorker(i, ctx)
 	}
 
-	qh.setPrefetch(1000)
+	qh.setPrefetch(3000)
 
 	q, err := qh.ch.QueueDeclare(
 		queueName,
