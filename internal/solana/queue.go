@@ -8,19 +8,20 @@ import (
 	"log"
 	"os"
 	"runtime"
+	"sync"
 	"time"
 )
 
 var (
-	queueName  = "solana-tx"
-	numWorkers = 750
+	queueName = "solana-tx"
+	txWorkers = 10
 )
 
 func NewSolanaQueueHandler(txHandler *TxHandler, pRepo SwapsRepo) *SolanaQueueHandler {
 	qh := &SolanaQueueHandler{
 		txHandler: txHandler,
 		pRepo:     pRepo,
-		workers:   750,
+		workers:   500,
 	}
 	qh.connectToRabbitMQ()
 
@@ -86,13 +87,13 @@ func (qh *SolanaQueueHandler) adjustWorkers(queueSize int) {
 
 	switch {
 	case queueSize > 1500:
-		newNumWorkers = 2500
-	case queueSize > 1000:
-		newNumWorkers = 2000
-	case queueSize > 750:
-		newNumWorkers = 1500
-	case queueSize > 500:
 		newNumWorkers = 1000
+	case queueSize > 1000:
+		newNumWorkers = 950
+	case queueSize > 750:
+		newNumWorkers = 900
+	case queueSize > 500:
+		newNumWorkers = 800
 	default:
 		newNumWorkers = 750
 
@@ -201,7 +202,7 @@ func (qh *SolanaQueueHandler) ListenToSolanaQueue(ctx context.Context) {
 		}
 		close(qh.rabbitChan)
 	}()
-	go qh.monitorQueue(ctx)
+	//go qh.monitorQueue(ctx)
 
 	qh.workerWg.Wait()
 
@@ -310,26 +311,56 @@ func (qh *SolanaQueueHandler) solanaWorker(ctx context.Context) {
 				}
 			}
 
-			swaps := make([]types.SwapLog, 0)
-			for _, tx := range blockData.Transactions {
-				_swaps, err := qh.txHandler.ProcessTransaction(ctx, &tx, blockData.Timestamp, blockData.Block, blockData.IgnoreWS)
-				if err != nil {
-					continue
+			txChan := make(chan types.SolanaTx, len(blockData.Transactions))
+			swapsChan := make(chan []types.SwapLog)
+			var wg sync.WaitGroup
+
+			for i := 0; i < 10; i++ {
+				wg.Add(1)
+				go func() {
+					defer wg.Done()
+					for tx := range txChan {
+						if tx.Meta.Err != nil {
+							continue
+						}
+						_swaps, err := qh.txHandler.ProcessTransaction(ctx, &tx, blockData.Timestamp, blockData.Block, blockData.IgnoreWS)
+						if err != nil {
+							continue
+						}
+						swapsChan <- _swaps
+					}
+				}()
+			}
+
+			go func() {
+				for _, tx := range blockData.Transactions {
+					txChan <- tx
 				}
-				swaps = append(swaps, _swaps...)
-			}
+				close(txChan)
+			}()
 
-			err = qh.insertBatch(ctx, swaps)
-			if err != nil {
-				log.Printf("Failed to insert swaps: %v", err)
-				return
-			}
+			go func() {
+				wg.Wait()
 
-			err = x.Ack(false)
-			if err != nil {
-				log.Printf("Failed to ack message: %v", err)
-				continue
-			}
+				swaps := make([]types.SwapLog, 0)
+				for result := range swapsChan {
+					swaps = append(swaps, result...)
+				}
+
+				err = qh.insertBatch(ctx, swaps)
+				if err != nil {
+					log.Printf("Failed to insert swaps: %v", err)
+					return
+				}
+
+				err = x.Ack(false)
+				if err != nil {
+					log.Printf("Failed to ack message: %v", err)
+					return
+				}
+
+				close(swapsChan)
+			}()
 
 		case <-ctx.Done():
 			return
