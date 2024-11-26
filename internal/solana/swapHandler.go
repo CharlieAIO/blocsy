@@ -183,8 +183,10 @@ func processInstruction(tx *types.SolanaTx, accountKeys []string, programId stri
 		ORCA_WHIRL_PROGRAM_ID: dex.HandleOrcaSwaps,
 		METEORA_DLMM_PROGRAM:  dex.HandleMeteoraSwaps,
 		METEORA_POOLS_PROGRAM: dex.HandleMeteoraSwaps,
-		FLUXBEAM_PROGRAM:      dex.HandleFluxbeamSwaps,
-		PUMPFUN:               dex.HandlePumpFunSwaps,
+		//PHOENIX: dex.HandlePhoenixSwaps,
+		//FLUXBEAM_PROGRAM:      dex.HandleFluxbeamSwaps,
+		//LIFINITY_SWAP_V2: dex.HandleLifinitySwaps,
+		PUMPFUN: dex.HandlePumpFunSwaps,
 	}
 
 	handler, exists := handlers[programId]

@@ -130,9 +130,14 @@ func HandleRaydiumSwaps(tx *types.SolanaTx, innerIndex int, ixIndex int, transfe
 		return types.SolSwap{}, 0
 	}
 
+	wallet := transfer1.FromUserAccount
+	if wallet == "" {
+		wallet = transfer2.ToUserAccount
+	}
+
 	s := types.SolSwap{
 		Exchange:  "RAYDIUM",
-		Wallet:    transfer1.FromUserAccount,
+		Wallet:    wallet,
 		TokenOut:  transfer1.Mint,
 		TokenIn:   transfer2.Mint,
 		AmountIn:  transfer2.Amount,
