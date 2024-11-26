@@ -342,12 +342,7 @@ func (qh *SolanaQueueHandler) solanaWorker(ctx context.Context) {
 			go func() {
 				wg.Wait()
 
-				swaps := make([]types.SwapLog, 0)
-				for result := range swapsChan {
-					swaps = append(swaps, result...)
-				}
-
-				err = qh.insertBatch(ctx, swaps)
+				err = qh.insertBatch(ctx, swapsChan)
 				if err != nil {
 					log.Printf("Failed to insert swaps: %v", err)
 					return
@@ -368,8 +363,13 @@ func (qh *SolanaQueueHandler) solanaWorker(ctx context.Context) {
 	}
 }
 
-func (qh *SolanaQueueHandler) insertBatch(ctx context.Context, swaps []types.SwapLog) error {
+func (qh *SolanaQueueHandler) insertBatch(ctx context.Context, swapsChan chan []types.SwapLog) error {
 	const maxRetries = 3
+	swaps := make([]types.SwapLog, 0)
+	for result := range swapsChan {
+		swaps = append(swaps, result...)
+	}
+	log.Printf("Inserting %d swaps", len(swaps))
 
 	for retry := 0; retry < maxRetries; retry++ {
 		if err := qh.pRepo.InsertSwaps(ctx, swaps); err != nil {
