@@ -79,8 +79,8 @@ func (sh *SwapHandler) HandleSwaps(ctx context.Context, transfers []types.SolTra
 		} else if programId == PUMPFUN {
 			source = "PUMPFUN"
 			s, _ = dex.HandlePumpFunSwaps(tx, innerIdx, -1, transfers)
-			if len(accounts) >= 2 && (len(accountKeys)-1) >= accounts[1] {
-				s.Pair = accountKeys[accounts[1]]
+			if len(accounts) >= 3 && (len(accountKeys)-1) >= accounts[3] {
+				s.Pair = accountKeys[accounts[3]]
 			}
 		} else {
 			if programId == JUPITER_V6_AGGREGATOR {
@@ -105,7 +105,6 @@ func (sh *SwapHandler) HandleSwaps(ctx context.Context, transfers []types.SolTra
 
 	builtSwaps := make([]types.SwapLog, 0)
 	for _, swap := range swaps {
-		//log.Println("Swap:", swap)
 		if swap.Wallet == "" || swap.Pair == "" {
 			continue
 		}
@@ -121,67 +120,47 @@ func (sh *SwapHandler) HandleSwaps(ctx context.Context, transfers []types.SolTra
 			continue
 		}
 
+		timeoutCtx, cancel := context.WithTimeout(ctx, 45*time.Second)
+		defer cancel()
+
+		var token_ *string
 		if swap.Exchange == "PUMPFUN" {
-			tokenOutDecimals := 0
-			tokenInDecimals := 0
+			var tokenInDecimals, tokenOutDecimals int
 			if swap.TokenOut == "So11111111111111111111111111111111111111112" {
-				tokenDetails, err := sh.tf.FindToken(ctx, swap.TokenIn)
-				if err != nil {
-					continue
-				}
-				if err != nil {
-					if errors.Is(err, types.TokenNotFound) {
-						continue
-					}
-					log.Println("Error finding token:", err)
-					continue
-				}
-
-				swap.Pair = swap.TokenIn
+				tokenInDecimals = 6
 				tokenOutDecimals = 9
-				tokenInDecimals = int(tokenDetails.Decimals)
-				action = "BUY"
+				token_ = &swap.TokenIn
 			} else {
-				tokenDetails, err := sh.tf.FindToken(ctx, swap.TokenOut)
-				if err != nil {
-					continue
-				}
-				swap.Pair = swap.TokenOut
-				tokenOutDecimals = int(tokenDetails.Decimals)
 				tokenInDecimals = 9
-				action = "SELL"
+				tokenOutDecimals = 6
+				token_ = &swap.TokenOut
 			}
-
 			amountOutFloat.Quo(amountOutFloat, new(big.Float).SetFloat64(math.Pow10(tokenOutDecimals)))
 			amountInFloat.Quo(amountInFloat, new(big.Float).SetFloat64(math.Pow10(tokenInDecimals)))
+		}
 
+		pairDetails, _, err := sh.pf.FindPair(timeoutCtx, swap.Pair, token_)
+		if err != nil {
+			if errors.Is(err, types.TokenNotFound) {
+				log.Println("pair not found:", err)
+				continue
+			}
+			continue
+		}
+
+		quoteTokenAddress := pairDetails.QuoteToken.Address
+
+		_, err = sh.tf.FindToken(ctx, pairDetails.Token)
+		if err != nil {
+			continue
+		}
+
+		ctx.Done()
+
+		if swap.TokenOut == quoteTokenAddress {
+			action = "BUY"
 		} else {
-			timeoutCtx, cancel := context.WithTimeout(ctx, 45*time.Second)
-			defer cancel()
-
-			pairDetails, _, err := sh.pf.FindPair(timeoutCtx, swap.Pair)
-			if err != nil {
-				if errors.Is(err, types.TokenNotFound) {
-					log.Println("pair not found:", err)
-					continue
-				}
-				continue
-			}
-
-			quoteTokenAddress := pairDetails.QuoteToken.Address
-
-			_, err = sh.tf.FindToken(ctx, pairDetails.Token)
-			if err != nil {
-				continue
-			}
-
-			ctx.Done()
-
-			if swap.TokenOut == quoteTokenAddress {
-				action = "BUY"
-			} else {
-				action = "SELL"
-			}
+			action = "SELL"
 		}
 
 		amountOutF, _ := amountOutFloat.Float64()
@@ -302,6 +281,9 @@ func HandleTxSwap(ix types.Instruction, tx *types.SolanaTx, innerIndex int, inde
 		}
 	case PUMPFUN:
 		s, indexIncrement = dex.HandlePumpFunSwaps(tx, innerIndex, index, transfers)
+		if len(accounts) >= 3 && (len(accountKeys)-1) >= accounts[3] {
+			s.Pair = accountKeys[accounts[3]] //bonding curve
+		}
 	default:
 		return nil, indexIncrement
 	}

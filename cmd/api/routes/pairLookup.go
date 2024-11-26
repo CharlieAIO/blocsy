@@ -11,7 +11,7 @@ func (h *Handler) PairLookupHandler(w http.ResponseWriter, r *http.Request) {
 
 	address := chi.URLParam(r, "pair")
 
-	pair, quoteToken, err := h.pairFinder.FindPair(ctx, address)
+	pair, quoteToken, err := h.pairFinder.FindPair(ctx, address, nil)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return

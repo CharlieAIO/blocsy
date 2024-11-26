@@ -4,7 +4,6 @@ import (
 	"blocsy/internal/types"
 	"context"
 	"fmt"
-
 	"github.com/blocto/solana-go-sdk/client"
 )
 
@@ -17,7 +16,7 @@ func NewPairsService(cache PairsCache, tf *TokenFinder, solSvc *SolanaService, r
 	}
 }
 
-func (ps *PairsService) FindPair(ctx context.Context, address string) (*types.Pair, *types.QuoteToken, error) {
+func (ps *PairsService) FindPair(ctx context.Context, address string, token_ *string) (*types.Pair, *types.QuoteToken, error) {
 	cachedPair, ok := ps.cache.GetPair(address)
 	if ok {
 		if cachedQT, ok := ps.cache.GetToken(address); ok {
@@ -38,7 +37,7 @@ func (ps *PairsService) FindPair(ctx context.Context, address string) (*types.Pa
 		return &pair, &quoteToken, nil
 	}
 
-	pair, err := ps.lookupPair(ctx, address)
+	pair, err := ps.lookupPair(ctx, address, token_)
 	if err != nil {
 		return nil, nil, fmt.Errorf("failed to lookup pair: %w", err)
 	}
@@ -70,7 +69,7 @@ func (ps *PairsService) FindPair(ctx context.Context, address string) (*types.Pa
 
 }
 
-func (ps *PairsService) lookupPair(ctx context.Context, address string) (types.Pair, error) {
+func (ps *PairsService) lookupPair(ctx context.Context, address string, token_ *string) (types.Pair, error) {
 	accInfo, err := ps.solSvc.GetAccountInfo(ctx, address)
 	if err != nil {
 		return types.Pair{}, fmt.Errorf("failed to get account info: %w", err)
@@ -78,7 +77,7 @@ func (ps *PairsService) lookupPair(ctx context.Context, address string) (types.P
 
 	owner := accInfo.Owner
 
-	exchange, quoteToken, token, identifier, err := identifyPair(owner.String(), accInfo)
+	exchange, quoteToken, token, identifier, err := identifyPair(owner.String(), accInfo, token_)
 	if err != nil {
 		return types.Pair{}, fmt.Errorf("failed to identify pair: %w", err)
 	}
@@ -99,7 +98,7 @@ func (ps *PairsService) lookupPair(ctx context.Context, address string) (types.P
 	return pair, nil
 }
 
-func identifyPair(owner string, accInfo client.AccountInfo) (string, string, string, string, error) {
+func identifyPair(owner string, accInfo client.AccountInfo, token_ *string) (string, string, string, string, error) {
 	var exchange, baseMint, tokenMint, baseMintIdentifier string
 
 	if owner == METEORA_DLMM_PROGRAM {
@@ -149,6 +148,11 @@ func identifyPair(owner string, accInfo client.AccountInfo) (string, string, str
 		baseMint = fbPool.MintA.String()
 		tokenMint = fbPool.MintB.String()
 		baseMintIdentifier = "mintA"
+	} else if owner == PUMPFUN {
+		exchange = "PUMPFUN"
+		baseMint = "So11111111111111111111111111111111111111112"
+		tokenMint = *token_
+		baseMintIdentifier = "N/A"
 	} else {
 		return "", "", "", "", fmt.Errorf("unknown program owner: %s", owner)
 	}

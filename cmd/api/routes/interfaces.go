@@ -11,7 +11,7 @@ type SolanaTokenFinder interface {
 }
 
 type SolanaPairFinder interface {
-	FindPair(ctx context.Context, address string) (*types.Pair, *types.QuoteToken, error)
+	FindPair(ctx context.Context, address string, token_ *string) (*types.Pair, *types.QuoteToken, error)
 }
 
 type PriceTrackers interface {

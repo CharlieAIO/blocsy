@@ -98,7 +98,7 @@ func (h *Handler) PnlHandler(w http.ResponseWriter, r *http.Request) {
 			quoteTokenSymbol = quoteTokenLookup.Symbol
 			tokenAddress = swap.Pair
 		} else {
-			pairLookup, _, err := h.pairFinder.FindPair(ctx, swap.Pair)
+			pairLookup, _, err := h.pairFinder.FindPair(ctx, swap.Pair, nil)
 			if err != nil {
 				if errors.Is(err, types.TokenNotFound) {
 					continue
@@ -264,7 +264,7 @@ func (h *Handler) AggregatedPnlHandler(w http.ResponseWriter, r *http.Request) {
 			} else {
 				start := time.Now()
 
-				_, qt, err := h.pairFinder.FindPair(ctx, pair)
+				_, qt, err := h.pairFinder.FindPair(ctx, pair, nil)
 				if err != nil {
 					quoteTokenSymbol = "SOL"
 				} else {
