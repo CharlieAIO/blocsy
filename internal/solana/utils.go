@@ -2,7 +2,6 @@ package solana
 
 import (
 	"blocsy/internal/types"
-	"fmt"
 )
 
 func getAllAccountKeys(tx *types.SolanaTx) []string {
@@ -24,22 +23,10 @@ func validateTX(tx *types.SolanaTx) bool {
 			key == METEORA_DLMM_PROGRAM ||
 			key == METEORA_POOLS_PROGRAM ||
 			key == RAYDIUM_LIQ_POOL_V4 ||
-			key == FLUXBEAM_PROGRAM ||
 			key == ORCA_WHIRL_PROGRAM_ID {
 			return true
 		}
 
 	}
 	return false
-}
-
-func strToInt(s string) int {
-	var i int
-	fmt.Sscanf(s, "%d", &i)
-	return i
-}
-func strToInt64(s string) int64 {
-	var i int64
-	fmt.Sscanf(s, "%d", &i)
-	return i
 }

@@ -26,9 +26,6 @@ func (sh *SwapHandler) HandleSwaps(ctx context.Context, transfers []types.SolTra
 	source := "UNKNOWN"
 	accountKeys := getAllAccountKeys(tx)
 
-	innerswaps := 0
-	instructionswaps := 0
-
 	for index, instruction := range tx.Transaction.Message.Instructions {
 		accounts := instruction.Accounts
 		innerInstructions, innerIdx := FindInnerIx(tx.Meta.InnerInstructions, index)
@@ -39,20 +36,21 @@ func (sh *SwapHandler) HandleSwaps(ctx context.Context, transfers []types.SolTra
 
 		programId := accountKeys[instruction.ProgramIdIndex]
 
-		swap, _ := processInstruction(tx, accountKeys, programId, accounts, innerIdx, -1, transfers)
+		swap, _ := processInstruction(instruction.Data, accountKeys, programId, accounts, innerIdx, -1, transfers, accounts)
 		if swap.Pair != "" || swap.TokenOut != "" || swap.TokenIn != "" {
 			swaps = append(swaps, swap)
-			instructionswaps++
-		} else {
-			innerSwaps := CheckInnerTx(tx, transfers, innerInstructions, innerIdx)
+		}
+
+		innerSwaps := CheckInnerTx(accountKeys, transfers, innerInstructions, innerIdx, accounts)
+		if len(innerSwaps) > 0 {
 			swaps = append(swaps, innerSwaps...)
-			innerswaps += len(innerSwaps)
 		}
 
 	}
 
 	builtSwaps := make([]types.SwapLog, 0)
 	for _, swap := range swaps {
+		log.Printf("processing swap: %+v", swap)
 		if swap.Wallet == "" || swap.Pair == "" {
 			log.Printf("%s ~ missing ... swap: %+v", tx.Transaction.Signatures[0], swap)
 			continue
@@ -90,6 +88,7 @@ func (sh *SwapHandler) HandleSwaps(ctx context.Context, transfers []types.SolTra
 
 		pairDetails, _, err := sh.pf.FindPair(timeoutCtx, swap.Pair, token_)
 		if err != nil {
+			log.Println("error finding pair:", err)
 			if errors.Is(err, types.TokenNotFound) {
 				log.Println("pair not found:", err)
 				continue
@@ -101,6 +100,7 @@ func (sh *SwapHandler) HandleSwaps(ctx context.Context, transfers []types.SolTra
 
 		_, err = sh.tf.FindToken(ctx, pairDetails.Token)
 		if err != nil {
+			log.Println("error finding token:", err)
 			continue
 		}
 
@@ -146,9 +146,8 @@ func (sh *SwapHandler) HandleSwaps(ctx context.Context, transfers []types.SolTra
 	return builtSwaps
 }
 
-func CheckInnerTx(tx *types.SolanaTx, transfers []types.SolTransfer, instructions []types.Instruction, innerIndex int) []types.SolSwap {
+func CheckInnerTx(accountKeys []string, transfers []types.SolTransfer, instructions []types.Instruction, innerIndex int, ixAccounts []int) []types.SolSwap {
 	swaps := make([]types.SolSwap, 0)
-	accountKeys := getAllAccountKeys(tx)
 
 	for index := 0; index < len(instructions); index++ {
 		ix := instructions[index]
@@ -164,11 +163,12 @@ func CheckInnerTx(tx *types.SolanaTx, transfers []types.SolTransfer, instruction
 			continue
 		}
 
-		s, indexIncrement := processInstruction(tx, accountKeys, programId, accounts, innerIndex, index, transfers)
+		s, indexIncrement := processInstruction(ix.Data, accountKeys, programId, accounts, innerIndex, index, transfers, ixAccounts)
 		if s.Pair == "" || s.TokenOut == "" || s.TokenIn == "" {
 			continue
 		}
 		swaps = append(swaps, s)
+
 		index += indexIncrement
 
 	}
@@ -176,8 +176,8 @@ func CheckInnerTx(tx *types.SolanaTx, transfers []types.SolTransfer, instruction
 
 }
 
-func processInstruction(tx *types.SolanaTx, accountKeys []string, programId string, accounts []int, innerIndex int, index int, transfers []types.SolTransfer) (types.SolSwap, int) {
-	type handlerFunc func(*types.SolanaTx, int, int, []types.SolTransfer) (types.SolSwap, int)
+func processInstruction(ixData string, accountKeys []string, programId string, accounts []int, innerIndex int, index int, transfers []types.SolTransfer, ixAccounts []int) (types.SolSwap, int) {
+	type handlerFunc func(string, int, int, []types.SolTransfer) (types.SolSwap, int)
 	handlers := map[string]handlerFunc{
 		RAYDIUM_LIQ_POOL_V4:   dex.HandleRaydiumSwaps,
 		ORCA_WHIRL_PROGRAM_ID: dex.HandleOrcaSwaps,
@@ -204,14 +204,14 @@ func processInstruction(tx *types.SolanaTx, accountKeys []string, programId stri
 		return types.SolSwap{}, 0
 	}
 
-	s, indexIncrement := handler(tx, innerIndex, index, transfers)
+	s, indexIncrement := handler(ixData, innerIndex, index, transfers)
 
-	setPairField(&s, programId, accounts, accountKeys)
+	setPairField(&s, programId, accounts, ixAccounts, accountKeys)
 
 	return s, indexIncrement
 }
 
-func setPairField(s *types.SolSwap, programId string, accounts []int, accountKeys []string) {
+func setPairField(s *types.SolSwap, programId string, accounts []int, ixAccounts []int, accountKeys []string) {
 	switch programId {
 	case ORCA_WHIRL_PROGRAM_ID:
 		if len(accounts) >= 3 && len(accountKeys) > accounts[2] {
@@ -227,7 +227,8 @@ func setPairField(s *types.SolSwap, programId string, accounts []int, accountKey
 		}
 	case PUMPFUN:
 		if len(accounts) >= 3 && len(accountKeys) > accounts[3] {
-			s.Pair = accountKeys[accounts[3]]
+			log.Printf("setting pumpfun pair: %s", accountKeys[accounts[3]])
+			s.Pair = accountKeys[ixAccounts[3]]
 		}
 	}
 }

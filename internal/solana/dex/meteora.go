@@ -4,7 +4,7 @@ import (
 	"blocsy/internal/types"
 )
 
-func HandleMeteoraSwaps(tx *types.SolanaTx, innerIndex int, ixIndex int, transfers []types.SolTransfer) (types.SolSwap, int) {
+func HandleMeteoraSwaps(ixData string, innerIndex int, ixIndex int, transfers []types.SolTransfer) (types.SolSwap, int) {
 	tf1Index := 1
 	tf2Index := 2
 

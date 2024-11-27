@@ -361,7 +361,6 @@ func (qh *SolanaQueueHandler) solanaWorker(ctx context.Context) {
 				log.Printf("Failed to ack message: %v", err)
 				return
 			}
-			wg.Done()
 
 		case <-ctx.Done():
 			return

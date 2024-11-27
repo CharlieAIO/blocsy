@@ -4,7 +4,7 @@ import (
 	"blocsy/internal/types"
 )
 
-func HandleOrcaSwaps(tx *types.SolanaTx, innerIndex int, ixIndex int, transfers []types.SolTransfer) (types.SolSwap, int) {
+func HandleOrcaSwaps(ixData string, innerIndex int, ixIndex int, transfers []types.SolTransfer) (types.SolSwap, int) {
 	transfer1, ok := FindTransfer(transfers, innerIndex, ixIndex+1)
 	if !ok {
 		return types.SolSwap{}, 0
