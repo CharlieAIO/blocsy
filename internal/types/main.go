@@ -10,6 +10,20 @@ const (
 	TokenNotFound AppError = "token not found"
 )
 
+type ProcessInstructionData struct {
+	AccountKeys         []string
+	InstructionAccounts *[]int
+
+	Transfers []SolTransfer
+	ProgramId *string
+
+	InnerInstructionIndex int
+	InnerIndex            *int
+	Data                  *string
+
+	InnerAccounts *[]int
+}
+
 //easyjson:json
 type Token struct {
 	Name             string `json:"name"`

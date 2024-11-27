@@ -39,7 +39,7 @@ func (ps *PairsService) FindPair(ctx context.Context, address string, token_ *st
 
 	pair, err := ps.lookupPair(ctx, address, token_)
 	if err != nil {
-		return nil, nil, fmt.Errorf("failed to lookup pair: %w", err)
+		return nil, nil, fmt.Errorf("(%s) failed to lookup pair: %w", address, err)
 	}
 
 	if err := ps.repo.StorePair(ctx, pair); err != nil {

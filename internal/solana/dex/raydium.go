@@ -4,16 +4,20 @@ import (
 	"blocsy/internal/types"
 )
 
-func HandleRaydiumSwaps(ixData string, innerIndex int, ixIndex int, transfers []types.SolTransfer) (types.SolSwap, int) {
+func HandleRaydiumSwaps(instructionData types.ProcessInstructionData) types.SolSwap {
 
-	transfer1, ok := FindTransfer(transfers, innerIndex, ixIndex+1)
-	if !ok {
-		return types.SolSwap{}, 0
+	if len(*instructionData.InnerAccounts) < 2 || len(instructionData.AccountKeys) < (*instructionData.InnerAccounts)[1] {
+		return types.SolSwap{}
 	}
 
-	transfer2, ok := FindTransfer(transfers, innerIndex, ixIndex+2)
+	transfer1, ok := FindTransfer(instructionData.Transfers, *instructionData.InnerIndex, (instructionData.InnerInstructionIndex)+1)
 	if !ok {
-		return types.SolSwap{}, 0
+		return types.SolSwap{}
+	}
+
+	transfer2, ok := FindTransfer(instructionData.Transfers, *instructionData.InnerIndex, (instructionData.InnerInstructionIndex)+2)
+	if !ok {
+		return types.SolSwap{}
 	}
 
 	wallet := transfer1.FromUserAccount
@@ -22,6 +26,7 @@ func HandleRaydiumSwaps(ixData string, innerIndex int, ixIndex int, transfers []
 	}
 
 	s := types.SolSwap{
+		Pair:      instructionData.AccountKeys[(*instructionData.InnerAccounts)[1]],
 		Exchange:  "RAYDIUM",
 		Wallet:    wallet,
 		TokenOut:  transfer1.Mint,
@@ -30,6 +35,6 @@ func HandleRaydiumSwaps(ixData string, innerIndex int, ixIndex int, transfers []
 		AmountOut: transfer1.Amount,
 	}
 
-	return s, 2
+	return s
 
 }

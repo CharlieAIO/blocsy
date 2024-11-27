@@ -1,41 +1,44 @@
 package dex
 
-import (
-	"blocsy/internal/types"
-)
+import "blocsy/internal/types"
 
-func HandleMeteoraSwaps(ixData string, innerIndex int, ixIndex int, transfers []types.SolTransfer) (types.SolSwap, int) {
+func HandleMeteoraSwaps(instructionData types.ProcessInstructionData) types.SolSwap {
+	if len(*instructionData.InnerAccounts) == 0 || len(instructionData.AccountKeys) < (*instructionData.InnerAccounts)[0] {
+		return types.SolSwap{}
+	}
+
 	tf1Index := 1
 	tf2Index := 2
 
-	transfer1, ok := FindTransfer(transfers, innerIndex, ixIndex+tf1Index)
+	transfer1, ok := FindTransfer(instructionData.Transfers, *instructionData.InnerIndex, (instructionData.InnerInstructionIndex)+tf1Index)
 	if !ok {
-		return types.SolSwap{}, 0
+		return types.SolSwap{}
 	}
 	for transfer1.Type != "token" {
 		tf1Index++
 		tf2Index++
 
-		transfer1, ok = FindTransfer(transfers, innerIndex, ixIndex+tf1Index)
+		transfer1, ok = FindTransfer(instructionData.Transfers, *instructionData.InnerIndex, (instructionData.InnerInstructionIndex)+tf1Index)
 		if !ok {
-			return types.SolSwap{}, 0
+			return types.SolSwap{}
 		}
 	}
 
-	transfer2, ok := FindTransfer(transfers, innerIndex, tf2Index+ixIndex)
+	transfer2, ok := FindTransfer(instructionData.Transfers, *instructionData.InnerIndex, tf2Index+(instructionData.InnerInstructionIndex))
 	if !ok {
-		return types.SolSwap{}, 0
+		return types.SolSwap{}
 	}
 	for transfer2.Type != "token" {
 		tf2Index++
 
-		transfer2, ok = FindTransfer(transfers, innerIndex, tf2Index+ixIndex)
+		transfer2, ok = FindTransfer(instructionData.Transfers, *instructionData.InnerIndex, tf2Index+(instructionData.InnerInstructionIndex))
 		if !ok {
-			return types.SolSwap{}, 0
+			return types.SolSwap{}
 		}
 	}
 
 	s := types.SolSwap{
+		Pair:      instructionData.AccountKeys[(*instructionData.InnerAccounts)[0]],
 		Exchange:  "METEORA",
 		Wallet:    transfer1.FromUserAccount,
 		TokenOut:  transfer1.Mint,
@@ -43,5 +46,5 @@ func HandleMeteoraSwaps(ixData string, innerIndex int, ixIndex int, transfers []
 		AmountIn:  transfer2.Amount,
 		AmountOut: transfer1.Amount,
 	}
-	return s, tf2Index
+	return s
 }
