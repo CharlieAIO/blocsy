@@ -21,7 +21,7 @@ func NewSolanaQueueHandler(txHandler *TxHandler, pRepo SwapsRepo) *SolanaQueueHa
 	qh := &SolanaQueueHandler{
 		txHandler: txHandler,
 		pRepo:     pRepo,
-		workers:   300,
+		workers:   100,
 	}
 	qh.connectToRabbitMQ()
 
@@ -361,7 +361,6 @@ func (qh *SolanaQueueHandler) solanaWorker(ctx context.Context) {
 				log.Printf("Failed to ack message: %v", err)
 				return
 			}
-			wg.Done()
 
 		case <-ctx.Done():
 			return
