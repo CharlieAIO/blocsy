@@ -287,17 +287,18 @@ func findAccount(ix types.Instruction, tokenAccount string, accountKeys []string
 		return "", "", false
 	}
 
+	for _, accountIndex := range ix.Accounts {
+		if accountIndex > len(accountKeys)-1 {
+			return "", "", false
+		}
+	}
+
 	programId := accountKeys[ix.ProgramIdIndex]
 
 	// Associated Token Account Program | createAssociatedTokenAccount
 	if programId == ASSOCIATED_TOKEN_PROGRAM {
 		if len(ix.Accounts) == 6 {
 
-			for _, accountIndex := range ix.Accounts {
-				if accountIndex > len(accountKeys)-1 {
-					return "", "", false
-				}
-			}
 			//tokenProgram := accountKeys[ix.Accounts[5]]
 			//systemProgram := accountKeys[ix.Accounts[4]]
 			mint := accountKeys[ix.Accounts[3]]
@@ -314,19 +315,20 @@ func findAccount(ix types.Instruction, tokenAccount string, accountKeys []string
 	//spl-token program | initializeAccount, initializeAccount2, initializeAccount3
 	if programId == TOKEN_PROGRAM {
 		if len(ix.Accounts) == 4 {
-
-			for _, accountIndex := range ix.Accounts {
-				if accountIndex > len(accountKeys)-1 {
-					return "", "", false
-				}
-			}
-
 			account := accountKeys[ix.Accounts[0]]
 			mint := accountKeys[ix.Accounts[1]]
 			owner := accountKeys[ix.Accounts[2]]
 			//rentSysvar := accountKeys[ix.Accounts[3]]
 			if account == tokenAccount {
 				return owner, mint, true
+			}
+		}
+		if len(ix.Accounts) == 3 {
+			account := accountKeys[ix.Accounts[0]]
+			destination := accountKeys[ix.Accounts[1]]
+			owner := accountKeys[ix.Accounts[2]]
+			if account == tokenAccount {
+				return owner, destination, true
 			}
 		}
 	}
