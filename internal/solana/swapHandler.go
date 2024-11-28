@@ -43,13 +43,13 @@ func (sh *SwapHandler) HandleSwaps(ctx context.Context, transfers []types.SolTra
 		programId := accountKeys[instruction.ProgramIdIndex]
 
 		processInstructionData.ProgramId = &programId
-		processInstructionData.InstructionAccounts = &accounts
-		processInstructionData.InnerAccounts = &accounts
+		processInstructionData.Accounts = &accounts
 		processInstructionData.InnerIndex = &innerIdx
-		processInstructionData.InnerInstructionIndex = -1
 		processInstructionData.Data = &instruction.Data
 
-		swap := processInstruction(processInstructionData, accounts)
+		processInstructionData.InnerInstructionIndex = -1
+
+		swap := processInstruction(processInstructionData)
 		if swap.Pair != "" || swap.TokenOut != "" || swap.TokenIn != "" {
 			swaps = append(swaps, swap)
 		}
@@ -59,12 +59,20 @@ func (sh *SwapHandler) HandleSwaps(ctx context.Context, transfers []types.SolTra
 			if len(accountKeys)-1 < innerIx.ProgramIdIndex || innerIx.Data == "" {
 				continue
 			}
+
+			if validateProgramId(accountKeys[innerIx.ProgramIdIndex]) && len(innerIx.Accounts) > 1 {
+				processInstructionData.ProgramId = &accountKeys[innerIx.ProgramIdIndex]
+				processInstructionData.Accounts = &innerIx.Accounts
+			} else {
+				processInstructionData.ProgramId = &programId
+				processInstructionData.Accounts = &accounts
+			}
+
 			processInstructionData.InnerInstructionIndex = innerIxIndex
 			processInstructionData.InnerAccounts = &innerIx.Accounts
-			processInstructionData.ProgramId = &accountKeys[innerIx.ProgramIdIndex]
 			processInstructionData.Data = &innerIx.Data
 
-			s := processInstruction(processInstructionData, innerIx.Accounts)
+			s := processInstruction(processInstructionData)
 			if s.Pair != "" && s.TokenOut != "" && s.TokenIn != "" {
 				innerSwaps = append(innerSwaps, s)
 			}
@@ -167,10 +175,13 @@ func (sh *SwapHandler) HandleSwaps(ctx context.Context, transfers []types.SolTra
 		builtSwaps = append(builtSwaps, s)
 	}
 
+	if len(builtSwaps) == 0 {
+		log.Printf("No swaps found for tx: %s", tx.Transaction.Signatures[0])
+	}
 	return builtSwaps
 }
 
-func processInstruction(instructionData types.ProcessInstructionData, accounts []int) types.SolSwap {
+func processInstruction(instructionData types.ProcessInstructionData) types.SolSwap {
 	type handlerFunc func(data types.ProcessInstructionData) types.SolSwap
 	handlers := map[string]handlerFunc{
 		RAYDIUM_LIQ_POOL_V4:   dex.HandleRaydiumSwaps,
@@ -180,7 +191,7 @@ func processInstruction(instructionData types.ProcessInstructionData, accounts [
 		PUMPFUN:               dex.HandlePumpFunSwaps,
 	}
 
-	accountsLen := len(accounts)
+	accountsLen := len(*instructionData.Accounts)
 	programId := *instructionData.ProgramId
 
 	handler, exists := handlers[programId]
@@ -189,7 +200,7 @@ func processInstruction(instructionData types.ProcessInstructionData, accounts [
 	}
 
 	if programId == ORCA_WHIRL_PROGRAM_ID {
-		if accountsLen != 11 || instructionData.AccountKeys[(accounts)[0]] != TOKEN_PROGRAM {
+		if (accountsLen != 15 && accountsLen != 11) || instructionData.AccountKeys[(*instructionData.Accounts)[0]] != TOKEN_PROGRAM {
 			return types.SolSwap{}
 		}
 	} else if programId == RAYDIUM_LIQ_POOL_V4 && accountsLen != 18 && accountsLen != 17 {

@@ -62,60 +62,6 @@ func (qh *SolanaQueueHandler) Close() {
 	}
 }
 
-func (qh *SolanaQueueHandler) monitorQueue(ctx context.Context) {
-	ticker := time.NewTicker(10 * time.Second)
-	defer ticker.Stop()
-
-	for {
-		select {
-		case <-ctx.Done():
-			return
-		case <-ticker.C:
-			queue, err := qh.ch.QueueInspect(queueName)
-			if err != nil {
-				log.Printf("Failed to inspect queue: %v", err)
-				continue
-			}
-
-			qh.adjustWorkers(queue.Messages)
-		}
-	}
-}
-
-func (qh *SolanaQueueHandler) adjustWorkers(queueSize int) {
-	var newNumWorkers int
-
-	switch {
-	case queueSize > 1500:
-		newNumWorkers = 1000
-	case queueSize > 1000:
-		newNumWorkers = 950
-	case queueSize > 750:
-		newNumWorkers = 900
-	case queueSize > 500:
-		newNumWorkers = 800
-	default:
-		newNumWorkers = 750
-
-	}
-
-	qh.mu.Lock()
-	currentWorkers := len(qh.workerPool)
-	qh.mu.Unlock()
-
-	if newNumWorkers > currentWorkers {
-		for i := currentWorkers; i < newNumWorkers; i++ {
-			qh.startWorker(i, qh.ctx)
-		}
-		log.Printf("Increased workers from %d to %d", currentWorkers, newNumWorkers)
-	} else if newNumWorkers < currentWorkers {
-		for i := currentWorkers - 1; i >= newNumWorkers; i-- {
-			qh.stopWorker(i)
-		}
-		log.Printf("Decreased workers from %d to %d", currentWorkers, newNumWorkers)
-	}
-}
-
 func (qh *SolanaQueueHandler) reconnect() bool {
 	qh.Close()
 	backoff := time.Second
@@ -202,10 +148,8 @@ func (qh *SolanaQueueHandler) ListenToSolanaQueue(ctx context.Context) {
 		}
 		close(qh.rabbitChan)
 	}()
-	//go qh.monitorQueue(ctx)
 
 	qh.workerWg.Wait()
-
 	runtime.GC()
 }
 

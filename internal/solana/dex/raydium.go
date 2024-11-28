@@ -6,7 +6,7 @@ import (
 
 func HandleRaydiumSwaps(instructionData types.ProcessInstructionData) types.SolSwap {
 
-	if len(*instructionData.InnerAccounts) < 2 || len(instructionData.AccountKeys) < (*instructionData.InnerAccounts)[1] {
+	if len(*instructionData.Accounts) < 2 || len(instructionData.AccountKeys) < (*instructionData.Accounts)[1] {
 		return types.SolSwap{}
 	}
 
@@ -26,7 +26,7 @@ func HandleRaydiumSwaps(instructionData types.ProcessInstructionData) types.SolS
 	}
 
 	s := types.SolSwap{
-		Pair:      instructionData.AccountKeys[(*instructionData.InnerAccounts)[1]],
+		Pair:      instructionData.AccountKeys[(*instructionData.Accounts)[1]],
 		Exchange:  "RAYDIUM",
 		Wallet:    wallet,
 		TokenOut:  transfer1.Mint,

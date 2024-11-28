@@ -3,7 +3,8 @@ package dex
 import (
 	"blocsy/internal/types"
 	"encoding/hex"
-	"github.com/mr-tron/base58/base58"
+	"github.com/mr-tron/base58"
+	"log"
 	"strconv"
 	"strings"
 )
@@ -12,7 +13,8 @@ const TRADE_EVENT_DISCRIMINATOR = "bddb7fd34ee661ee"
 
 func HandlePumpFunSwaps(instructionData types.ProcessInstructionData) types.SolSwap {
 
-	if len(*instructionData.InstructionAccounts) < 4 || len(instructionData.AccountKeys) < (*instructionData.InstructionAccounts)[3] {
+	if len(*instructionData.Accounts) < 4 || len(instructionData.AccountKeys) < (*instructionData.Accounts)[3] {
+		log.Printf("Not enough accounts for PUMPFUN swap")
 		return types.SolSwap{}
 	}
 
@@ -57,7 +59,7 @@ func HandlePumpFunSwaps(instructionData types.ProcessInstructionData) types.SolS
 		return types.SolSwap{}
 	}
 
-	s.Pair = instructionData.AccountKeys[(*instructionData.InstructionAccounts)[3]]
+	s.Pair = instructionData.AccountKeys[(*instructionData.Accounts)[3]]
 
 	return s
 }

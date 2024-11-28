@@ -63,7 +63,8 @@ func TestSwapHandler(t *testing.T) {
 
 func txTest(ctx context.Context, node *solana.Node, sh *solana.SwapHandler, t *testing.T) {
 	return
-	const signature = "5NH1NSK7yvpckgYp3M1mqGrkDbzZwNEwB7FTCkPXxLZSqt9DFh9a9VdCzv29YoTkG1R7kZmWNF4URTan8tXBQMgc"
+
+	const signature = "43QW8kcBpkrxvSauLZkhBMD5ToLEo5zRFmHPfHmLJaLw3ED8LogTevcNrjzm2aWTYqzGvc97dNfgKHYxuqmZ6PCr"
 
 	tx, err := node.GetTx(ctx, signature)
 	if err != nil {
@@ -77,7 +78,7 @@ func txTest(ctx context.Context, node *solana.Node, sh *solana.SwapHandler, t *t
 
 func blockTest(ctx context.Context, node *solana.Node, txHandler *solana.TxHandler, t *testing.T) {
 	//return
-	const blockNum = 303821042
+	const blockNum = 304129216
 
 	blockMsg, err := node.GetBlockMessage(ctx, blockNum)
 	if err != nil {

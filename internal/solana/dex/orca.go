@@ -5,7 +5,7 @@ import (
 )
 
 func HandleOrcaSwaps(instructionData types.ProcessInstructionData) types.SolSwap {
-	if len(*instructionData.InnerAccounts) < 3 || len(instructionData.AccountKeys) < (*instructionData.InnerAccounts)[2] {
+	if len(*instructionData.Accounts) < 3 || len(instructionData.AccountKeys) < (*instructionData.Accounts)[2] {
 		return types.SolSwap{}
 	}
 
@@ -19,8 +19,15 @@ func HandleOrcaSwaps(instructionData types.ProcessInstructionData) types.SolSwap
 		return types.SolSwap{}
 	}
 
+	pair := ""
+	if len(*instructionData.Accounts) == 15 {
+		pair = instructionData.AccountKeys[(*instructionData.Accounts)[4]]
+	} else {
+		pair = instructionData.AccountKeys[(*instructionData.Accounts)[2]]
+	}
+
 	s := types.SolSwap{
-		Pair:      instructionData.AccountKeys[(*instructionData.InnerAccounts)[2]],
+		Pair:      pair,
 		Exchange:  "ORCA",
 		Wallet:    transfer1.FromUserAccount,
 		TokenOut:  transfer1.Mint,

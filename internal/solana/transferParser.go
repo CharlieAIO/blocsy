@@ -7,25 +7,9 @@ import (
 	"strconv"
 )
 
-func findAccountKeyIndex(keyMap map[string]int, key string) (int, bool) {
-	if i, ok := keyMap[key]; ok {
-		return i, true
-	}
-
-	return -1, false
-}
-
-func GetAllTransfers(tx *types.SolanaTx) []types.SolTransfer {
-	accountKeys := getAllAccountKeys(tx)
-	AccountKeysMap := make(map[string]int, len(accountKeys))
-	for i := range accountKeys {
-		AccountKeysMap[accountKeys[i]] = i
-	}
-
+func GetTokenBalanceDiffs(tx *types.SolanaTx) map[int]types.SolBalanceDiff {
 	balanceDiffMap := make(map[int]types.SolBalanceDiff, len(tx.Meta.PostTokenBalances))
-	nativeBalanceDiffMap := make(map[int]types.SolBalanceDiff, len(tx.Meta.PostBalances))
 
-	// Calculate token balance differences
 	for i := range tx.Meta.PostTokenBalances {
 		swap := types.SolBalanceDiff{
 			Mint:     tx.Meta.PostTokenBalances[i].Mint,
@@ -58,6 +42,11 @@ func GetAllTransfers(tx *types.SolanaTx) []types.SolTransfer {
 		balanceDiffMap[tx.Meta.PreTokenBalances[i].AccountIndex] = swap
 
 	}
+	return balanceDiffMap
+}
+
+func GetNativeBalanceDiffs(tx *types.SolanaTx) map[int]types.SolBalanceDiff {
+	balanceDiffMap := make(map[int]types.SolBalanceDiff, len(tx.Meta.PostBalances))
 
 	for i := range tx.Meta.PostBalances {
 		swap := types.SolBalanceDiff{
@@ -66,11 +55,11 @@ func GetAllTransfers(tx *types.SolanaTx) []types.SolTransfer {
 			Decimals: 9,
 			Owner:    "",
 		}
-		nativeBalanceDiffMap[i] = swap
+		balanceDiffMap[i] = swap
 	}
 
 	for i := range tx.Meta.PreBalances {
-		swap, ok := nativeBalanceDiffMap[i]
+		swap, ok := balanceDiffMap[i]
 		if !ok {
 			continue
 		}
@@ -81,13 +70,24 @@ func GetAllTransfers(tx *types.SolanaTx) []types.SolTransfer {
 
 		difference := new(big.Float).Sub(postAmount, preAmount)
 		swap.Amount = difference.Text('f', -1)
-		nativeBalanceDiffMap[i] = swap
+		balanceDiffMap[i] = swap
 	}
+	return balanceDiffMap
+}
+
+func GetAllTransfers(tx *types.SolanaTx) []types.SolTransfer {
+	accountKeys := getAllAccountKeys(tx)
+	AccountKeysMap := make(map[string]int, len(accountKeys))
+	for i := range accountKeys {
+		AccountKeysMap[accountKeys[i]] = i
+	}
+
+	balanceDiffMap := GetTokenBalanceDiffs(tx)
+	nativeBalanceDiffMap := GetNativeBalanceDiffs(tx)
 
 	transfers := make([]types.SolTransfer, 0)
 	for i := range tx.Meta.InnerInstructions {
 		for ixIndex := range tx.Meta.InnerInstructions[i].Instructions {
-
 			transfer, found := buildTransfer(tx.Meta.InnerInstructions[i].Instructions[ixIndex], AccountKeysMap, balanceDiffMap, nativeBalanceDiffMap, tx, tx.Meta.InnerInstructions[i].Index, ixIndex)
 			if found {
 				transfers = append(transfers, transfer)
@@ -135,7 +135,7 @@ func buildTransfer(ix types.Instruction, AccountKeysMap map[string]int, balanceD
 		}
 		//amount := amountFromData
 		amount := ""
-		if balanceDiff, ok := findAccountKeyIndex(AccountKeysMap, destination); ok {
+		if balanceDiff, ok := FindAccountKeyIndex(AccountKeysMap, destination); ok {
 			if balanceDiffMap[balanceDiff].Amount != "" {
 				amount = balanceDiffMap[balanceDiff].Amount
 			} else if nativeBalanceDiffMap[balanceDiff].Amount != "0" {
@@ -151,7 +151,7 @@ func buildTransfer(ix types.Instruction, AccountKeysMap map[string]int, balanceD
 			ToUserAccount:   destination,
 			FromUserAccount: source,
 			Amount:          amount,
-			Mint:            "", //So11111111111111111111111111111111111111112
+			Mint:            "So11111111111111111111111111111111111111112", //So11111111111111111111111111111111111111112
 			Type:            "native",
 		}
 		if transfer.Amount == "" {
@@ -197,7 +197,7 @@ func buildTransfer(ix types.Instruction, AccountKeysMap map[string]int, balanceD
 			mint := ""
 			decimals := -1
 
-			if balanceDiff, ok := findAccountKeyIndex(AccountKeysMap, destination); ok {
+			if balanceDiff, ok := FindAccountKeyIndex(AccountKeysMap, destination); ok {
 				if balanceDiffMap[balanceDiff].Owner != "" {
 					toUserAccount = balanceDiffMap[balanceDiff].Owner
 					mint = balanceDiffMap[balanceDiff].Mint
@@ -214,7 +214,7 @@ func buildTransfer(ix types.Instruction, AccountKeysMap map[string]int, balanceD
 			}
 
 			fromUserAccount := ""
-			if balanceDiffSource, ok := findAccountKeyIndex(AccountKeysMap, source); ok {
+			if balanceDiffSource, ok := FindAccountKeyIndex(AccountKeysMap, source); ok {
 				if balanceDiffMap[balanceDiffSource].Owner != "" {
 					fromUserAccount = balanceDiffMap[balanceDiffSource].Owner
 					if amount == "" || amount == "0" {

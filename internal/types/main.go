@@ -14,8 +14,11 @@ type ProcessInstructionData struct {
 	AccountKeys         []string
 	InstructionAccounts *[]int
 
-	Transfers []SolTransfer
-	ProgramId *string
+	Accounts *[]int
+
+	Transfers      []SolTransfer
+	ProgramId      *string
+	InnerProgramId *string
 
 	InnerInstructionIndex int
 	InnerIndex            *int

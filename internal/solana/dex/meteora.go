@@ -3,7 +3,7 @@ package dex
 import "blocsy/internal/types"
 
 func HandleMeteoraSwaps(instructionData types.ProcessInstructionData) types.SolSwap {
-	if len(*instructionData.InnerAccounts) == 0 || len(instructionData.AccountKeys) < (*instructionData.InnerAccounts)[0] {
+	if len(*instructionData.Accounts) == 0 || len(instructionData.AccountKeys) < (*instructionData.Accounts)[0] {
 		return types.SolSwap{}
 	}
 
@@ -38,7 +38,7 @@ func HandleMeteoraSwaps(instructionData types.ProcessInstructionData) types.SolS
 	}
 
 	s := types.SolSwap{
-		Pair:      instructionData.AccountKeys[(*instructionData.InnerAccounts)[0]],
+		Pair:      instructionData.AccountKeys[(*instructionData.Accounts)[0]],
 		Exchange:  "METEORA",
 		Wallet:    transfer1.FromUserAccount,
 		TokenOut:  transfer1.Mint,
