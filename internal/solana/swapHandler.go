@@ -97,7 +97,7 @@ func (sh *SwapHandler) HandleSwaps(ctx context.Context, transfers []types.SolTra
 	builtSwaps := make([]types.SwapLog, 0)
 	for _, swap := range swaps {
 		if swap.Wallet == "" || swap.Pair == "" {
-			log.Printf("%s ~ missing ... swap: %+v", tx.Transaction.Signatures[0], swap)
+			//log.Printf("%s ~ missing ... swap: %+v", tx.Transaction.Signatures[0], swap)
 			continue
 		}
 		action := ""
@@ -182,9 +182,9 @@ func (sh *SwapHandler) HandleSwaps(ctx context.Context, transfers []types.SolTra
 		builtSwaps = append(builtSwaps, s)
 	}
 
-	//if len(builtSwaps) == 0 {
-	//	log.Printf("No swaps found for tx: %s", tx.Transaction.Signatures[0])
-	//}
+	if len(builtSwaps) == 0 {
+		log.Printf("No swaps found for tx: %s", tx.Transaction.Signatures[0])
+	}
 
 	return builtSwaps
 }
