@@ -2,6 +2,7 @@ package solana
 
 import (
 	"blocsy/internal/types"
+	"strings"
 )
 
 func getAllAccountKeys(tx *types.SolanaTx) []string {
@@ -52,4 +53,45 @@ func FindAccountKeyIndex(keyMap map[string]int, key string) (int, bool) {
 	}
 
 	return -1, false
+}
+
+type LogDetails struct {
+	Program string
+	Logs    []string
+	SubLogs []LogDetails
+}
+
+func GetLogs(logs []string) []LogDetails {
+	details := make([]LogDetails, 0)
+	var current LogDetails
+	var stack []LogDetails
+
+	for _, l := range logs {
+		if strings.Contains(l, "invoke") {
+			if current.Program != "" {
+				stack = append(stack, current)
+			}
+			current = LogDetails{
+				Program: strings.Fields(l)[1],
+			}
+		} else if strings.Contains(l, "Program log:") {
+			current.Logs = append(current.Logs, l)
+		} else if strings.Contains(l, "success") {
+			if len(stack) > 0 {
+				parent := stack[len(stack)-1]
+				stack = stack[:len(stack)-1]
+				parent.SubLogs = append(parent.SubLogs, current)
+				current = parent
+			} else {
+				details = append(details, current)
+				current = LogDetails{}
+			}
+		}
+	}
+
+	if current.Program != "" {
+		details = append(details, current)
+	}
+
+	return details
 }

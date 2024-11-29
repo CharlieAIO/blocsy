@@ -24,7 +24,15 @@ type ProcessInstructionData struct {
 	InnerIndex            *int
 	Data                  *string
 
-	InnerAccounts *[]int
+	InnerAccounts   *[]int
+	Logs            []string
+	TokenAccountMap map[string]TokenAccountDetails
+}
+
+type TokenAccountDetails struct {
+	UserAccount string
+	MintAddress string
+	Decimals    int
 }
 
 //easyjson:json

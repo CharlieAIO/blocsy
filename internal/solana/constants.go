@@ -16,6 +16,7 @@ const (
 
 	TOKEN_PROGRAM            = "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
 	ASSOCIATED_TOKEN_PROGRAM = "ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL"
+	SYSTEM_PROGRAM           = "11111111111111111111111111111111"
 )
 
 var QuoteTokens = map[string]string{

@@ -32,6 +32,7 @@ require (
 	github.com/mitchellh/go-testing-interface v1.14.1 // indirect
 	github.com/montanaflynn/stats v0.7.1 // indirect
 	github.com/near/borsh-go v0.3.2-0.20220516180422-1ff87d108454 // indirect
+	github.com/pkg/errors v0.9.1 // indirect
 	github.com/streamingfast/logging v0.0.0-20230608130331-f22c91403091 // indirect
 	github.com/xdg-go/pbkdf2 v1.0.0 // indirect
 	github.com/xdg-go/scram v1.1.2 // indirect

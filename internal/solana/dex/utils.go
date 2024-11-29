@@ -10,3 +10,12 @@ func FindTransfer(transfers []types.SolTransfer, innerIndex int, ixIndex int) (*
 	}
 	return nil, false
 }
+
+func FindTransferFromAccounts(transfers []types.SolTransfer, fromTokenAcc string) (*types.SolTransfer, bool) {
+	for i := range transfers {
+		if transfers[i].FromTokenAccount == fromTokenAcc {
+			return &transfers[i], true
+		}
+	}
+	return nil, false
+}

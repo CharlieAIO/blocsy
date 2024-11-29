@@ -5,6 +5,8 @@ import (
 	"encoding/hex"
 	"github.com/mr-tron/base58"
 	"log"
+	"math"
+	"math/big"
 	"strconv"
 	"strings"
 )
@@ -19,6 +21,7 @@ func HandlePumpFunSwaps(instructionData types.ProcessInstructionData) types.SolS
 	}
 
 	s := types.SolSwap{}
+	var tokenOutDecimals, tokenInDecimals int
 
 	bytesData, _ := base58.Decode(*instructionData.Data)
 	if bytesData == nil {
@@ -46,10 +49,14 @@ func HandlePumpFunSwaps(instructionData types.ProcessInstructionData) types.SolS
 
 		if swap_.IsBuy {
 			s.TokenOut = "So11111111111111111111111111111111111111112"
+			tokenOutDecimals = 9
+			tokenInDecimals = 6
 			s.TokenIn = swap_.Mint.String()
 			s.AmountOut = strconv.FormatUint(swap_.SolAmount, 10)
 			s.AmountIn = strconv.FormatUint(swap_.TokenAmount, 10)
 		} else {
+			tokenOutDecimals = 6
+			tokenInDecimals = 9
 			s.TokenIn = "So11111111111111111111111111111111111111112"
 			s.TokenOut = swap_.Mint.String()
 			s.AmountOut = strconv.FormatUint(swap_.TokenAmount, 10)
@@ -59,7 +66,21 @@ func HandlePumpFunSwaps(instructionData types.ProcessInstructionData) types.SolS
 		return types.SolSwap{}
 	}
 
+	amountOutFloat, ok := new(big.Float).SetString(s.AmountOut)
+	if !ok || amountOutFloat.Cmp(big.NewFloat(0)) == 0 {
+		return types.SolSwap{}
+	}
+
+	amountInFloat, ok := new(big.Float).SetString(s.AmountIn)
+	if !ok || amountInFloat.Cmp(big.NewFloat(0)) == 0 {
+		return types.SolSwap{}
+	}
+
+	amountOutFloat.Quo(amountOutFloat, new(big.Float).SetFloat64(math.Pow10(tokenOutDecimals)))
+	amountInFloat.Quo(amountInFloat, new(big.Float).SetFloat64(math.Pow10(tokenInDecimals)))
 	s.Pair = instructionData.AccountKeys[(*instructionData.Accounts)[3]]
+	s.AmountOut = amountOutFloat.String()
+	s.AmountIn = amountInFloat.String()
 
 	return s
 }

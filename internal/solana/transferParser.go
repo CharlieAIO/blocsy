@@ -2,10 +2,11 @@ package solana
 
 import (
 	"blocsy/internal/types"
-	"github.com/blocto/solana-go-sdk/common"
 	"math/big"
 	"strconv"
 )
+
+//TODO: redo transfer parser so balance maps are not used and instead the transfers are parsed directly from the instructions (Debug tx: https://solscan.io/tx/DB7onVtvwm9GKt9gezSmCZEVUhvFcTjNGu5K6uNRdySg3cg8F9YimH8R8EpcQyS2sc1SRFhLwydCSBNxxdL5An8)
 
 func GetTokenBalanceDiffs(tx *types.SolanaTx) map[int]types.SolBalanceDiff {
 	balanceDiffMap := make(map[int]types.SolBalanceDiff, len(tx.Meta.PostTokenBalances))
@@ -105,7 +106,14 @@ func GetAllTransfers(tx *types.SolanaTx) []types.SolTransfer {
 	return transfers
 }
 
-func buildTransfer(ix types.Instruction, AccountKeysMap map[string]int, balanceDiffMap map[int]types.SolBalanceDiff, nativeBalanceDiffMap map[int]types.SolBalanceDiff, tx *types.SolanaTx, innerIndex int, ixIndex int) (types.SolTransfer, bool) {
+func buildTransfer(
+	ix types.Instruction,
+	AccountKeysMap map[string]int,
+	balanceDiffMap map[int]types.SolBalanceDiff,
+	nativeBalanceDiffMap map[int]types.SolBalanceDiff,
+	tx *types.SolanaTx,
+	innerIndex int,
+	ixIndex int) (types.SolTransfer, bool) {
 	if ix.Data == "" {
 		return types.SolTransfer{}, false
 	}
@@ -116,7 +124,6 @@ func buildTransfer(ix types.Instruction, AccountKeysMap map[string]int, balanceD
 	}
 	programId := accountKeys[ix.ProgramIdIndex]
 
-	//System program
 	if programId == "11111111111111111111111111111111" {
 		if len(ix.Accounts) != 2 || len(ix.Data) > 30 {
 			return types.SolTransfer{}, false
@@ -133,7 +140,6 @@ func buildTransfer(ix types.Instruction, AccountKeysMap map[string]int, balanceD
 		if destination == "" || source == "" {
 			return types.SolTransfer{}, false
 		}
-		//amount := amountFromData
 		amount := ""
 		if balanceDiff, ok := FindAccountKeyIndex(AccountKeysMap, destination); ok {
 			if balanceDiffMap[balanceDiff].Amount != "" {
@@ -206,10 +212,11 @@ func buildTransfer(ix types.Instruction, AccountKeysMap map[string]int, balanceD
 				}
 			}
 			if toUserAccount == "" {
-				associatedAccount, mintAddress, found := findUserAccount(destination, tx)
+				tokenAccount, found := findUserAccount(destination, tx)
 				if found {
-					toUserAccount = associatedAccount
-					mint = mintAddress
+					toUserAccount = tokenAccount.UserAccount
+					mint = tokenAccount.MintAddress
+					decimals = tokenAccount.Decimals
 				}
 			}
 
@@ -228,9 +235,10 @@ func buildTransfer(ix types.Instruction, AccountKeysMap map[string]int, balanceD
 				}
 			}
 			if fromUserAccount == "" {
-				if uAccount, mintAddress, found := findUserAccount(source, tx); found {
-					fromUserAccount = uAccount
-					mint = mintAddress
+				if tokenAccount, found := findUserAccount(source, tx); found {
+					fromUserAccount = tokenAccount.UserAccount
+					mint = tokenAccount.MintAddress
+					decimals = tokenAccount.Decimals
 				} else {
 					tType = "mint"
 				}
@@ -260,29 +268,75 @@ func buildTransfer(ix types.Instruction, AccountKeysMap map[string]int, balanceD
 	return types.SolTransfer{}, false
 }
 
-func findUserAccount(tokenAccount string, tx *types.SolanaTx) (string, string, bool) {
+func CreateTokenAccountMap(tx *types.SolanaTx) map[string]types.TokenAccountDetails {
+	accountMap := make(map[string]types.TokenAccountDetails)
+
 	accountKeys := getAllAccountKeys(tx)
-	for i := range tx.Meta.InnerInstructions {
-		for j := range tx.Meta.InnerInstructions[i].Instructions {
-			acc, mint, ok := findAccount(tx.Meta.InnerInstructions[i].Instructions[j], tokenAccount, accountKeys)
-			if ok {
-				return acc, mint, true
-			}
+
+	for _, account := range accountKeys {
+		if tokenAccount, found := findUserAccount(account, tx); found {
+			accountMap[account] = tokenAccount
 		}
 	}
+
+	return accountMap
+}
+
+func findUserAccount(tokenAccount string, tx *types.SolanaTx) (types.TokenAccountDetails, bool) {
+	accountKeys := getAllAccountKeys(tx)
+
+	currentInfo := types.TokenAccountDetails{
+		UserAccount: "",
+		MintAddress: "",
+		Decimals:    -1,
+	}
+	foundInfo := false
 
 	for i := range tx.Transaction.Message.Instructions {
-		acc, mint, found := findAccount(tx.Transaction.Message.Instructions[i], tokenAccount, accountKeys)
+		userAccount, mint, found := findAccount(tx.Transaction.Message.Instructions[i], tokenAccount, accountKeys)
 		if found {
-			return acc, mint, true
+			foundInfo = true
+			if currentInfo.UserAccount == "" {
+				currentInfo.UserAccount = userAccount
+			}
+			if currentInfo.MintAddress == "" {
+				currentInfo.MintAddress = mint
+			}
+		}
+
+		for innerI := range tx.Meta.InnerInstructions {
+			if tx.Meta.InnerInstructions[innerI].Index != i {
+				continue
+			}
+
+			for innerIxIndex := range tx.Meta.InnerInstructions[innerI].Instructions {
+				userAccount, mint, found := findAccount(tx.Meta.InnerInstructions[innerI].Instructions[innerIxIndex], tokenAccount, accountKeys)
+
+				if found {
+					foundInfo = true
+					if currentInfo.UserAccount == "" {
+						currentInfo.UserAccount = userAccount
+					}
+					if currentInfo.MintAddress == "" {
+						currentInfo.MintAddress = mint
+					}
+				}
+			}
+		}
+
+	}
+
+	if currentInfo.Decimals == -1 {
+		decimals := findMintInBalances(tx, currentInfo.MintAddress)
+		if decimals != -1 {
+			currentInfo.Decimals = decimals
 		}
 	}
 
-	return "", "", false
+	return currentInfo, foundInfo
 }
 
 func findAccount(ix types.Instruction, tokenAccount string, accountKeys []string) (string, string, bool) {
-	//parsedInfo := ix.Parsed.Info
 	if len(accountKeys)-1 < ix.ProgramIdIndex {
 		return "", "", false
 	}
@@ -314,6 +368,7 @@ func findAccount(ix types.Instruction, tokenAccount string, accountKeys []string
 	}
 	//spl-token program | initializeAccount, initializeAccount2, initializeAccount3
 	if programId == TOKEN_PROGRAM {
+
 		if len(ix.Accounts) == 4 {
 			account := accountKeys[ix.Accounts[0]]
 			mint := accountKeys[ix.Accounts[1]]
@@ -323,32 +378,42 @@ func findAccount(ix types.Instruction, tokenAccount string, accountKeys []string
 				return owner, mint, true
 			}
 		}
-		if len(ix.Accounts) == 3 {
+		//if len(ix.Accounts) == 3 {
+		//	//source := accountKeys[ix.Accounts[0]]
+		//	destination := accountKeys[ix.Accounts[1]]
+		//	//authority := accountKeys[ix.Accounts[2]]
+		//	//log.Printf("authority: %s | destination: %s | source: %s", authority, destination, source)
+		//	if destination == tokenAccount {
+		//		return "", "", true
+		//	}
+		//}
+		if len(ix.Accounts) == 2 {
 			account := accountKeys[ix.Accounts[0]]
-			destination := accountKeys[ix.Accounts[1]]
-			owner := accountKeys[ix.Accounts[2]]
+			mint := accountKeys[ix.Accounts[1]]
 			if account == tokenAccount {
-				return owner, destination, true
+				return "", mint, true
+			}
+		}
+	}
+
+	if programId == SYSTEM_PROGRAM {
+		if len(ix.Accounts) == 2 {
+			source := accountKeys[ix.Accounts[0]]
+			newAccount := accountKeys[ix.Accounts[1]]
+			if newAccount == tokenAccount {
+				return source, "", true
 			}
 		}
 	}
 	return "", "", false
 }
 
-func getAssociatedTokenAddress(walletPubKey, mintPubKey common.PublicKey) (common.PublicKey, error) {
-	associatedTokenProgramID := common.PublicKeyFromString(ASSOCIATED_TOKEN_PROGRAM)
-	tokenProgramID := common.PublicKeyFromString(TOKEN_PROGRAM)
+func findMintInBalances(tx *types.SolanaTx, mint string) int {
 
-	seeds := [][]byte{
-		walletPubKey.Bytes(),
-		tokenProgramID.Bytes(),
-		mintPubKey.Bytes(),
+	for _, tokenBalance := range tx.Meta.PostTokenBalances {
+		if tokenBalance.Mint == mint {
+			return tokenBalance.UITokenAmount.Decimals
+		}
 	}
-
-	associatedTokenAddress, _, err := common.FindProgramAddress(seeds, associatedTokenProgramID)
-	if err != nil {
-		return common.PublicKey{}, err
-	}
-
-	return associatedTokenAddress, nil
+	return -1
 }

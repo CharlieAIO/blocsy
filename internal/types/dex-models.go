@@ -460,3 +460,43 @@ func (m *PumpFunSwap) Decode(in []byte) error {
 	}
 	return nil
 }
+
+type RaySwapBaseIn struct {
+	LogType          uint8  `json:"logType"`
+	AmountIn         uint64 `json:"amountIn"`
+	MinimumAmountOut uint64 `json:"minimumAmountOut"`
+	Direction        uint64 `json:"direction"`
+	UserSource       uint64 `json:"userSource"`
+	PoolCoin         uint64 `json:"poolCoin"`
+	PoolPc           uint64 `json:"poolPc"`
+	OutAmount        uint64 `json:"outAmount"`
+}
+
+func (m *RaySwapBaseIn) Decode(in []byte) error {
+	decoder := bin.NewBinDecoder(in)
+	err := decoder.Decode(&m)
+	if err != nil {
+		return fmt.Errorf("unpack: %w", err)
+	}
+	return nil
+}
+
+type RaySwapBaseOut struct {
+	LogType         uint8  `json:"logType"`
+	MaximumAmountIn uint64 `json:"maximumAmountIn"`
+	AmountOut       uint64 `json:"amountOut"`
+	Direction       uint64 `json:"direction"`
+	UserSource      uint64 `json:"userSource"`
+	PoolCoin        uint64 `json:"poolCoin"`
+	PoolPc          uint64 `json:"poolPc"`
+	DeductIn        uint64 `json:"deductIn"`
+}
+
+func (m *RaySwapBaseOut) Decode(in []byte) error {
+	decoder := bin.NewBinDecoder(in)
+	err := decoder.Decode(&m)
+	if err != nil {
+		return fmt.Errorf("unpack: %w", err)
+	}
+	return nil
+}

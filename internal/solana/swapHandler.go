@@ -6,7 +6,6 @@ import (
 	"context"
 	"errors"
 	"log"
-	"math"
 	"math/big"
 	"time"
 )
@@ -30,11 +29,21 @@ func (sh *SwapHandler) HandleSwaps(ctx context.Context, transfers []types.SolTra
 		AccountKeys:           accountKeys,
 		Transfers:             transfers,
 		InnerInstructionIndex: -1,
+		TokenAccountMap:       CreateTokenAccountMap(tx),
 	}
+
+	logs := GetLogs(tx.Meta.LogMessages)
+	//for _, x := range transfers {
+	//	log.Printf("transfer: %+v", x)
+	//}
 
 	for index, instruction := range tx.Transaction.Message.Instructions {
 		accounts := instruction.Accounts
 		innerInstructions, innerIdx := FindInnerIx(tx.Meta.InnerInstructions, index)
+
+		if index < len(logs) {
+			processInstructionData.Logs = logs[index].Logs
+		}
 
 		if len(accountKeys)-1 < instruction.ProgramIdIndex {
 			continue
@@ -56,16 +65,20 @@ func (sh *SwapHandler) HandleSwaps(ctx context.Context, transfers []types.SolTra
 
 		innerSwaps := make([]types.SolSwap, 0)
 		for innerIxIndex, innerIx := range innerInstructions {
+
+			if index < len(logs) && innerIxIndex < len(logs[index].SubLogs) {
+				processInstructionData.Logs = logs[index].SubLogs[innerIxIndex].Logs
+			}
+
 			if len(accountKeys)-1 < innerIx.ProgramIdIndex || innerIx.Data == "" {
 				continue
 			}
 
-			if validateProgramId(accountKeys[innerIx.ProgramIdIndex]) && len(innerIx.Accounts) > 1 {
+			if validateProgramId(accountKeys[innerIx.ProgramIdIndex]) && len(innerIx.Accounts) > 5 {
+				accountsCopy := make([]int, len(innerIx.Accounts))
+				copy(accountsCopy, innerIx.Accounts)
 				processInstructionData.ProgramId = &accountKeys[innerIx.ProgramIdIndex]
-				processInstructionData.Accounts = &innerIx.Accounts
-			} else {
-				processInstructionData.ProgramId = &programId
-				processInstructionData.Accounts = &accounts
+				processInstructionData.Accounts = &accountsCopy
 			}
 
 			processInstructionData.InnerInstructionIndex = innerIxIndex
@@ -99,23 +112,17 @@ func (sh *SwapHandler) HandleSwaps(ctx context.Context, transfers []types.SolTra
 			continue
 		}
 
-		timeoutCtx, cancel := context.WithTimeout(ctx, 45*time.Second)
-		defer cancel()
+		timeoutCtx, cancelCtx := context.WithTimeout(ctx, 30*time.Second)
+		defer cancelCtx()
 
 		var token_ *string
+
 		if swap.Exchange == "PUMPFUN" {
-			var tokenInDecimals, tokenOutDecimals int
 			if swap.TokenOut == "So11111111111111111111111111111111111111112" {
-				tokenInDecimals = 6
-				tokenOutDecimals = 9
 				token_ = &swap.TokenIn
 			} else {
-				tokenInDecimals = 9
-				tokenOutDecimals = 6
 				token_ = &swap.TokenOut
 			}
-			amountOutFloat.Quo(amountOutFloat, new(big.Float).SetFloat64(math.Pow10(tokenOutDecimals)))
-			amountInFloat.Quo(amountInFloat, new(big.Float).SetFloat64(math.Pow10(tokenInDecimals)))
 		}
 
 		pairDetails, _, err := sh.pf.FindPair(timeoutCtx, swap.Pair, token_)
@@ -123,20 +130,20 @@ func (sh *SwapHandler) HandleSwaps(ctx context.Context, transfers []types.SolTra
 			log.Printf("%s error finding pair: %v", tx.Transaction.Signatures[0], err)
 			if errors.Is(err, types.TokenNotFound) {
 				log.Println("pair not found:", err)
-				continue
 			}
+			cancelCtx()
 			continue
 		}
 
 		quoteTokenAddress := pairDetails.QuoteToken.Address
 
-		_, err = sh.tf.FindToken(ctx, pairDetails.Token)
+		_, err = sh.tf.FindToken(timeoutCtx, pairDetails.Token)
 		if err != nil {
 			log.Println("error finding token:", err)
+			cancelCtx()
 			continue
 		}
-
-		ctx.Done()
+		cancelCtx()
 
 		if swap.TokenOut == quoteTokenAddress {
 			action = "BUY"
@@ -175,9 +182,10 @@ func (sh *SwapHandler) HandleSwaps(ctx context.Context, transfers []types.SolTra
 		builtSwaps = append(builtSwaps, s)
 	}
 
-	if len(builtSwaps) == 0 {
-		log.Printf("No swaps found for tx: %s", tx.Transaction.Signatures[0])
-	}
+	//if len(builtSwaps) == 0 {
+	//	log.Printf("No swaps found for tx: %s", tx.Transaction.Signatures[0])
+	//}
+
 	return builtSwaps
 }
 
@@ -194,6 +202,8 @@ func processInstruction(instructionData types.ProcessInstructionData) types.SolS
 	accountsLen := len(*instructionData.Accounts)
 	programId := *instructionData.ProgramId
 
+	//log.Printf("Program ID: %s | %d", programId, accountsLen)
+
 	handler, exists := handlers[programId]
 	if !exists {
 		return types.SolSwap{}
@@ -205,7 +215,7 @@ func processInstruction(instructionData types.ProcessInstructionData) types.SolS
 		}
 	} else if programId == RAYDIUM_LIQ_POOL_V4 && accountsLen != 18 && accountsLen != 17 {
 		return types.SolSwap{}
-	} else if programId == METEORA_DLMM_PROGRAM && accountsLen != 18 {
+	} else if programId == METEORA_DLMM_PROGRAM && accountsLen != 18 && accountsLen != 17 {
 		return types.SolSwap{}
 	}
 
