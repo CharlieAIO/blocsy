@@ -110,7 +110,7 @@ func (qh *SolanaQueueHandler) ListenToSolanaQueue(ctx context.Context) {
 		qh.startWorker(i, ctx)
 	}
 
-	qh.setPrefetch(3000)
+	qh.setPrefetch(1000)
 
 	q, err := qh.ch.QueueDeclare(
 		queueName,
