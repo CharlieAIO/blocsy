@@ -45,8 +45,10 @@ type SwapsRepo interface {
 
 type SolanaTokenFinder interface {
 	FindToken(ctx context.Context, address string) (*types.Token, error)
+	AddToQueue(address string)
 }
 
 type SolanaPairFinder interface {
 	FindPair(ctx context.Context, address string, token_ *string) (*types.Pair, *types.QuoteToken, error)
+	AddToQueue(pair PairProcessorQueue)
 }

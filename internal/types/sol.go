@@ -288,6 +288,7 @@ type SolSwap struct {
 	AmountOut string
 	AmountIn  string
 	Wallet    string
+	Source    string
 }
 
 //easyjson:json

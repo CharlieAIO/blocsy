@@ -19,6 +19,13 @@ type TokenFinder struct {
 	cache  TockenCache
 	solSvc *SolanaService
 	repo   TokensRepo
+
+	processor *TokenProcessor
+}
+type TokenProcessor struct {
+	queue chan string
+	seen  sync.Map
+	wg    sync.WaitGroup
 }
 
 type PairsService struct {
@@ -26,6 +33,17 @@ type PairsService struct {
 	tokenFinder *TokenFinder
 	solSvc      *SolanaService
 	repo        PairsRepo
+
+	processor *PairProcessor
+}
+type PairProcessor struct {
+	queue chan PairProcessorQueue
+	seen  sync.Map
+	wg    sync.WaitGroup
+}
+type PairProcessorQueue struct {
+	address string
+	token   *string
 }
 
 type TxHandler struct {

@@ -21,7 +21,7 @@ func NewSolanaQueueHandler(txHandler *TxHandler, pRepo SwapsRepo) *SolanaQueueHa
 	qh := &SolanaQueueHandler{
 		txHandler: txHandler,
 		pRepo:     pRepo,
-		workers:   300,
+		workers:   100,
 	}
 	qh.connectToRabbitMQ()
 

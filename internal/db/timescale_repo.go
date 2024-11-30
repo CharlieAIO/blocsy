@@ -47,17 +47,14 @@ func (repo *TimescaleRepository) InsertSwaps(ctx context.Context, swaps []types.
 	columns := []string{
 		`"id"`,
 		`"wallet"`,
-		`"network"`,
-		`"exchange"`,
+		`"source"`,
 		`"blockNumber"`,
-		`"blockHash"`,
 		`"timestamp"`,
-		`"type"`,
 		`"amountOut"`,
 		`"amountIn"`,
-		`"price"`,
+		`"action"`,
 		`"pair"`,
-		`"logIndex"`,
+		`"token"`,
 		`"processed"`,
 	}
 
@@ -77,22 +74,19 @@ func (repo *TimescaleRepository) InsertSwaps(ctx context.Context, swaps []types.
 		valueArgs = append(valueArgs,
 			swap.ID,
 			swap.Wallet,
-			swap.Network,
-			swap.Exchange,
+			swap.Source,
 			swap.BlockNumber,
-			swap.BlockHash,
 			swap.Timestamp.UTC(),
-			swap.Type,
 			swap.AmountOut,
 			swap.AmountIn,
-			swap.Price,
+			swap.Action,
 			swap.Pair,
-			swap.LogIndex,
+			swap.Token,
 			swap.Processed,
 		)
 	}
 
-	query += strings.Join(valueStrings, ", ") + fmt.Sprintf(` ON CONFLICT (id, pair, type, "amountOut", "amountIn", timestamp, "blockNumber") DO NOTHING;`)
+	query += strings.Join(valueStrings, ", ") + fmt.Sprintf(` ON CONFLICT (id, pair, action, "amountOut", "amountIn", timestamp, "blockNumber") DO NOTHING;`)
 
 	_, err := repo.db.ExecContext(ctx, query, valueArgs...)
 	if err != nil {
@@ -193,19 +187,16 @@ func CreateSwapsTable(ctx context.Context, db *sqlx.DB) {
 	var query = fmt.Sprintf(`CREATE TABLE IF NOT EXISTS "%s" (
     "id" TEXT NOT NULL,
     "wallet" TEXT NOT NULL,
-    "network" TEXT NOT NULL,
-    "exchange" TEXT NOT NULL,
+    "source" TEXT NOT NULL,
     "blockNumber" INT NOT NULL DEFAULT 0,
-    "blockHash" TEXT NOT NULL DEFAULT '',
     "timestamp" TIMESTAMP NOT NULL,
-    "type" TEXT NOT NULL,
     "amountOut" DOUBLE PRECISION NOT NULL DEFAULT 0, 
     "amountIn" DOUBLE PRECISION NOT NULL DEFAULT 0,
-    "price" DOUBLE PRECISION NOT NULL DEFAULT 0,
+    "action" TEXT,
     "pair" TEXT NOT NULL,
-    "logIndex" TEXT NOT NULL DEFAULT '',
+    "token" TEXT NOT NULL,
     "processed" BOOLEAN DEFAULT FALSE NOT NULL,
-    PRIMARY KEY (id,pair,type, "amountIn","amountOut","blockNumber","timestamp")
+    PRIMARY KEY (id,pair,action,"amountIn","amountOut","blockNumber",timestamp)
 );`, swapLogTable)
 
 	if _, err := db.ExecContext(ctx, query); err != nil {

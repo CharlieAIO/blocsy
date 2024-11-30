@@ -4,15 +4,21 @@ import (
 	"blocsy/internal/types"
 	"context"
 	"fmt"
+	"log"
 	"math/big"
 	"strconv"
+	"sync"
+	"time"
 )
+
+const workers = 10
 
 func NewTokenFinder(cache TockenCache, solSvc *SolanaService, repo TokensRepo) *TokenFinder {
 	return &TokenFinder{
-		cache:  cache,
-		solSvc: solSvc,
-		repo:   repo,
+		cache:     cache,
+		solSvc:    solSvc,
+		repo:      repo,
+		processor: nil,
 	}
 }
 
@@ -91,6 +97,48 @@ func (tf *TokenFinder) lookupToken(ctx context.Context, address string) (*types.
 	}
 
 	return &token, nil
+}
+
+func (tf *TokenFinder) NewTokenProcessor() {
+	tf.processor = &TokenProcessor{
+		queue: make(chan string, 1000),
+		seen:  sync.Map{},
+		wg:    sync.WaitGroup{},
+	}
+
+	for i := 0; i < workers; i++ {
+		tf.processor.wg.Add(1)
+		go tf.worker(i)
+	}
+
+}
+
+func (tf *TokenFinder) worker(id int) {
+	defer tf.processor.wg.Done()
+
+	for token := range tf.processor.queue {
+		timeOutCtx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+		_, _ = tf.FindToken(timeOutCtx, token)
+		cancel()
+		tf.processor.seen.Delete(token)
+	}
+}
+
+func (tf *TokenFinder) AddToQueue(token string) {
+	if tf.processor == nil {
+		return
+	}
+
+	if _, exists := tf.processor.seen.LoadOrStore(token, struct{}{}); exists {
+		return
+	}
+
+	select {
+	case tf.processor.queue <- token:
+	default:
+		tf.processor.seen.Delete(token)
+		log.Printf("Queue is full! Token %s discarded.", token)
+	}
 }
 
 func ParseTokenAmount(tokenAmount string, d int) (string, error) {

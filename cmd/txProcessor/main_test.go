@@ -77,7 +77,7 @@ func txTest(ctx context.Context, node *solana.Node, sh *solana.SwapHandler, t *t
 
 func blockTest(ctx context.Context, node *solana.Node, txHandler *solana.TxHandler, t *testing.T) {
 	//return
-	const blockNum = 304148625
+	const blockNum = 304413401
 
 	blockMsg, err := node.GetBlockMessage(ctx, blockNum)
 	if err != nil {

@@ -57,7 +57,10 @@ func solanaTxHandler(ctx context.Context, c *cache.Cache, mRepo *db.MongoReposit
 	solSvc := solana.NewSolanaService(ctx)
 
 	tf := solana.NewTokenFinder(c, solSvc, mRepo)
+	tf.NewTokenProcessor()
 	pf := solana.NewPairsService(c, tf, solSvc, mRepo)
+	pf.NewPairProcessor()
+
 	sh := solana.NewSwapHandler(tf, pf)
 
 	txHandler := solana.NewTxHandler(sh, solSvc, mRepo, pRepo, websocketServer)

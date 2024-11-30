@@ -89,7 +89,7 @@ func (h *Handler) PnlHandler(w http.ResponseWriter, r *http.Request) {
 		var tokenAddress, quoteTokenSymbol, network, exchange string
 		swap := swapLogs[0]
 
-		if swap.Exchange == "PUMPFUN" {
+		if swap.Source == "PUMPFUN" {
 			quoteTokenLookup, err := h.tokenFinder.FindToken(ctx, "So11111111111111111111111111111111111111112")
 			if err != nil {
 				log.Println("Error finding token:", err)
@@ -144,7 +144,7 @@ func (h *Handler) PnlHandler(w http.ResponseWriter, r *http.Request) {
 		}
 
 		for _, swap := range swapLogs {
-			if swap.Type == "BUY" {
+			if swap.Action == "BUY" {
 				totalBuyVolume, _ := strconv.ParseFloat(info.TotalBuyVolume, 64)
 				info.TotalBuyVolume = fmt.Sprintf("%.20f", totalBuyVolume+swap.AmountOut)
 				totalBuyVolumeUSD, _ := strconv.ParseFloat(info.TotalBuyVolumeUSD, 64)
@@ -259,7 +259,7 @@ func (h *Handler) AggregatedPnlHandler(w http.ResponseWriter, r *http.Request) {
 			defer func() { <-sem }()
 
 			var quoteTokenSymbol string
-			if swapLogs[0].Exchange == "PUMPFUN" {
+			if swapLogs[0].Source == "PUMPFUN" {
 				quoteTokenSymbol = "SOL"
 			} else {
 				start := time.Now()
@@ -298,9 +298,9 @@ func (h *Handler) AggregatedPnlHandler(w http.ResponseWriter, r *http.Request) {
 			//price := 0.0
 
 			for _, swap := range swapLogs {
-				if swap.Type == "BUY" {
+				if swap.Action == "BUY" {
 					totalBuyAmount += swap.AmountOut
-				} else if swap.Type == "SELL" {
+				} else if swap.Action == "SELL" {
 					totalSellAmount += swap.AmountIn
 				}
 			}

@@ -5,6 +5,9 @@ import (
 	"context"
 	"fmt"
 	"github.com/blocto/solana-go-sdk/client"
+	"log"
+	"sync"
+	"time"
 )
 
 func NewPairsService(cache PairsCache, tf *TokenFinder, solSvc *SolanaService, repo PairsRepo) *PairsService {
@@ -13,6 +16,8 @@ func NewPairsService(cache PairsCache, tf *TokenFinder, solSvc *SolanaService, r
 		tokenFinder: tf,
 		solSvc:      solSvc,
 		repo:        repo,
+
+		processor: nil,
 	}
 }
 
@@ -96,6 +101,48 @@ func (ps *PairsService) lookupPair(ctx context.Context, address string, token_ *
 	}
 
 	return pair, nil
+}
+
+func (ps *PairsService) NewPairProcessor() {
+	ps.processor = &PairProcessor{
+		queue: make(chan PairProcessorQueue, 1000),
+		seen:  sync.Map{},
+		wg:    sync.WaitGroup{},
+	}
+
+	for i := 0; i < workers; i++ {
+		ps.processor.wg.Add(1)
+		go ps.worker(i)
+	}
+
+}
+
+func (ps *PairsService) worker(id int) {
+	defer ps.processor.wg.Done()
+
+	for pair := range ps.processor.queue {
+		timeOutCtx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+		_, _, _ = ps.FindPair(timeOutCtx, pair.address, pair.token)
+		cancel()
+		ps.processor.seen.Delete(pair.address)
+	}
+}
+
+func (ps *PairsService) AddToQueue(pair PairProcessorQueue) {
+	if ps.processor == nil {
+		return
+	}
+
+	if _, exists := ps.processor.seen.LoadOrStore(pair.address, struct{}{}); exists {
+		return
+	}
+
+	select {
+	case ps.processor.queue <- pair:
+	default:
+		ps.processor.seen.Delete(pair)
+		log.Printf("Queue is full! Pair %s discarded.", pair)
+	}
 }
 
 func identifyPair(owner string, accInfo client.AccountInfo, token_ *string) (string, string, string, string, error) {

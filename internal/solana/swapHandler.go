@@ -4,8 +4,6 @@ import (
 	"blocsy/internal/solana/dex"
 	"blocsy/internal/types"
 	"context"
-	"errors"
-	"log"
 	"math/big"
 	"time"
 )
@@ -22,7 +20,6 @@ func (sh *SwapHandler) HandleSwaps(ctx context.Context, transfers []types.SolTra
 		return []types.SwapLog{}
 	}
 	swaps := make([]types.SolSwap, 0)
-	source := "UNKNOWN"
 	accountKeys := getAllAccountKeys(tx)
 
 	processInstructionData := types.ProcessInstructionData{
@@ -50,6 +47,7 @@ func (sh *SwapHandler) HandleSwaps(ctx context.Context, transfers []types.SolTra
 		}
 
 		programId := accountKeys[instruction.ProgramIdIndex]
+		instructionSource := identifySource(programId)
 
 		processInstructionData.ProgramId = &programId
 		processInstructionData.Accounts = &accounts
@@ -60,6 +58,7 @@ func (sh *SwapHandler) HandleSwaps(ctx context.Context, transfers []types.SolTra
 
 		swap := processInstruction(processInstructionData)
 		if swap.Pair != "" || swap.TokenOut != "" || swap.TokenIn != "" {
+			swap.Source = instructionSource
 			swaps = append(swaps, swap)
 		}
 
@@ -87,6 +86,7 @@ func (sh *SwapHandler) HandleSwaps(ctx context.Context, transfers []types.SolTra
 
 			s := processInstruction(processInstructionData)
 			if s.Pair != "" && s.TokenOut != "" && s.TokenIn != "" {
+				s.Source = instructionSource
 				innerSwaps = append(innerSwaps, s)
 			}
 		}
@@ -97,10 +97,8 @@ func (sh *SwapHandler) HandleSwaps(ctx context.Context, transfers []types.SolTra
 	builtSwaps := make([]types.SwapLog, 0)
 	for _, swap := range swaps {
 		if swap.Wallet == "" || swap.Pair == "" {
-			//log.Printf("%s ~ missing ... swap: %+v", tx.Transaction.Signatures[0], swap)
 			continue
 		}
-		action := ""
 
 		amountOutFloat, ok := new(big.Float).SetString(swap.AmountOut)
 		if !ok || amountOutFloat.Cmp(big.NewFloat(0)) == 0 {
@@ -112,79 +110,41 @@ func (sh *SwapHandler) HandleSwaps(ctx context.Context, transfers []types.SolTra
 			continue
 		}
 
-		timeoutCtx, cancelCtx := context.WithTimeout(ctx, 30*time.Second)
-		defer cancelCtx()
-
-		var token_ *string
-
-		if swap.Exchange == "PUMPFUN" {
-			if swap.TokenOut == "So11111111111111111111111111111111111111112" {
-				token_ = &swap.TokenIn
-			} else {
-				token_ = &swap.TokenOut
-			}
-		}
-
-		pairDetails, _, err := sh.pf.FindPair(timeoutCtx, swap.Pair, token_)
-		if err != nil {
-			log.Printf("%s error finding pair: %v", tx.Transaction.Signatures[0], err)
-			if errors.Is(err, types.TokenNotFound) {
-				log.Println("pair not found:", err)
-			}
-			cancelCtx()
-			continue
-		}
-
-		quoteTokenAddress := pairDetails.QuoteToken.Address
-
-		_, err = sh.tf.FindToken(timeoutCtx, pairDetails.Token)
-		if err != nil {
-			log.Println("error finding token:", err)
-			cancelCtx()
-			continue
-		}
-		cancelCtx()
-
-		if swap.TokenOut == quoteTokenAddress {
-			action = "BUY"
-		} else {
-			action = "SELL"
-		}
-
 		amountOutF, _ := amountOutFloat.Float64()
 		amountInF, _ := amountInFloat.Float64()
 
-		price := 0.0
-		if action == "BUY" {
-			priceFloat := new(big.Float).Quo(amountOutFloat, amountInFloat)
-			price, _ = priceFloat.Float64()
-		} else {
-			priceFloat := new(big.Float).Quo(amountInFloat, amountOutFloat)
-			price, _ = priceFloat.Float64()
+		token := ""
+		action := ""
+		if _, found := QuoteTokens[swap.TokenOut]; found {
+			token = swap.TokenIn
+			action = "BUY"
+		} else if _, found := QuoteTokens[swap.TokenIn]; found {
+			token = swap.TokenOut
+			action = "SELL"
 		}
+
+		sh.tf.AddToQueue(token)
+		sh.pf.AddToQueue(PairProcessorQueue{address: swap.Pair, token: &token})
 
 		s := types.SwapLog{
 			ID:          tx.Transaction.Signatures[0],
 			Wallet:      swap.Wallet,
-			Network:     "solana",
-			Exchange:    source,
+			Source:      swap.Source,
 			BlockNumber: block,
-			BlockHash:   "",
 			Timestamp:   time.Unix(timestamp, 0),
-			Type:        action,
 			AmountOut:   amountOutF,
 			AmountIn:    amountInF,
-			Price:       price,
+			Action:      action,
 			Pair:        swap.Pair,
-			LogIndex:    "0",
+			Token:       token,
 			Processed:   false,
 		}
 		builtSwaps = append(builtSwaps, s)
 	}
 
-	if len(builtSwaps) == 0 {
-		log.Printf("No swaps found for tx: %s", tx.Transaction.Signatures[0])
-	}
+	//if len(builtSwaps) == 0 {
+	//	log.Printf("No swaps found for tx: %s", tx.Transaction.Signatures[0])
+	//}
 
 	return builtSwaps
 }
@@ -201,8 +161,6 @@ func processInstruction(instructionData types.ProcessInstructionData) types.SolS
 
 	accountsLen := len(*instructionData.Accounts)
 	programId := *instructionData.ProgramId
-
-	//log.Printf("Program ID: %s | %d", programId, accountsLen)
 
 	handler, exists := handlers[programId]
 	if !exists {
@@ -221,4 +179,23 @@ func processInstruction(instructionData types.ProcessInstructionData) types.SolS
 
 	return handler(instructionData)
 
+}
+
+func identifySource(programId string) string {
+	switch programId {
+	case RAYDIUM_LIQ_POOL_V4:
+		return "RAYDIUM"
+	case ORCA_WHIRL_PROGRAM_ID:
+		return "ORCA"
+	case METEORA_DLMM_PROGRAM:
+		return "METEORA"
+	case METEORA_POOLS_PROGRAM:
+		return "METEORA"
+	case PUMPFUN:
+		return "PUMPFUN"
+	case JUPITER_V6_AGGREGATOR:
+		return "JUPITER"
+	default:
+		return "UNKNOWN"
+	}
 }
