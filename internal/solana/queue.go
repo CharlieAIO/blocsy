@@ -21,7 +21,7 @@ func NewSolanaQueueHandler(txHandler *TxHandler, pRepo SwapsRepo) *SolanaQueueHa
 	qh := &SolanaQueueHandler{
 		txHandler: txHandler,
 		pRepo:     pRepo,
-		workers:   100,
+		workers:   200,
 	}
 	qh.connectToRabbitMQ()
 
@@ -110,7 +110,7 @@ func (qh *SolanaQueueHandler) ListenToSolanaQueue(ctx context.Context) {
 		qh.startWorker(i, ctx)
 	}
 
-	qh.setPrefetch(1000)
+	qh.setPrefetch(100)
 
 	q, err := qh.ch.QueueDeclare(
 		queueName,
