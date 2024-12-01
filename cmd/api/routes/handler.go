@@ -45,6 +45,7 @@ func (h *Handler) GetHttpHandler() http.Handler {
 		r.Use(RateLimitMiddleware)
 
 		r.Get("/pair/{pair}", h.PairLookupHandler)
+		r.Get("/token/{token}", h.TokenLookupHandler)
 
 		r.Get("/find-swap/{token}/{amount}/{timestamp}", h.FindSwapHandler)
 
