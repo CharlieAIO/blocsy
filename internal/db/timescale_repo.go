@@ -172,7 +172,8 @@ func (repo *TimescaleRepository) GetSwapsOnDate(ctx context.Context, wallet stri
 
 func (repo *TimescaleRepository) FindSwap(ctx context.Context, timestamp int64, token string, amount float64) (*types.SwapLog, error) {
 	var query = fmt.Sprintf(`SELECT * FROM "%s" 
-WHERE token = ? AND "amountOut" = ? 
+WHERE token = ?
+AND ABS("amountOut"-?) <= 0.001
 AND ABS(EXTRACT(EPOCH FROM timestamp) - ?) <= 3 
 AND EXTRACT(EPOCH FROM timestamp) < ?
 ORDER BY timestamp DESC LIMIT 1;`, swapLogTable)
