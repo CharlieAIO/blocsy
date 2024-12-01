@@ -21,5 +21,5 @@ type PriceTrackers interface {
 type SwapsRepo interface {
 	GetAllWalletSwaps(ctx context.Context, wallet string) ([]types.SwapLog, error)
 	GetSwapsOnDate(ctx context.Context, wallet string, startDate time.Time) ([]types.SwapLog, error)
-	FindSwap(ctx context.Context, timestamp int64, pairs []string, amount float64) (*types.SwapLog, error)
+	FindSwap(ctx context.Context, timestamp int64, token string, amount float64) (*types.SwapLog, error)
 }
