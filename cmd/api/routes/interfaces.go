@@ -7,7 +7,7 @@ import (
 )
 
 type SolanaTokenFinder interface {
-	FindToken(ctx context.Context, address string) (*types.Token, error)
+	FindToken(ctx context.Context, address string, miss bool) (*types.Token, *[]types.Pair, error)
 }
 
 type SolanaPairFinder interface {
@@ -21,4 +21,5 @@ type PriceTrackers interface {
 type SwapsRepo interface {
 	GetAllWalletSwaps(ctx context.Context, wallet string) ([]types.SwapLog, error)
 	GetSwapsOnDate(ctx context.Context, wallet string, startDate time.Time) ([]types.SwapLog, error)
+	FindSwap(ctx context.Context, timestamp int64, pairs []string, amount float64) (*types.SwapLog, error)
 }

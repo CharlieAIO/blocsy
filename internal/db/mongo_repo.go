@@ -128,7 +128,7 @@ func (repo *MongoRepository) LookupByPair(ctx context.Context, address string, n
 		return types.Pair{}, types.Token{}, types.QuoteToken{}, nil
 	}
 
-	token, err := tf.FindToken(ctx, pairs[0].Token)
+	token, _, err := tf.FindToken(ctx, pairs[0].Token, false)
 	if err != nil {
 		return types.Pair{}, types.Token{}, types.QuoteToken{}, fmt.Errorf("cannot find token: %w", err)
 	}
@@ -138,7 +138,7 @@ func (repo *MongoRepository) LookupByPair(ctx context.Context, address string, n
 		return types.Pair{}, types.Token{}, types.QuoteToken{}, nil
 	}
 
-	quoteToken, err := tf.FindToken(ctx, pairs[0].QuoteToken.Address)
+	quoteToken, _, err := tf.FindToken(ctx, pairs[0].QuoteToken.Address, false)
 	if err != nil {
 		return types.Pair{}, types.Token{}, types.QuoteToken{}, fmt.Errorf("cannot find quote token: %w", err)
 	}

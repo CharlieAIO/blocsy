@@ -22,32 +22,32 @@ func NewTokenFinder(cache TockenCache, solSvc *SolanaService, repo TokensRepo) *
 	}
 }
 
-func (tf *TokenFinder) FindToken(ctx context.Context, address string) (*types.Token, error) {
+func (tf *TokenFinder) FindToken(ctx context.Context, address string, miss bool) (*types.Token, *[]types.Pair, error) {
 	cachedToken, ok := tf.cache.GetToken(address)
-	if ok {
-		return cachedToken, nil
+	if ok && !miss {
+		return cachedToken, nil, nil
 	}
 
-	token, _, err := tf.repo.LookupByToken(ctx, address, "solana")
+	token, pairs, err := tf.repo.LookupByToken(ctx, address, "solana")
 	if err != nil {
-		return nil, fmt.Errorf("failed to lookup repo token: %w", err)
+		return nil, nil, fmt.Errorf("failed to lookup repo token: %w", err)
 	}
 
 	if token.Address != "" {
 		tf.cache.PutToken(token.Address, token)
-		return &token, nil
+		return &token, &pairs, nil
 	}
 
 	newToken, err := tf.lookupToken(ctx, address)
 	if err != nil {
-		return nil, fmt.Errorf("failed to lookup token: %w", err)
+		return nil, nil, fmt.Errorf("failed to lookup token: %w", err)
 	}
 
 	if err := tf.repo.StoreToken(ctx, *newToken); err != nil {
-		return nil, fmt.Errorf("failed to store token: %w", err)
+		return nil, nil, fmt.Errorf("failed to store token: %w", err)
 	}
 
-	return newToken, nil
+	return newToken, &pairs, nil
 
 }
 
@@ -118,7 +118,7 @@ func (tf *TokenFinder) worker(id int) {
 
 	for token := range tf.processor.queue {
 		timeOutCtx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
-		_, _ = tf.FindToken(timeOutCtx, token)
+		_, _, _ = tf.FindToken(timeOutCtx, token, false)
 		cancel()
 		tf.processor.seen.Delete(token)
 	}

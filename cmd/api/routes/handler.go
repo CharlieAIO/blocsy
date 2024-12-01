@@ -46,6 +46,8 @@ func (h *Handler) GetHttpHandler() http.Handler {
 
 		r.Get("/pair/{pair}", h.PairLookupHandler)
 
+		r.Get("/find-swap/{token}/{amount}/{timestamp}", h.FindSwapHandler)
+
 		r.Get("/pnl-aggregated/{wallet}", h.AggregatedPnlHandler)
 		r.Get("/pnl/{wallet}", h.PnlHandler)
 	})

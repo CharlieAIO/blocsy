@@ -55,7 +55,7 @@ func (ps *PairsService) FindPair(ctx context.Context, address string, token_ *st
 		return nil, nil, fmt.Errorf("unsupported quote token: %s", pair.QuoteToken.Address)
 	}
 
-	quoteTokenLookup, err := ps.tokenFinder.FindToken(ctx, pair.QuoteToken.Address)
+	quoteTokenLookup, _, err := ps.tokenFinder.FindToken(ctx, pair.QuoteToken.Address, false)
 	if err != nil {
 		return nil, nil, fmt.Errorf("failed to find quote token: %w", err)
 	}

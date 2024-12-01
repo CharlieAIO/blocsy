@@ -90,7 +90,7 @@ func (h *Handler) PnlHandler(w http.ResponseWriter, r *http.Request) {
 		swap := swapLogs[0]
 
 		if swap.Source == "PUMPFUN" {
-			quoteTokenLookup, err := h.tokenFinder.FindToken(ctx, "So11111111111111111111111111111111111111112")
+			quoteTokenLookup, _, err := h.tokenFinder.FindToken(ctx, "So11111111111111111111111111111111111111112", false)
 			if err != nil {
 				log.Println("Error finding token:", err)
 				continue
@@ -111,7 +111,7 @@ func (h *Handler) PnlHandler(w http.ResponseWriter, r *http.Request) {
 				continue
 			}
 
-			quoteTokenLookup, err := h.tokenFinder.FindToken(ctx, pairLookup.QuoteToken.Address)
+			quoteTokenLookup, _, err := h.tokenFinder.FindToken(ctx, pairLookup.QuoteToken.Address, false)
 			if err != nil {
 				log.Println("Error finding token:", err)
 				continue

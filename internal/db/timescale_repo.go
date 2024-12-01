@@ -3,6 +3,7 @@ package db
 import (
 	"blocsy/internal/types"
 	"context"
+	"database/sql"
 	"fmt"
 	"github.com/jmoiron/sqlx"
 	"log"
@@ -35,6 +36,36 @@ func (repo *TimescaleRepository) MarkBlockProcessed(ctx context.Context, blockNu
 	}
 
 	return nil
+}
+
+func (repo *TimescaleRepository) FindMissingBlocks(ctx context.Context) ([][]int, error) {
+	var query = fmt.Sprintf(`SELECT DISTINCT "blockNumber" FROM "%s" ORDER BY "blockNumber";`, blocksTable)
+
+	var blockNumbers []int
+	if err := repo.db.SelectContext(ctx, &blockNumbers, query); err != nil {
+		return nil, fmt.Errorf("cannot get block numbers: %w", err)
+	}
+
+	if len(blockNumbers) == 0 {
+		return nil, nil
+	}
+
+	if blockNumbers[0] == 0 {
+		blockNumbers = blockNumbers[1:]
+	}
+
+	var missingBlockRanges [][]int
+	for i := 1; i < len(blockNumbers); i++ {
+		gap := blockNumbers[i] - blockNumbers[i-1] - 1
+		if gap > 0 {
+			missingBlockRanges = append(missingBlockRanges, []int{
+				blockNumbers[i-1] + 1,
+				blockNumbers[i] - 1,
+			})
+		}
+	}
+
+	return missingBlockRanges, nil
 }
 
 //=============================================== Swap Table Functions  ================================================
@@ -139,34 +170,31 @@ func (repo *TimescaleRepository) GetSwapsOnDate(ctx context.Context, wallet stri
 	return swaps, nil
 }
 
-func (repo *TimescaleRepository) FindMissingBlocks(ctx context.Context) ([][]int, error) {
-	var query = fmt.Sprintf(`SELECT DISTINCT "blockNumber" FROM "%s" ORDER BY "blockNumber";`, blocksTable)
+func (repo *TimescaleRepository) FindSwap(ctx context.Context, timestamp int64, pairs []string, amount float64) (*types.SwapLog, error) {
+	query := `SELECT * FROM swap_log_new 
+WHERE pair IN (?) AND "amountOut" = ? 
+AND ABS(EXTRACT(EPOCH FROM timestamp) - ?) <= 3 
+AND EXTRACT(EPOCH FROM timestamp) < ?
+ORDER BY timestamp DESC LIMIT 1;`
 
-	var blockNumbers []int
-	if err := repo.db.SelectContext(ctx, &blockNumbers, query); err != nil {
-		return nil, fmt.Errorf("cannot get block numbers: %w", err)
+	query, args, err := sqlx.In(query, pairs, amount, timestamp, timestamp)
+	if err != nil {
+		return nil, fmt.Errorf("cannot build query: %w", err)
 	}
 
-	if len(blockNumbers) == 0 {
-		return nil, nil
-	}
+	query = repo.db.Rebind(query)
 
-	if blockNumbers[0] == 0 {
-		blockNumbers = blockNumbers[1:]
-	}
-
-	var missingBlockRanges [][]int
-	for i := 1; i < len(blockNumbers); i++ {
-		gap := blockNumbers[i] - blockNumbers[i-1] - 1
-		if gap > 0 {
-			missingBlockRanges = append(missingBlockRanges, []int{
-				blockNumbers[i-1] + 1,
-				blockNumbers[i] - 1,
-			})
+	var swap types.SwapLog
+	err = repo.db.GetContext(ctx, &swap, query, args...)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			// No swap found
+			return nil, nil
 		}
+		return nil, fmt.Errorf("cannot get swap: %w", err)
 	}
 
-	return missingBlockRanges, nil
+	return &swap, nil
 }
 
 //=============================================== Create Tables  =======================================================
