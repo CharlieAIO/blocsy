@@ -198,6 +198,20 @@ ORDER BY timestamp DESC LIMIT 1;`, swapLogTable)
 	return &swap, nil
 }
 
+func (repo *TimescaleRepository) FindFirstTokenSwaps(ctx context.Context, token string) ([]types.SwapLog, error) {
+	var query = fmt.Sprintf(`SELECT * FROM "%s" 
+WHERE token = ?
+ORDER BY timestamp ASC LIMIT 100;`, swapLogTable)
+
+	var swaps []types.SwapLog
+	if err := repo.db.SelectContext(ctx, &swaps, query, token); err != nil {
+		return nil, fmt.Errorf("cannot get swaps: %w", err)
+	}
+
+	return swaps, nil
+
+}
+
 //=============================================== Create Tables  =======================================================
 
 func CreateProcessedBlocksTable(ctx context.Context, db *sqlx.DB) {

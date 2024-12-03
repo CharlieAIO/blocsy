@@ -61,7 +61,7 @@ func TestSwapHandler(t *testing.T) {
 
 }
 
-func txTest(ctx context.Context, node *solana.Node, sh *solana.SwapHandler, t *testing.T) {
+func txTest(ctx context.Context, node *Node, sh *solana.SwapHandler, t *testing.T) {
 	return
 	const signature = "DB7onVtvwm9GKt9gezSmCZEVUhvFcTjNGu5K6uNRdySg3cg8F9YimH8R8EpcQyS2sc1SRFhLwydCSBNxxdL5An8"
 
@@ -75,7 +75,7 @@ func txTest(ctx context.Context, node *solana.Node, sh *solana.SwapHandler, t *t
 	log.Printf("Swaps: %+v", swaps)
 }
 
-func blockTest(ctx context.Context, node *solana.Node, txHandler *solana.TxHandler, t *testing.T) {
+func blockTest(ctx context.Context, node *Node, txHandler *solana.TxHandler, t *testing.T) {
 	//return
 	const blockNum = 304413401
 

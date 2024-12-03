@@ -55,23 +55,17 @@ func FindAccountKeyIndex(keyMap map[string]int, key string) (int, bool) {
 	return -1, false
 }
 
-type LogDetails struct {
-	Program string
-	Logs    []string
-	SubLogs []LogDetails
-}
-
-func GetLogs(logs []string) []LogDetails {
-	details := make([]LogDetails, 0)
-	var current LogDetails
-	var stack []LogDetails
+func GetLogs(logs []string) []types.LogDetails {
+	details := make([]types.LogDetails, 0)
+	var current types.LogDetails
+	var stack []types.LogDetails
 
 	for _, l := range logs {
 		if strings.Contains(l, "invoke") {
 			if current.Program != "" {
 				stack = append(stack, current)
 			}
-			current = LogDetails{
+			current = types.LogDetails{
 				Program: strings.Fields(l)[1],
 			}
 		} else if strings.Contains(l, "Program log:") {
@@ -84,7 +78,7 @@ func GetLogs(logs []string) []LogDetails {
 				current = parent
 			} else {
 				details = append(details, current)
-				current = LogDetails{}
+				current = types.LogDetails{}
 			}
 		}
 	}

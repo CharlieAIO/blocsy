@@ -8,10 +8,12 @@ import (
 	"blocsy/internal/trackers"
 	"blocsy/internal/utils"
 	"context"
+	"fmt"
 	"log"
 	"net/http"
 	"os"
 	"os/signal"
+	"strings"
 	"time"
 )
 
@@ -50,7 +52,19 @@ func main() {
 	tf := solana.NewTokenFinder(c, solSvc, mRepo)
 	pf := solana.NewPairsService(c, tf, solSvc, mRepo)
 
-	handler := routes.NewHandler(pt, tf, pf, swapsRepo).GetHttpHandler()
+	var nodes []routes.Node
+
+	if os.Getenv("SOL_HTTPS_BACKFILL_NODES") != "" {
+		nodeUrls := strings.Split(os.Getenv("SOL_HTTPS_BACKFILL_NODES"), ",")
+		for i, url := range nodeUrls {
+			//nodes = solana.NewNode(fmt.Sprintf("node %d", i), url)
+			nodes = append(nodes, solana.NewNode(fmt.Sprintf("node %d", i), url))
+		}
+	} else {
+		log.Fatalf("No nodes provided")
+	}
+
+	handler := routes.NewHandler(pt, tf, pf, swapsRepo, nodes).GetHttpHandler()
 
 	srv := &http.Server{
 		Addr:    ":8080",

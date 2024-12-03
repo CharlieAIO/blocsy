@@ -22,4 +22,10 @@ type SwapsRepo interface {
 	GetAllWalletSwaps(ctx context.Context, wallet string) ([]types.SwapLog, error)
 	GetSwapsOnDate(ctx context.Context, wallet string, startDate time.Time) ([]types.SwapLog, error)
 	FindSwap(ctx context.Context, timestamp int64, token string, amount float64) (*types.SwapLog, error)
+	FindFirstTokenSwaps(ctx context.Context, token string) ([]types.SwapLog, error)
+}
+
+type Node interface {
+	GetTx(ctx context.Context, hash string) (*types.SolanaTx, error)
+	GetParsedLogs(rawLogs []string) []types.LogDetails
 }

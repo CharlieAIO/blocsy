@@ -13,14 +13,17 @@ type Handler struct {
 	tokenFinder SolanaTokenFinder
 	pairFinder  SolanaPairFinder
 	swapsRepo   SwapsRepo
+	nodes       []Node
 }
 
-func NewHandler(pricer PriceTrackers, tokenFinder SolanaTokenFinder, pairFinder SolanaPairFinder, swapsRepo SwapsRepo) *Handler {
+func NewHandler(pricer PriceTrackers, tokenFinder SolanaTokenFinder, pairFinder SolanaPairFinder, swapsRepo SwapsRepo, nodes []Node) *Handler {
+
 	return &Handler{
 		pricer:      pricer,
 		tokenFinder: tokenFinder,
 		pairFinder:  pairFinder,
 		swapsRepo:   swapsRepo,
+		nodes:       nodes,
 	}
 }
 

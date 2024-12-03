@@ -24,6 +24,10 @@ func NewNode(name string, url string) *Node {
 	}
 }
 
+func (n *Node) GetParsedLogs(rawLogs []string) []types.LogDetails {
+	return GetLogs(rawLogs)
+}
+
 func (n *Node) GetBlockMessage(ctx context.Context, blockNumber int) (*types.HTTPBlockMessage, error) {
 	payload := fmt.Sprintf(`{
         "jsonrpc": "2.0",

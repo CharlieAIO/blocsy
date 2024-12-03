@@ -79,15 +79,15 @@ type SolanaQueueHandler struct {
 	workerPool map[int]context.CancelFunc
 }
 
+type SwapHandler struct {
+	tf SolanaTokenFinder
+	pf SolanaPairFinder
+}
+
 type Node struct {
 	name    string
 	url     string
 	cli     *http.Client
 	counter atomic.Int64
 	timings atomic.Int64
-}
-
-type SwapHandler struct {
-	tf SolanaTokenFinder
-	pf SolanaPairFinder
 }

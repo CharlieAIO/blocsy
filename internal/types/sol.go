@@ -6,6 +6,12 @@ import (
 	jlexer "github.com/mailru/easyjson/jlexer"
 )
 
+type LogDetails struct {
+	Program string
+	Logs    []string
+	SubLogs []LogDetails
+}
+
 //easyjson:json
 type BlockData struct {
 	Transactions []SolanaTx `json:"transactions"`
