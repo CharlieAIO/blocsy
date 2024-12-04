@@ -200,8 +200,9 @@ ORDER BY timestamp DESC LIMIT 1;`, swapLogTable)
 
 func (repo *TimescaleRepository) FindFirstTokenSwaps(ctx context.Context, token string) ([]types.SwapLog, error) {
 	var query = fmt.Sprintf(`SELECT * FROM "%s" 
-WHERE token = ?
-ORDER BY timestamp ASC LIMIT 100;`, swapLogTable)
+WHERE token = $1
+ORDER BY timestamp ASC 
+LIMIT 100;`, swapLogTable)
 
 	var swaps []types.SwapLog
 	if err := repo.db.SelectContext(ctx, &swaps, query, token); err != nil {

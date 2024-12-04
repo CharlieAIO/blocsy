@@ -4,6 +4,7 @@ import (
 	"blocsy/internal/types"
 	"encoding/json"
 	"github.com/go-chi/chi/v5"
+	"log"
 	"net/http"
 	"strings"
 )
@@ -47,8 +48,10 @@ func (h *Handler) CheckBundledHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	log.Printf("Checking bundled for token: %s", address)
 	swaps, err := h.swapsRepo.FindFirstTokenSwaps(ctx, address)
 	if err != nil || len(swaps) == 0 {
+		log.Printf("Error finding swaps: %v", err)
 		http.Error(w, "swap history not found", http.StatusInternalServerError)
 		return
 	}
