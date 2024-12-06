@@ -22,6 +22,7 @@ func validateTX(tx *types.SolanaTx) bool {
 			key == METEORA_DLMM_PROGRAM ||
 			key == METEORA_POOLS_PROGRAM ||
 			key == RAYDIUM_LIQ_POOL_V4 ||
+			key == TOKEN_PROGRAM ||
 			key == ORCA_WHIRL_PROGRAM_ID {
 			return true
 		}

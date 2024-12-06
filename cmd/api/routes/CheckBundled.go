@@ -42,7 +42,7 @@ func (h *Handler) CheckBundledHandler(w http.ResponseWriter, r *http.Request) {
 
 	address := chi.URLParam(r, "token")
 
-	_, _, err := h.tokenFinder.FindToken(ctx, address, false)
+	token, _, err := h.tokenFinder.FindToken(ctx, address, false)
 	if err != nil {
 		http.Error(w, "token not found", http.StatusInternalServerError)
 		return
@@ -68,27 +68,31 @@ func (h *Handler) CheckBundledHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var hasTokenCreation bool
-	for _, swap := range firstBlockSwaps {
+	var tokenCreation = -1
+	for indx, swap := range firstBlockSwaps {
 		tx, err := h.nodes[0].GetTx(ctx, swap.ID)
 		if err != nil {
 			return
 		}
 		parsedLogs := h.nodes[0].GetParsedLogs(tx.Meta.LogMessages)
 		if isTokenCreation(parsedLogs) {
-			hasTokenCreation = true
+			tokenCreation = indx
 			break
 		}
 	}
 
-	if !hasTokenCreation {
+	if tokenCreation == -1 {
 		http.Error(w, "not bundled", http.StatusInternalServerError)
 		return
 	}
 
+	// remove token creation from first block swaps
+	firstBlockSwaps = append(firstBlockSwaps[:tokenCreation], firstBlockSwaps[tokenCreation+1:]...)
+
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(map[string]interface{}{
 		"results": firstBlockSwaps,
+		"token":   token,
 	})
 	return
 

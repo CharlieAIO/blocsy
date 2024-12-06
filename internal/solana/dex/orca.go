@@ -4,7 +4,7 @@ import (
 	"blocsy/internal/types"
 )
 
-func HandleOrcaSwaps(instructionData types.ProcessInstructionData) types.SolSwap {
+func HandleOrcaSwaps(instructionData *types.ProcessInstructionData) types.SolSwap {
 	if len(*instructionData.Accounts) < 3 || len(instructionData.AccountKeys) < (*instructionData.Accounts)[2] {
 		return types.SolSwap{}
 	}
@@ -18,6 +18,9 @@ func HandleOrcaSwaps(instructionData types.ProcessInstructionData) types.SolSwap
 	if !ok {
 		return types.SolSwap{}
 	}
+
+	instructionData.Transfers = removeTransfer(instructionData.Transfers, *instructionData.InnerIndex)
+	//instructionData.Transfers = removeTransfer(instructionData.Transfers, transfer2)
 
 	pair := ""
 	if len(*instructionData.Accounts) == 15 {

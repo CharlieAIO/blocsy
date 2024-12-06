@@ -2,7 +2,7 @@ package dex
 
 import "blocsy/internal/types"
 
-func HandleMeteoraSwaps(instructionData types.ProcessInstructionData) types.SolSwap {
+func HandleMeteoraSwaps(instructionData *types.ProcessInstructionData) types.SolSwap {
 	if len(*instructionData.Accounts) == 0 || len(instructionData.AccountKeys) < (*instructionData.Accounts)[0] {
 		return types.SolSwap{}
 	}
@@ -36,6 +36,9 @@ func HandleMeteoraSwaps(instructionData types.ProcessInstructionData) types.SolS
 			return types.SolSwap{}
 		}
 	}
+
+	instructionData.Transfers = removeTransfer(instructionData.Transfers, *instructionData.InnerIndex)
+	//instructionData.Transfers = removeTransfer(instructionData.Transfers, transfer2)
 
 	s := types.SolSwap{
 		Pair:      instructionData.AccountKeys[(*instructionData.Accounts)[0]],

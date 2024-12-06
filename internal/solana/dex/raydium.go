@@ -168,7 +168,7 @@ func parseRayLogs(logs []string) []types.RaySwapLog {
 //
 //}
 
-func HandleRaydiumSwaps(instructionData types.ProcessInstructionData) types.SolSwap {
+func HandleRaydiumSwaps(instructionData *types.ProcessInstructionData) types.SolSwap {
 
 	if len(*instructionData.Accounts) < 2 || len(instructionData.AccountKeys) < (*instructionData.Accounts)[1] {
 		return types.SolSwap{}
@@ -183,10 +183,15 @@ func HandleRaydiumSwaps(instructionData types.ProcessInstructionData) types.SolS
 	if !ok {
 		return types.SolSwap{}
 	}
+	instructionData.Transfers = removeTransfer(instructionData.Transfers, *instructionData.InnerIndex)
 
-	wallet := transfer1.FromUserAccount
-	if wallet == "" {
-		wallet = transfer2.ToUserAccount
+	//wallet := transfer1.FromUserAccount
+	//if wallet == "" {
+	//	wallet = transfer2.ToUserAccount
+	//}
+	wallet := instructionData.AccountKeys[(*instructionData.Accounts)[16]]
+	if len(*instructionData.Accounts) == 18 {
+		wallet = instructionData.AccountKeys[(*instructionData.Accounts)[17]]
 	}
 
 	s := types.SolSwap{

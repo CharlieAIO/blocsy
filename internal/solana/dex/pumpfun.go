@@ -13,7 +13,7 @@ import (
 
 const TRADE_EVENT_DISCRIMINATOR = "bddb7fd34ee661ee"
 
-func HandlePumpFunSwaps(instructionData types.ProcessInstructionData) types.SolSwap {
+func HandlePumpFunSwaps(instructionData *types.ProcessInstructionData) types.SolSwap {
 
 	if len(*instructionData.Accounts) < 4 || len(instructionData.AccountKeys) < (*instructionData.Accounts)[3] {
 		log.Printf("Not enough accounts for PUMPFUN swap")
@@ -75,6 +75,8 @@ func HandlePumpFunSwaps(instructionData types.ProcessInstructionData) types.SolS
 	if !ok || amountInFloat.Cmp(big.NewFloat(0)) == 0 {
 		return types.SolSwap{}
 	}
+
+	instructionData.Transfers = removeTransfer(instructionData.Transfers, *instructionData.InnerIndex)
 
 	amountOutFloat.Quo(amountOutFloat, new(big.Float).SetFloat64(math.Pow10(tokenOutDecimals)))
 	amountInFloat.Quo(amountInFloat, new(big.Float).SetFloat64(math.Pow10(tokenInDecimals)))
