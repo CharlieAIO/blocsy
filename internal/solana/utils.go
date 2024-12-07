@@ -69,7 +69,7 @@ func GetLogs(logs []string) []types.LogDetails {
 			current = types.LogDetails{
 				Program: strings.Fields(l)[1],
 			}
-		} else if strings.Contains(l, "Program log:") {
+		} else if strings.Contains(l, "Program log:") || strings.Contains(l, "Program data:") {
 			current.Logs = append(current.Logs, l)
 		} else if strings.Contains(l, "success") {
 			if len(stack) > 0 {

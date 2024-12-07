@@ -461,6 +461,23 @@ func (m *PumpFunSwap) Decode(in []byte) error {
 	return nil
 }
 
+type PumpFunCreation struct {
+	Name         string           `json:"name,string"`
+	Symbol       string           `json:"symbol,string"`
+	Uri          string           `json:"uri,string"`
+	Mint         common.PublicKey `json:"mint"`
+	BondingCurve common.PublicKey `json:"bondingCurve"`
+	User         common.PublicKey `json:"user"`
+}
+
+func (m *PumpFunCreation) Decode(in []byte) error {
+	decoder := bin.NewBorshDecoder(in[8:])
+	if err := decoder.Decode(&m); err != nil {
+		return nil
+	}
+	return nil
+}
+
 type RaySwapBaseIn struct {
 	LogType          uint8  `json:"logType"`
 	AmountIn         uint64 `json:"amountIn"`

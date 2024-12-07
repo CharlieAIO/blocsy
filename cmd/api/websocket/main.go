@@ -12,17 +12,24 @@ import (
 	"time"
 )
 
+type Client struct {
+	ClientType string   `json:"clientType"`
+	Wallets    []string `json:"wallets"`
+}
+
 type WebSocketServer struct {
-	clients   map[*websocket.Conn][]string
-	broadcast chan []byte
-	upgrader  websocket.Upgrader
-	mu        sync.Mutex
+	clients           map[*websocket.Conn]Client
+	broadcastSwaps    chan []byte
+	broadcastPFTokens chan []byte
+	upgrader          websocket.Upgrader
+	mu                sync.Mutex
 }
 
 func NewWebSocketServer() *WebSocketServer {
 	return &WebSocketServer{
-		clients:   make(map[*websocket.Conn][]string),
-		broadcast: make(chan []byte),
+		clients:           make(map[*websocket.Conn]Client),
+		broadcastSwaps:    make(chan []byte),
+		broadcastPFTokens: make(chan []byte),
 		upgrader: websocket.Upgrader{
 			ReadBufferSize:  1024,
 			WriteBufferSize: 1024,
@@ -48,7 +55,7 @@ func (ws *WebSocketServer) handleConnections(w http.ResponseWriter, r *http.Requ
 	}()
 
 	ws.mu.Lock()
-	ws.clients[conn] = []string{}
+	ws.clients[conn] = Client{}
 	ws.mu.Unlock()
 
 	go func() {
@@ -68,12 +75,15 @@ func (ws *WebSocketServer) handleConnections(w http.ResponseWriter, r *http.Requ
 			break
 		}
 
-		var wallets []string
-		if err := json.Unmarshal(message, &wallets); err == nil {
+		var clientData Client
+		if err := json.Unmarshal(message, &clientData); err == nil {
+			if !validateClientType(clientData.ClientType) {
+				log.Printf("Invalid client type from client %v: %v", conn.RemoteAddr(), clientData.ClientType)
+				break
+			}
 			ws.mu.Lock()
-			ws.clients[conn] = wallets
+			ws.clients[conn] = clientData
 			ws.mu.Unlock()
-			log.Printf("Client %v subscribed to wallets: %v", conn.RemoteAddr(), wallets)
 		} else {
 			log.Printf("Failed to parse wallets from client %v: %v", conn.RemoteAddr(), err)
 		}
@@ -82,28 +92,48 @@ func (ws *WebSocketServer) handleConnections(w http.ResponseWriter, r *http.Requ
 
 func (ws *WebSocketServer) handleMessages() {
 	for {
-		message := <-ws.broadcast
+		messageSwaps := <-ws.broadcastSwaps
 		var swaps []types.SwapLog
-
-		if err := json.Unmarshal(message, &swaps); err != nil {
+		if err := json.Unmarshal(messageSwaps, &swaps); err != nil {
 			log.Printf("Failed to unmarshal swap message: %v", err)
 			continue
 		}
 
+		messagePFTokens := <-ws.broadcastPFTokens
+		var tokens []types.PumpFunCreation
+		if err := json.Unmarshal(messagePFTokens, &tokens); err != nil {
+			log.Printf("Failed to unmarshal pf tokens message: %v", err)
+			continue
+		}
+
 		ws.mu.Lock()
-		for client, wallets := range ws.clients {
-			for _, swap := range swaps {
-				if ws.isRelevantTransaction(swap, wallets) {
-					if err := client.WriteMessage(websocket.TextMessage, message); err != nil {
-						log.Printf("Failed to write message to client: %v", err)
-						delete(ws.clients, client)
-						break
+		for client, clientData := range ws.clients {
+			if clientData.ClientType == "wallet" {
+				for _, swap := range swaps {
+					if ws.isRelevantTransaction(swap, clientData.Wallets) {
+						if err := client.WriteMessage(websocket.TextMessage, messageSwaps); err != nil {
+							log.Printf("Failed to write message to client: %v", err)
+							delete(ws.clients, client)
+							break
+						}
 					}
 				}
 			}
+			if clientData.ClientType == "pf-tokens" {
+				if err := client.WriteMessage(websocket.TextMessage, messagePFTokens); err != nil {
+					log.Printf("Failed to write message to client: %v", err)
+					delete(ws.clients, client)
+					break
+				}
+			}
+
 		}
 		ws.mu.Unlock()
 	}
+}
+
+func validateClientType(clientType string) bool {
+	return clientType == "wallet" || clientType == "pf-tokens"
 }
 
 func (ws *WebSocketServer) isRelevantTransaction(swap types.SwapLog, wallets []string) bool {
@@ -121,7 +151,16 @@ func (ws *WebSocketServer) BroadcastSwaps(swaps []types.SwapLog) {
 		log.Printf("Failed to marshal swap: %v", err)
 		return
 	}
-	ws.broadcast <- message
+	ws.broadcastSwaps <- message
+}
+
+func (ws *WebSocketServer) BroadcastPumpFunTokens(tokens []types.PumpFunCreation) {
+	message, err := json.Marshal(tokens)
+	if err != nil {
+		log.Printf("Failed to marshal pf tokens: %v", err)
+		return
+	}
+	ws.broadcastPFTokens <- message
 }
 
 func (ws *WebSocketServer) RegisterRoutes(r chi.Router) {

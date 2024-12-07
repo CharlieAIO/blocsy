@@ -64,16 +64,13 @@ func TestSwapHandler(t *testing.T) {
 func txTest(ctx context.Context, node *solana.Node, sh *solana.SwapHandler, t *testing.T) {
 	//return
 	//const signature = "3Ry66VFMKtLUxwG1FFbAdz2RMZbxdwmDGXjMmtkWcA2PKTuVuQhU8RVMZUw1duciR8eeZLYHYD5tGCy5LVz1wa4f"
-	const signature = "2pxpG7AL94Mqf82YGF2zzD6LPvVKULqwWZSSKUjEZLh2ENo1aJjw2gSzm1Qp5JCpjNkEYat6n2yMsahwMP1ZFJTN"
+	const signature = "C3dEWX9JVVrokjPbbjNX3WntzUbJMQYxKS4J5yio9unyVDxUrzKacgqdPDNkJi5rR9H1UjEWLvEdV7hzPYHwcdg"
 	tx, err := node.GetTx(ctx, signature)
 	if err != nil {
 		t.Fatalf("Error getting tx: %v", err)
 	}
-
 	transfers := solana.GetAllTransfers(tx)
-	for _, tf := range transfers {
-		log.Printf("Transfer: %+v", tf)
-	}
+
 	swaps := sh.HandleSwaps(ctx, transfers, tx, 0, 0)
 	log.Printf("Swaps: %+v", swaps)
 }
