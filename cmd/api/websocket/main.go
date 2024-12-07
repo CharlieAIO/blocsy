@@ -141,12 +141,7 @@ func (ws *WebSocketServer) broadcastPFTokensToClients(messagePFTokens []byte) {
 
 	for client, clientData := range ws.clients {
 		if clientData.ClientType == "pf-tokens" {
-			message, err := json.Marshal(messagePFTokens)
-			if err != nil {
-				log.Printf("Failed to marshal relevant swaps: %v", err)
-				continue
-			}
-			if err := client.WriteMessage(websocket.TextMessage, message); err != nil {
+			if err := client.WriteMessage(websocket.TextMessage, messagePFTokens); err != nil {
 				log.Printf("Failed to write message to client: %v", err)
 				delete(ws.clients, client)
 			}
