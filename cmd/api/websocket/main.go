@@ -76,73 +76,77 @@ func (ws *WebSocketServer) handleConnections(w http.ResponseWriter, r *http.Requ
 		}
 
 		var clientData Client
-		if err := json.Unmarshal(message, &clientData); err == nil {
-			if !validateClientType(clientData.ClientType) {
-				log.Printf("Invalid client type from client %v: %v", conn.RemoteAddr(), clientData.ClientType)
-				break
-			}
-			ws.mu.Lock()
-			ws.clients[conn] = clientData
-			ws.mu.Unlock()
-		} else {
-			log.Printf("Failed to parse wallets from client %v: %v", conn.RemoteAddr(), err)
+		if err := json.Unmarshal(message, &clientData); err != nil {
+			log.Printf("Failed to parse client data from %v: %v", conn.RemoteAddr(), err)
+			break
 		}
+
+		if !validateClientType(clientData.ClientType) {
+			log.Printf("Invalid client type from client %v: %v", conn.RemoteAddr(), clientData.ClientType)
+			break
+		}
+
+		log.Printf("Client %v connected with type %v", conn.RemoteAddr(), clientData.ClientType)
+
+		ws.mu.Lock()
+		ws.clients[conn] = clientData
+		ws.mu.Unlock()
 	}
+
 }
 
 func (ws *WebSocketServer) handleMessages() {
 	for {
-		messageSwaps := <-ws.broadcastSwaps
-		var swaps []types.SwapLog
-		if err := json.Unmarshal(messageSwaps, &swaps); err != nil {
-			log.Printf("Failed to unmarshal swap message: %v", err)
-			continue
-		}
-
-		messagePFTokens := <-ws.broadcastPFTokens
-		var tokens []types.PumpFunCreation
-		if err := json.Unmarshal(messagePFTokens, &tokens); err != nil {
-			log.Printf("Failed to unmarshal pf tokens message: %v", err)
-			continue
-		}
-
-		ws.mu.Lock()
-		for client, clientData := range ws.clients {
-			if clientData.ClientType == "wallet" {
-				for _, swap := range swaps {
-					if ws.isRelevantTransaction(swap, clientData.Wallets) {
-						if err := client.WriteMessage(websocket.TextMessage, messageSwaps); err != nil {
-							log.Printf("Failed to write message to client: %v", err)
-							delete(ws.clients, client)
-							break
-						}
-					}
-				}
+		select {
+		case messageSwaps := <-ws.broadcastSwaps:
+			var swaps []types.SwapLog
+			if err := json.Unmarshal(messageSwaps, &swaps); err != nil {
+				log.Printf("Failed to unmarshal swap message: %v", err)
+				continue
 			}
-			if clientData.ClientType == "pf-tokens" {
-				if err := client.WriteMessage(websocket.TextMessage, messagePFTokens); err != nil {
+			ws.broadcastRelevantSwaps(swaps)
+
+		case messagePFTokens := <-ws.broadcastPFTokens:
+			ws.broadcastPFTokensToClients(messagePFTokens)
+		}
+	}
+}
+
+func (ws *WebSocketServer) broadcastRelevantSwaps(swaps []types.SwapLog) {
+	ws.mu.Lock()
+	defer ws.mu.Unlock()
+
+	for client, clientData := range ws.clients {
+		if clientData.ClientType == "wallet" {
+			relevantSwaps := filterRelevantSwaps(swaps, clientData.Wallets)
+			if len(relevantSwaps) > 0 {
+				message, err := json.Marshal(relevantSwaps)
+				if err != nil {
+					log.Printf("Failed to marshal relevant swaps: %v", err)
+					continue
+				}
+
+				if err := client.WriteMessage(websocket.TextMessage, message); err != nil {
 					log.Printf("Failed to write message to client: %v", err)
 					delete(ws.clients, client)
-					break
 				}
 			}
-
 		}
-		ws.mu.Unlock()
 	}
 }
 
-func validateClientType(clientType string) bool {
-	return clientType == "wallet" || clientType == "pf-tokens"
-}
+func (ws *WebSocketServer) broadcastPFTokensToClients(messagePFTokens []byte) {
+	ws.mu.Lock()
+	defer ws.mu.Unlock()
 
-func (ws *WebSocketServer) isRelevantTransaction(swap types.SwapLog, wallets []string) bool {
-	for _, wallet := range wallets {
-		if wallet == swap.Wallet {
-			return true
+	for client, clientData := range ws.clients {
+		if clientData.ClientType == "pf-tokens" {
+			if err := client.WriteMessage(websocket.TextMessage, messagePFTokens); err != nil {
+				log.Printf("Failed to write message to client: %v", err)
+				delete(ws.clients, client)
+			}
 		}
 	}
-	return false
 }
 
 func (ws *WebSocketServer) BroadcastSwaps(swaps []types.SwapLog) {
