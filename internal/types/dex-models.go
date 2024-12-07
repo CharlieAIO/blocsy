@@ -462,9 +462,9 @@ func (m *PumpFunSwap) Decode(in []byte) error {
 }
 
 type PumpFunCreation struct {
-	Name         string           `json:"name,string"`
-	Symbol       string           `json:"symbol,string"`
-	Uri          string           `json:"uri,string"`
+	Name         string           `json:"name"`
+	Symbol       string           `json:"symbol"`
+	Uri          string           `json:"uri"`
 	Mint         common.PublicKey `json:"mint"`
 	BondingCurve common.PublicKey `json:"bondingCurve"`
 	User         common.PublicKey `json:"user"`
