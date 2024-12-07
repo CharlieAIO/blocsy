@@ -23,7 +23,7 @@ func (t *TxHandler) ProcessTransaction(ctx context.Context, tx *types.SolanaTx, 
 	transfers := GetAllTransfers(tx)
 	logs := GetLogs(tx.Meta.LogMessages)
 	swaps := t.sh.HandleSwaps(ctx, transfers, tx, timestamp, block)
-	pumpFunTokens := dex.HandlePumpFunNewToken(logs)
+	pumpFunTokens := dex.HandlePumpFunNewToken(logs, PUMPFUN)
 
 	if t.Websocket != nil && !ignoreWS {
 		go func() {

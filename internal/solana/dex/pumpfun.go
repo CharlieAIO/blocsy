@@ -88,7 +88,7 @@ func HandlePumpFunSwaps(instructionData *types.ProcessInstructionData) types.Sol
 	return s
 }
 
-func HandlePumpFunNewToken(parsedLogs []types.LogDetails) []types.PumpFunCreation {
+func HandlePumpFunNewToken(parsedLogs []types.LogDetails, programId string) []types.PumpFunCreation {
 
 	var pfLogs []string
 
@@ -96,7 +96,7 @@ func HandlePumpFunNewToken(parsedLogs []types.LogDetails) []types.PumpFunCreatio
 	checkLogs = func(logs []types.LogDetails) {
 		for _, logDetail := range logs {
 			for _, log_ := range logDetail.Logs {
-				if strings.Contains(log_, "Program data:") {
+				if strings.Contains(log_, "Program data:") && logDetail.Program == programId {
 					pfLogs = append(pfLogs, log_)
 				}
 			}
@@ -116,7 +116,10 @@ func HandlePumpFunNewToken(parsedLogs []types.LogDetails) []types.PumpFunCreatio
 			continue
 		}
 		newToken := types.PumpFunCreation{}
-		newToken.Decode(bytesData)
+		err = newToken.Decode(bytesData)
+		if err != nil {
+			continue
+		}
 		if newToken.Mint.String() == "" || newToken.Symbol == "" {
 			continue
 		}
