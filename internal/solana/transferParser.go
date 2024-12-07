@@ -6,8 +6,6 @@ import (
 	"strconv"
 )
 
-//TODO: redo transfer parser so balance maps are not used and instead the transfers are parsed directly from the instructions (Debug tx: https://solscan.io/tx/DB7onVtvwm9GKt9gezSmCZEVUhvFcTjNGu5K6uNRdySg3cg8F9YimH8R8EpcQyS2sc1SRFhLwydCSBNxxdL5An8)
-
 func GetTokenBalanceDiffs(tx *types.SolanaTx) map[int]types.SolBalanceDiff {
 	balanceDiffMap := make(map[int]types.SolBalanceDiff, len(tx.Meta.PostTokenBalances))
 
@@ -255,6 +253,7 @@ func buildTransfer(
 				Mint:             mint,
 				Decimals:         decimals,
 				Type:             tType,
+				ProgramId:        programId,
 			}
 
 			if transfer.Amount == "" {

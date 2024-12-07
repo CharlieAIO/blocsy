@@ -30,10 +30,6 @@ func (sh *SwapHandler) HandleSwaps(ctx context.Context, transfers []types.SolTra
 	}
 
 	logs := GetLogs(tx.Meta.LogMessages)
-	//for _, x := range transfers {
-	//	log.Printf("transfer: %+v", x)
-	//}
-
 	for index, instruction := range tx.Transaction.Message.Instructions {
 		accounts := instruction.Accounts
 		innerInstructions, innerIdx := FindInnerIx(tx.Meta.InnerInstructions, index)
@@ -56,8 +52,8 @@ func (sh *SwapHandler) HandleSwaps(ctx context.Context, transfers []types.SolTra
 
 		processInstructionData.InnerInstructionIndex = -1
 
-		swap := processInstruction(processInstructionData)
-		if swap.Pair != "" || swap.TokenOut != "" || swap.TokenIn != "" {
+		swap := processInstruction(&processInstructionData)
+		if swap.TokenOut != "" || swap.TokenIn != "" {
 			swap.Source = instructionSource
 			swaps = append(swaps, swap)
 		}
@@ -84,7 +80,7 @@ func (sh *SwapHandler) HandleSwaps(ctx context.Context, transfers []types.SolTra
 			processInstructionData.InnerAccounts = &innerIx.Accounts
 			processInstructionData.Data = &innerIx.Data
 
-			s := processInstruction(processInstructionData)
+			s := processInstruction(&processInstructionData)
 			if s.Pair != "" && s.TokenOut != "" && s.TokenIn != "" {
 				s.Source = instructionSource
 				innerSwaps = append(innerSwaps, s)
@@ -94,19 +90,32 @@ func (sh *SwapHandler) HandleSwaps(ctx context.Context, transfers []types.SolTra
 
 	}
 
+	//for _, transfer := range processInstructionData.Transfers {
+	//	if transfer.Type == "token" {
+	//		transferSwap := types.SolSwap{
+	//			TokenIn:   transfer.Mint,
+	//			Wallet:    transfer.ToUserAccount,
+	//			AmountIn:  transfer.Amount,
+	//			AmountOut: "0",
+	//		}
+	//		log.Printf("transferSwap: %+v", transferSwap)
+	//		swaps = append(swaps, transferSwap)
+	//	}
+	//}
+
 	builtSwaps := make([]types.SwapLog, 0)
 	for _, swap := range swaps {
-		if swap.Wallet == "" || swap.Pair == "" {
+		if swap.Wallet == "" || swap.TokenIn == "" {
 			continue
 		}
 
 		amountOutFloat, ok := new(big.Float).SetString(swap.AmountOut)
-		if !ok || amountOutFloat.Cmp(big.NewFloat(0)) == 0 {
+		if !ok {
 			continue
 		}
 
 		amountInFloat, ok := new(big.Float).SetString(swap.AmountIn)
-		if !ok || amountInFloat.Cmp(big.NewFloat(0)) == 0 {
+		if !ok {
 			continue
 		}
 
@@ -121,10 +130,15 @@ func (sh *SwapHandler) HandleSwaps(ctx context.Context, transfers []types.SolTra
 		} else if _, found := QuoteTokens[swap.TokenIn]; found {
 			token = swap.TokenOut
 			action = "SELL"
+		} else {
+			token = swap.TokenIn
+			action = "TRANSFER"
 		}
 
 		sh.tf.AddToQueue(token)
-		sh.pf.AddToQueue(PairProcessorQueue{address: swap.Pair, token: &token})
+		if swap.Pair != "" {
+			sh.pf.AddToQueue(PairProcessorQueue{address: swap.Pair, token: &token})
+		}
 
 		s := types.SwapLog{
 			ID:          tx.Transaction.Signatures[0],
@@ -149,14 +163,15 @@ func (sh *SwapHandler) HandleSwaps(ctx context.Context, transfers []types.SolTra
 	return builtSwaps
 }
 
-func processInstruction(instructionData types.ProcessInstructionData) types.SolSwap {
-	type handlerFunc func(data types.ProcessInstructionData) types.SolSwap
+func processInstruction(instructionData *types.ProcessInstructionData) types.SolSwap {
+	type handlerFunc func(data *types.ProcessInstructionData) types.SolSwap
 	handlers := map[string]handlerFunc{
 		RAYDIUM_LIQ_POOL_V4:   dex.HandleRaydiumSwaps,
 		ORCA_WHIRL_PROGRAM_ID: dex.HandleOrcaSwaps,
 		METEORA_DLMM_PROGRAM:  dex.HandleMeteoraSwaps,
 		METEORA_POOLS_PROGRAM: dex.HandleMeteoraSwaps,
 		PUMPFUN:               dex.HandlePumpFunSwaps,
+		//TOKEN_PROGRAM:         dex.HandleTokenSwaps,
 	}
 
 	accountsLen := len(*instructionData.Accounts)

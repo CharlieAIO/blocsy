@@ -213,6 +213,27 @@ LIMIT 100;`, swapLogTable)
 
 }
 
+func (repo *TimescaleRepository) FindWalletTokenHoldings(ctx context.Context, token string, wallet string) (float64, error) {
+	var query = fmt.Sprintf(`
+		SELECT COALESCE(SUM(
+			CASE 
+				WHEN action = 'BUY' THEN "amountIn" 
+				WHEN action = 'SELL' THEN -"amountOut" 
+				ELSE 0 
+			END
+		), 0) as totalTokens
+		FROM "%s"
+		WHERE token = $1
+		AND wallet = $2;
+	`, swapLogTable)
+
+	var totalTokens float64
+	if err := repo.db.GetContext(ctx, &totalTokens, query, token, wallet); err != nil {
+		return 0, fmt.Errorf("cannot get total tokens: %w", err)
+	}
+	return totalTokens, nil
+}
+
 //=============================================== Create Tables  =======================================================
 
 func CreateProcessedBlocksTable(ctx context.Context, db *sqlx.DB) {

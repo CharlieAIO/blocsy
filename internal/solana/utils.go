@@ -22,6 +22,7 @@ func validateTX(tx *types.SolanaTx) bool {
 			key == METEORA_DLMM_PROGRAM ||
 			key == METEORA_POOLS_PROGRAM ||
 			key == RAYDIUM_LIQ_POOL_V4 ||
+			key == TOKEN_PROGRAM ||
 			key == ORCA_WHIRL_PROGRAM_ID {
 			return true
 		}
@@ -68,7 +69,7 @@ func GetLogs(logs []string) []types.LogDetails {
 			current = types.LogDetails{
 				Program: strings.Fields(l)[1],
 			}
-		} else if strings.Contains(l, "Program log:") {
+		} else if strings.Contains(l, "Program log:") || strings.Contains(l, "Program data:") {
 			current.Logs = append(current.Logs, l)
 		} else if strings.Contains(l, "success") {
 			if len(stack) > 0 {

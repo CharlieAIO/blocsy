@@ -2,6 +2,7 @@ package dex
 
 import (
 	"blocsy/internal/types"
+	"encoding/base64"
 	"encoding/hex"
 	"github.com/mr-tron/base58"
 	"log"
@@ -13,7 +14,7 @@ import (
 
 const TRADE_EVENT_DISCRIMINATOR = "bddb7fd34ee661ee"
 
-func HandlePumpFunSwaps(instructionData types.ProcessInstructionData) types.SolSwap {
+func HandlePumpFunSwaps(instructionData *types.ProcessInstructionData) types.SolSwap {
 
 	if len(*instructionData.Accounts) < 4 || len(instructionData.AccountKeys) < (*instructionData.Accounts)[3] {
 		log.Printf("Not enough accounts for PUMPFUN swap")
@@ -76,6 +77,8 @@ func HandlePumpFunSwaps(instructionData types.ProcessInstructionData) types.SolS
 		return types.SolSwap{}
 	}
 
+	instructionData.Transfers = removeTransfer(instructionData.Transfers, *instructionData.InnerIndex)
+
 	amountOutFloat.Quo(amountOutFloat, new(big.Float).SetFloat64(math.Pow10(tokenOutDecimals)))
 	amountInFloat.Quo(amountInFloat, new(big.Float).SetFloat64(math.Pow10(tokenInDecimals)))
 	s.Pair = instructionData.AccountKeys[(*instructionData.Accounts)[3]]
@@ -83,4 +86,45 @@ func HandlePumpFunSwaps(instructionData types.ProcessInstructionData) types.SolS
 	s.AmountIn = amountInFloat.String()
 
 	return s
+}
+
+func HandlePumpFunNewToken(parsedLogs []types.LogDetails) []types.PumpFunCreation {
+
+	var pfLogs []string
+
+	var checkLogs func(logs []types.LogDetails)
+	checkLogs = func(logs []types.LogDetails) {
+		for _, logDetail := range logs {
+			for _, log_ := range logDetail.Logs {
+				if strings.Contains(log_, "Program data:") {
+					pfLogs = append(pfLogs, log_)
+				}
+			}
+			checkLogs(logDetail.SubLogs)
+		}
+	}
+	checkLogs(parsedLogs)
+	if len(pfLogs) == 0 {
+		return nil
+	}
+
+	var tokens []types.PumpFunCreation
+	for _, pLog := range pfLogs {
+		splitStr := strings.Split(pLog, "Program data: ")[1]
+		bytesData, err := base64.StdEncoding.DecodeString(splitStr)
+		if err != nil {
+			continue
+		}
+		newToken := types.PumpFunCreation{}
+		newToken.Decode(bytesData)
+		if newToken.Mint.String() == "" || newToken.Symbol == "" {
+			continue
+		}
+
+		tokens = append(tokens, newToken)
+
+	}
+
+	return tokens
+
 }
