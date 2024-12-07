@@ -5,6 +5,7 @@ import (
 	"blocsy/internal/solana/dex"
 	"blocsy/internal/types"
 	"context"
+	"log"
 )
 
 func NewTxHandler(sh *SwapHandler, solSvc *SolanaService, repo TokensAndPairsRepo, pRepo SwapsRepo, websocket *websocket.WebSocketServer) *TxHandler {
@@ -29,6 +30,7 @@ func (t *TxHandler) ProcessTransaction(ctx context.Context, tx *types.SolanaTx, 
 		go func() {
 			t.Websocket.BroadcastSwaps(swaps)
 			if len(pumpFunTokens) > 0 {
+				log.Printf("Broadcasting pumpfun tokens")
 				t.Websocket.BroadcastPumpFunTokens(pumpFunTokens)
 			}
 		}()
