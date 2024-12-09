@@ -148,6 +148,10 @@ func (ps *PairsService) AddToQueue(pair PairProcessorQueue) {
 func identifyPair(owner string, accInfo client.AccountInfo, token_ *string) (string, string, string, string, error) {
 	var exchange, baseMint, tokenMint, baseMintIdentifier string
 
+	if token_ == nil {
+		token_ = new(string)
+	}
+
 	if owner == METEORA_DLMM_PROGRAM {
 		met_ := types.MeteoraLayout{}
 		err := met_.Decode(accInfo.Data)
