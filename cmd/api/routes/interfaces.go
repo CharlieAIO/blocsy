@@ -23,6 +23,7 @@ type SwapsRepo interface {
 	GetSwapsOnDate(ctx context.Context, wallet string, startDate time.Time) ([]types.SwapLog, error)
 	FindSwap(ctx context.Context, timestamp int64, token string, amount float64) (*types.SwapLog, error)
 	FindFirstTokenSwaps(ctx context.Context, token string) ([]types.SwapLog, error)
+	FindLatestSwap(ctx context.Context, pair string) ([]types.SwapLog, error)
 }
 
 type Node interface {

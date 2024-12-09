@@ -2,205 +2,15 @@ package routes
 
 import (
 	"blocsy/internal/types"
-	"errors"
-	"fmt"
+	"github.com/goccy/go-json"
 	"log"
+	"math/big"
 	"net/http"
-	"strconv"
 	"sync"
 	"time"
 
-	"github.com/goccy/go-json"
-
 	"github.com/go-chi/chi/v5"
 )
-
-func (h *Handler) PnlHandler(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
-
-	wallet := chi.URLParam(r, "wallet")
-
-	pageStr := r.URL.Query().Get("page")
-	pageSizeStr := r.URL.Query().Get("pageSize")
-
-	page := 1
-	pageSize := 5
-
-	if pageStr != "" {
-		if p, err := strconv.Atoi(pageStr); err == nil && p > 0 {
-			page = p
-		}
-	}
-	if pageSizeStr != "" {
-		if ps, err := strconv.Atoi(pageSizeStr); err == nil && ps > 0 {
-			pageSize = ps
-		}
-	}
-
-	swaps, err := h.swapsRepo.GetAllWalletSwaps(ctx, wallet)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	if len(swaps) == 0 {
-		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(map[string]interface{}{
-			"results":  []types.PNLInfo{},
-			"nextPage": nil,
-		})
-		return
-	}
-
-	pairSwaps := make(map[string][]types.SwapLog)
-	for _, swap := range swaps {
-		pairSwaps[swap.Pair] = append(pairSwaps[swap.Pair], swap)
-	}
-
-	allPairs := make([]string, 0, len(pairSwaps))
-	for pair := range pairSwaps {
-		allPairs = append(allPairs, pair)
-	}
-
-	totalPairs := len(allPairs)
-	startIndex := (page - 1) * pageSize
-	endIndex := startIndex + pageSize
-
-	if startIndex >= totalPairs {
-		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(map[string]interface{}{
-			"results":  []types.PNLInfo{},
-			"nextPage": nil,
-		})
-		return
-	}
-
-	if endIndex > totalPairs {
-		endIndex = totalPairs
-	}
-
-	currentPagePairs := allPairs[startIndex:endIndex]
-	hasMore := endIndex < totalPairs
-
-	pnlMap := make(map[string]types.PNLInfo)
-	for _, pair := range currentPagePairs {
-		swapLogs := pairSwaps[pair]
-
-		var tokenAddress, quoteTokenSymbol, network, exchange string
-		swap := swapLogs[0]
-
-		if swap.Source == "PUMPFUN" {
-			quoteTokenLookup, _, err := h.tokenFinder.FindToken(ctx, "So11111111111111111111111111111111111111112", false)
-			if err != nil {
-				log.Println("Error finding token:", err)
-				continue
-			}
-			quoteTokenSymbol = quoteTokenLookup.Symbol
-			tokenAddress = swap.Pair
-		} else {
-			pairLookup, _, err := h.pairFinder.FindPair(ctx, swap.Pair, nil)
-			if err != nil {
-				if errors.Is(err, types.TokenNotFound) {
-					continue
-				}
-				log.Println("Error finding pair:", err)
-				return
-			}
-
-			if pairLookup.Address == "" {
-				continue
-			}
-
-			quoteTokenLookup, _, err := h.tokenFinder.FindToken(ctx, pairLookup.QuoteToken.Address, false)
-			if err != nil {
-				log.Println("Error finding token:", err)
-				continue
-			}
-
-			quoteTokenSymbol = quoteTokenLookup.Symbol
-			tokenAddress = pairLookup.Token
-			network = pairLookup.Network
-			exchange = pairLookup.Exchange
-		}
-
-		usdPrice := h.pricer.GetUSDPrice(quoteTokenSymbol)
-		info := types.PNLInfo{
-			Pair:                    swap.Pair,
-			QuoteTokenSymbol:        quoteTokenSymbol,
-			Token:                   tokenAddress,
-			Network:                 network,
-			Exchange:                exchange,
-			Swaps:                   len(swapLogs),
-			TotalBuyVolume:          "0",
-			TotalBuyVolumeUSD:       "0",
-			TotalSellVolume:         "0",
-			TotalSellVolumeUSD:      "0",
-			TotalPnL:                "0",
-			TotalPnLUSD:             "0",
-			UnrealizedPnL:           "0",
-			UnrealizedPnLUSD:        "0",
-			RoiPercentage:           "0%",
-			UnrealizedRoiPercentage: "0%",
-		}
-
-		for _, swap := range swapLogs {
-			if swap.Action == "BUY" {
-				totalBuyVolume, _ := strconv.ParseFloat(info.TotalBuyVolume, 64)
-				info.TotalBuyVolume = fmt.Sprintf("%.20f", totalBuyVolume+swap.AmountOut)
-				totalBuyVolumeUSD, _ := strconv.ParseFloat(info.TotalBuyVolumeUSD, 64)
-				info.TotalBuyVolumeUSD = fmt.Sprintf("%.2f", totalBuyVolumeUSD+(swap.AmountOut*usdPrice))
-			} else {
-				totalSellVolume, _ := strconv.ParseFloat(info.TotalSellVolume, 64)
-				info.TotalSellVolume = fmt.Sprintf("%.20f", totalSellVolume+swap.AmountIn)
-				totalSellVolumeUSD, _ := strconv.ParseFloat(info.TotalSellVolumeUSD, 64)
-				info.TotalSellVolumeUSD = fmt.Sprintf("%.2f", totalSellVolumeUSD+(swap.AmountIn*usdPrice))
-			}
-		}
-
-		// Calculate final PnL, ROI, and Unrealized PnL
-		totalBuyVolume, _ := strconv.ParseFloat(info.TotalBuyVolume, 64)
-		totalSellVolume, _ := strconv.ParseFloat(info.TotalSellVolume, 64)
-		totalBuyVolumeUSD, _ := strconv.ParseFloat(info.TotalBuyVolumeUSD, 64)
-		totalSellVolumeUSD, _ := strconv.ParseFloat(info.TotalSellVolumeUSD, 64)
-
-		totalPnL := totalSellVolume - totalBuyVolume
-		totalPnLUSD := totalSellVolumeUSD - totalBuyVolumeUSD
-		netTokens := totalBuyVolume - totalSellVolume
-		unrealizedPnLUSD := netTokens * usdPrice
-
-		info.TotalPnL = fmt.Sprintf("%.20f", totalPnL)
-		info.TotalPnLUSD = fmt.Sprintf("%.2f", totalPnLUSD)
-		info.UnrealizedPnL = fmt.Sprintf("%.20f", unrealizedPnLUSD)
-		info.UnrealizedPnLUSD = fmt.Sprintf("%.2f", unrealizedPnLUSD)
-
-		if totalBuyVolumeUSD != 0 {
-			info.RoiPercentage = fmt.Sprintf("%.2f%%", (totalPnLUSD/totalBuyVolumeUSD)*100)
-			info.UnrealizedRoiPercentage = fmt.Sprintf("%.2f%%", (unrealizedPnLUSD/totalBuyVolumeUSD)*100)
-		}
-
-		pnlMap[pair] = info
-	}
-
-	var pnlResults []types.PNLInfo
-	for _, info := range pnlMap {
-		pnlResults = append(pnlResults, info)
-	}
-
-	nextPage := page + 1
-	response := map[string]interface{}{
-		"results":  pnlResults,
-		"nextPage": nil,
-	}
-	if hasMore {
-		response["nextPage"] = nextPage
-	}
-
-	w.Header().Set("Content-Type", "application/json")
-	if err := json.NewEncoder(w).Encode(response); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-}
 
 func (h *Handler) AggregatedPnlHandler(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
@@ -242,6 +52,9 @@ func (h *Handler) AggregatedPnlHandler(w http.ResponseWriter, r *http.Request) {
 	tokensTraded := make(map[string]bool)
 	winCount := 0
 
+	totalInvestment := new(big.Float)
+	weightedROINumerator := new(big.Float)
+
 	var mu sync.Mutex
 	var wg sync.WaitGroup
 	sem := make(chan struct{}, 100) // Limit to 100 goroutines
@@ -263,7 +76,6 @@ func (h *Handler) AggregatedPnlHandler(w http.ResponseWriter, r *http.Request) {
 				quoteTokenSymbol = "SOL"
 			} else {
 				start := time.Now()
-
 				_, qt, err := h.pairFinder.FindPair(ctx, pair, nil)
 				if err != nil {
 					quoteTokenSymbol = "SOL"
@@ -271,7 +83,6 @@ func (h *Handler) AggregatedPnlHandler(w http.ResponseWriter, r *http.Request) {
 					quoteTokenSymbol = qt.Symbol
 				}
 				log.Printf("%s | findPair took %s", pair, time.Since(start))
-
 			}
 
 			if quoteTokenSymbol == "" {
@@ -293,60 +104,84 @@ func (h *Handler) AggregatedPnlHandler(w http.ResponseWriter, r *http.Request) {
 			}
 			mu.Unlock()
 
-			totalBuyAmount, totalBuyValue := 0.0, 0.0
-			totalSellAmount, totalSellValue := 0.0, 0.0
-			//price := 0.0
+			totalBuyTokens := new(big.Float)
+			totalSellTokens := new(big.Float)
+			totalBuyValue := new(big.Float)
+			totalSellValue := new(big.Float)
 
 			for _, swap := range swapLogs {
+				amountOutFloat := new(big.Float).SetFloat64(swap.AmountOut)
+				amountInFloat := new(big.Float).SetFloat64(swap.AmountIn)
 				if swap.Action == "BUY" {
-					totalBuyAmount += swap.AmountOut
+					totalBuyTokens.Add(totalBuyTokens, amountInFloat)
+					totalBuyValue.Add(totalBuyValue, new(big.Float).Mul(amountOutFloat, big.NewFloat(usdPrice)))
 				} else if swap.Action == "SELL" {
-					totalSellAmount += swap.AmountIn
+					totalSellTokens.Add(totalSellTokens, amountOutFloat)
+					totalSellValue.Add(totalSellValue, new(big.Float).Mul(amountInFloat, big.NewFloat(usdPrice)))
 				}
 			}
 
-			totalBuyValue = totalBuyAmount * usdPrice
-			totalSellValue = totalSellAmount * usdPrice
-
-			realizedPNL := totalSellValue - totalBuyValue
-			unrealizedPNL := 0.0
-			remainingAmount := totalBuyAmount - totalSellAmount
-
-			if remainingAmount > 0 {
-				unrealizedPNL = remainingAmount * usdPrice
+			realizedPNL := new(big.Float)
+			if totalSellTokens.Cmp(big.NewFloat(0)) != 0 {
+				realizedPNL.Sub(totalSellValue, totalBuyValue)
+			} else {
+				realizedPNL.SetFloat64(0)
 			}
 
-			//		log.Printf(`
-			//	[DEBUG] Pair: %s
-			//	QuoteToken: %s, USDPrice: %.2f, price: %.8f
-			//	TotalBuyAmount: %.2f, TotalBuyValue: %.2f
-			//	TotalSellAmount: %.2f, TotalSellValue: %.2f
-			//	RealizedPnL: %.2f, UnrealizedPnL: %.2f
-			//	RemainingAmount: %.2f
-			//`, pair, quoteTokenSymbol, usdPrice, price, totalBuyAmount, totalBuyValue, totalSellAmount, totalSellValue, realizedPNL, unrealizedPNL, remainingAmount)
+			unrealizedPNL := new(big.Float)
+			remainingAmount := new(big.Float).Sub(totalBuyTokens, totalSellTokens)
+
+			if remainingAmount.Cmp(big.NewFloat(0)) > 0 {
+				mostRecentPrice := new(big.Float)
+				mostRecentSwap, err := h.swapsRepo.FindLatestSwap(ctx, pair)
+				if err == nil {
+					amountOutFloat := new(big.Float).SetFloat64(mostRecentSwap[0].AmountOut)
+					amountInFloat := new(big.Float).SetFloat64(mostRecentSwap[0].AmountIn)
+					if mostRecentSwap[0].Action == "BUY" {
+						mostRecentPrice = new(big.Float).Quo(amountOutFloat, amountInFloat)
+					} else {
+						mostRecentPrice = new(big.Float).Quo(amountInFloat, amountOutFloat)
+					}
+				}
+				unrealizedPNL.Mul(remainingAmount, mostRecentPrice)
+			}
 
 			mu.Lock()
 			defer mu.Unlock()
 
-			pnlResults.RealizedPnLUSD += realizedPNL
-			pnlResults.UnrealizedPnLUSD += unrealizedPNL
-			if realizedPNL > 0 {
+			realizedPNLFloatUSD, _ := realizedPNL.Float64()
+			pnlResults.RealizedPnLUSD += realizedPNLFloatUSD
+
+			unrealizedPNLFloatUSD, _ := unrealizedPNL.Float64()
+			pnlResults.UnrealizedPnLUSD += unrealizedPNLFloatUSD
+
+			// Realized ROI
+			if totalSellValue.Cmp(big.NewFloat(0)) > 0 {
+				realizedROI := new(big.Float).Quo(realizedPNL, totalSellValue)
+				realizedROIFloat, _ := realizedROI.Float64()
+				pnlResults.RealizedROI += realizedROIFloat * 100
+			}
+
+			// Unrealized ROI
+			if remainingAmount.Cmp(big.NewFloat(0)) > 0 {
+				avgBuyPrice := new(big.Float).Quo(totalBuyValue, totalBuyTokens)
+				remainingCost := new(big.Float).Mul(avgBuyPrice, remainingAmount)
+
+				if remainingCost.Cmp(big.NewFloat(0)) > 0 {
+					unrealizedROI := new(big.Float).Quo(unrealizedPNL, remainingCost)
+					unrealizedROIFloat, _ := unrealizedROI.Float64()
+					pnlResults.UnrealizedROI += unrealizedROIFloat * 100
+				}
+			}
+
+			if totalBuyValue.Cmp(big.NewFloat(0)) > 0 {
+				totalROI := new(big.Float).Quo(new(big.Float).Add(realizedPNL, unrealizedPNL), totalBuyValue)
+				weightedROINumerator.Add(weightedROINumerator, new(big.Float).Mul(totalROI, totalBuyValue))
+				totalInvestment.Add(totalInvestment, totalBuyValue)
+			}
+
+			if realizedPNL.Cmp(big.NewFloat(0)) > 0 {
 				winCount++
-			}
-			totalBuyValue += totalBuyValue
-
-			if totalBuyValue > 0 {
-				pnlResults.RealizedROI += (realizedPNL / totalBuyValue) * 100
-			}
-
-			remainingCost := totalBuyValue - totalSellValue
-			if remainingCost > 0 {
-				pnlResults.UnrealizedROI += (unrealizedPNL / remainingCost) * 100
-			}
-
-			pnlResults.PnLUSD = pnlResults.RealizedPnLUSD + pnlResults.UnrealizedPnLUSD
-			if pnlResults.PnLUSD > 0 {
-				pnlResults.ROI = (pnlResults.PnLUSD / totalBuyValue) * 100
 			}
 
 			tokensTraded[pair] = true
@@ -354,6 +189,14 @@ func (h *Handler) AggregatedPnlHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	wg.Wait()
+
+	if totalInvestment.Cmp(big.NewFloat(0)) > 0 {
+		finalROI := new(big.Float).Quo(weightedROINumerator, totalInvestment)
+		finalROIFloat, _ := finalROI.Float64()
+		pnlResults.ROI = finalROIFloat * 100
+	}
+
+	pnlResults.PnLUSD = pnlResults.RealizedPnLUSD + pnlResults.UnrealizedPnLUSD
 
 	pnlResults.TokensTraded = len(tokensTraded)
 	if pnlResults.TokensTraded > 0 {

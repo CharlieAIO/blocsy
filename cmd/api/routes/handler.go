@@ -53,8 +53,7 @@ func (h *Handler) GetHttpHandler() http.Handler {
 		r.Get("/check-bundled/{token}", h.CheckBundledHandler)
 		r.Get("/find-swap/{token}/{amount}/{timestamp}", h.FindSwapHandler)
 
-		r.Get("/pnl-aggregated/{wallet}", h.AggregatedPnlHandler)
-		r.Get("/pnl/{wallet}", h.PnlHandler)
+		r.Get("/pnl/{wallet}", h.AggregatedPnlHandler)
 	})
 
 	return r

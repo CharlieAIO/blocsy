@@ -213,6 +213,20 @@ LIMIT 100;`, swapLogTable)
 
 }
 
+func (repo *TimescaleRepository) FindLatestSwap(ctx context.Context, pair string) ([]types.SwapLog, error) {
+	var query = fmt.Sprintf(`SELECT * FROM "%s" 
+WHERE pair = $1
+ORDER BY timestamp DESC
+LIMIT 1;`, swapLogTable)
+	var swaps []types.SwapLog
+	if err := repo.db.SelectContext(ctx, &swaps, query, pair); err != nil {
+		return nil, fmt.Errorf("cannot get swaps: %w", err)
+	}
+
+	return swaps, nil
+
+}
+
 func (repo *TimescaleRepository) FindWalletTokenHoldings(ctx context.Context, token string, wallet string) (float64, error) {
 	var query = fmt.Sprintf(`
 		SELECT COALESCE(SUM(
