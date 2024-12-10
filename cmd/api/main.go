@@ -21,6 +21,13 @@ func main() {
 	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt, os.Kill)
 	defer cancel()
 
+	//key, err := routes.GenerateAPIKey(20)
+	//if err != nil {
+	//	return
+	//}
+	//log.Printf("API key: %s", key)
+	//return
+
 	utils.LoadEnvironment()
 	mCli, err := utils.GetMongoConnection(ctx)
 	if err != nil {

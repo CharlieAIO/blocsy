@@ -12,6 +12,7 @@ import (
 var apiKeys = map[string]*rate.Limiter{
 	"9686032971eb850a002a86649e468253cc76e1e2": rate.NewLimiter(1, 2),  // 1 request per second, burst size of 2
 	"24af1b0df83bc86621ce305203d9d11b5f698e62": rate.NewLimiter(5, 10), // 5 requests per second, burst size of 10
+	"1edae2c22e997a5a3f1609e8832cea285abebcde": rate.NewLimiter(10000, 1000),
 }
 
 func GenerateAPIKey(length int) (string, error) {
