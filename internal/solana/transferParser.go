@@ -85,23 +85,60 @@ func GetAllTransfers(tx *types.SolanaTx) []types.SolTransfer {
 	nativeBalanceDiffMap := GetNativeBalanceDiffs(tx)
 
 	transfers := make([]types.SolTransfer, 0)
-	for i := range tx.Meta.InnerInstructions {
-		for ixIndex := range tx.Meta.InnerInstructions[i].Instructions {
-			transfer, found := buildTransfer(tx.Meta.InnerInstructions[i].Instructions[ixIndex], AccountKeysMap, balanceDiffMap, nativeBalanceDiffMap, tx, tx.Meta.InnerInstructions[i].Index, ixIndex)
-			if found {
-				transfers = append(transfers, transfer)
+
+	for instructionIndex := range tx.Transaction.Message.Instructions {
+		instruction := tx.Transaction.Message.Instructions[instructionIndex]
+		transfer, found := buildTransfer(instruction, AccountKeysMap, balanceDiffMap, nativeBalanceDiffMap, tx, -1, instructionIndex)
+
+		if found {
+			parentProgramId, parentAccounts := findParentProgram(instructionIndex, tx, -1, -1, accountKeys)
+			transfer.IxAccounts = parentAccounts
+			transfer.ParentProgramId = parentProgramId
+
+			transfers = append(transfers, transfer)
+		}
+
+		// Now check if there are anny inner instructions for this instruction
+		for innerIxIndex := range tx.Meta.InnerInstructions {
+			if tx.Meta.InnerInstructions[innerIxIndex].Index != instructionIndex {
+				continue
+			}
+			for ixIndex := range tx.Meta.InnerInstructions[innerIxIndex].Instructions {
+				innerInstruction := tx.Meta.InnerInstructions[innerIxIndex].Instructions[ixIndex]
+				innerTransfer, foundInner := buildTransfer(innerInstruction, AccountKeysMap, balanceDiffMap, nativeBalanceDiffMap, tx, instructionIndex, ixIndex)
+
+				if foundInner {
+					parentProgramId, parentAccounts := findParentProgram(instructionIndex, tx, innerIxIndex, ixIndex, accountKeys)
+					innerTransfer.IxAccounts = parentAccounts
+					innerTransfer.ParentProgramId = parentProgramId
+
+					transfers = append(transfers, innerTransfer)
+				}
 			}
 		}
 	}
 
-	for i := range tx.Transaction.Message.Instructions {
-		transfer, found := buildTransfer(tx.Transaction.Message.Instructions[i], AccountKeysMap, balanceDiffMap, nativeBalanceDiffMap, tx, -1, i)
-		if found {
-			transfers = append(transfers, transfer)
+	return transfers
+}
+
+func findParentProgram(ixIndex int, tx *types.SolanaTx, innerIxIndex int, innerInstructionIxIndex int, accountKeys []string) (string, []int) {
+	if innerIxIndex >= 0 {
+		// If inner instruction, traverse backwards within inner instructions
+		for innerI := innerInstructionIxIndex; innerI >= 0; innerI-- {
+			ix := tx.Meta.InnerInstructions[innerIxIndex].Instructions[innerI]
+			if validateProgramIsDex(accountKeys[ix.ProgramIdIndex]) {
+				return accountKeys[ix.ProgramIdIndex], ix.Accounts
+			}
 		}
 	}
 
-	return transfers
+	baseIx := tx.Transaction.Message.Instructions[ixIndex]
+	if validateProgramIsDex(accountKeys[baseIx.ProgramIdIndex]) {
+		return accountKeys[baseIx.ProgramIdIndex], baseIx.Accounts
+	}
+
+	// Fallback: Default to empty if no parent program is found
+	return "", nil
 }
 
 func buildTransfer(
@@ -155,7 +192,7 @@ func buildTransfer(
 			ToUserAccount:   destination,
 			FromUserAccount: source,
 			Amount:          amount,
-			Mint:            "So11111111111111111111111111111111111111112", //So11111111111111111111111111111111111111112
+			Mint:            "So11111111111111111111111111111111111111112", // this is WSOL address
 			Type:            "native",
 		}
 		if transfer.Amount == "" {
@@ -253,7 +290,6 @@ func buildTransfer(
 				Mint:             mint,
 				Decimals:         decimals,
 				Type:             tType,
-				ProgramId:        programId,
 			}
 
 			if transfer.Amount == "" {

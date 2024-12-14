@@ -22,71 +22,14 @@ func (sh *SwapHandler) HandleSwaps(ctx context.Context, transfers []types.SolTra
 	swaps := make([]types.SolSwap, 0)
 	accountKeys := getAllAccountKeys(tx)
 
-	processInstructionData := types.ProcessInstructionData{
-		AccountKeys:           accountKeys,
-		Transfers:             transfers,
-		InnerInstructionIndex: -1,
-		TokenAccountMap:       CreateTokenAccountMap(tx),
-	}
+	//processInstructionData := types.ProcessInstructionData{
+	//	AccountKeys:           accountKeys,
+	//	Transfers:             transfers,
+	//	InnerInstructionIndex: -1,
+	//	TokenAccountMap:       CreateTokenAccountMap(tx),
+	//}
 
-	logs := GetLogs(tx.Meta.LogMessages)
-	for index, instruction := range tx.Transaction.Message.Instructions {
-		accounts := instruction.Accounts
-		innerInstructions, innerIdx := FindInnerIx(tx.Meta.InnerInstructions, index)
-
-		if index < len(logs) {
-			processInstructionData.Logs = logs[index].Logs
-		}
-
-		if len(accountKeys)-1 < instruction.ProgramIdIndex {
-			continue
-		}
-
-		programId := accountKeys[instruction.ProgramIdIndex]
-		instructionSource := identifySource(programId)
-
-		processInstructionData.ProgramId = &programId
-		processInstructionData.Accounts = &accounts
-		processInstructionData.InnerIndex = &innerIdx
-		processInstructionData.Data = &instruction.Data
-
-		processInstructionData.InnerInstructionIndex = -1
-
-		swap := processInstruction(&processInstructionData)
-		if swap.TokenOut != "" || swap.TokenIn != "" {
-			swap.Source = instructionSource
-			swaps = append(swaps, swap)
-		}
-
-		innerSwaps := make([]types.SolSwap, 0)
-		for innerIxIndex, innerIx := range innerInstructions {
-
-			if index < len(logs) && innerIxIndex < len(logs[index].SubLogs) {
-				processInstructionData.Logs = logs[index].SubLogs[innerIxIndex].Logs
-			}
-
-			if len(accountKeys)-1 < innerIx.ProgramIdIndex || innerIx.Data == "" {
-				continue
-			}
-
-			if validateProgramId(accountKeys[innerIx.ProgramIdIndex]) && len(innerIx.Accounts) > 5 {
-				accountsCopy := make([]int, len(innerIx.Accounts))
-				copy(accountsCopy, innerIx.Accounts)
-				processInstructionData.ProgramId = &accountKeys[innerIx.ProgramIdIndex]
-				processInstructionData.Accounts = &accountsCopy
-			}
-
-			processInstructionData.InnerInstructionIndex = innerIxIndex
-			processInstructionData.InnerAccounts = &innerIx.Accounts
-			processInstructionData.Data = &innerIx.Data
-
-			s := processInstruction(&processInstructionData)
-			if s.Pair != "" && s.TokenOut != "" && s.TokenIn != "" {
-				s.Source = instructionSource
-				innerSwaps = append(innerSwaps, s)
-			}
-		}
-		swaps = append(swaps, innerSwaps...)
+	for _, transfer := range transfers {
 
 	}
 

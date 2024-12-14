@@ -31,7 +31,7 @@ func validateTX(tx *types.SolanaTx) bool {
 	return false
 }
 
-func validateProgramId(programId string) bool {
+func validateProgramIsDex(programId string) bool {
 	switch programId {
 	case PUMPFUN, METEORA_DLMM_PROGRAM, METEORA_POOLS_PROGRAM, RAYDIUM_LIQ_POOL_V4, ORCA_WHIRL_PROGRAM_ID:
 		return true

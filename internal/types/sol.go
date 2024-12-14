@@ -245,8 +245,9 @@ type SolTransfer struct {
 	Decimals int
 	Amount   string
 
-	Type      string
-	ProgramId string
+	Type            string
+	ParentProgramId string
+	IxAccounts      []int
 }
 
 //easyjson:json
