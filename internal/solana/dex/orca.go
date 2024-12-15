@@ -4,39 +4,36 @@ import (
 	"blocsy/internal/types"
 )
 
-func HandleOrcaSwaps(instructionData *types.ProcessInstructionData) types.SolSwap {
-	if len(*instructionData.Accounts) < 3 || len(instructionData.AccountKeys) < (*instructionData.Accounts)[2] {
-		return types.SolSwap{}
+func HandleOrcaSwaps(index int, transfers []types.SolTransfer, accountKeys []string) (types.SolSwap, int) {
+	currentTransfer := transfers[index]
+	nextTransfer := transfers[index+1]
+	if currentTransfer.ParentProgramId != nextTransfer.ParentProgramId {
+		return types.SolSwap{}, 0
 	}
 
-	transfer1, ok := FindTransfer(instructionData.Transfers, *instructionData.InnerIndex, (instructionData.InnerInstructionIndex)+1)
-	if !ok {
-		return types.SolSwap{}
+	if len(currentTransfer.IxAccounts) < 3 || len(accountKeys) < (currentTransfer.IxAccounts)[2] {
+		return types.SolSwap{}, 0
 	}
 
-	transfer2, ok := FindTransfer(instructionData.Transfers, *instructionData.InnerIndex, (instructionData.InnerInstructionIndex)+2)
-	if !ok {
-		return types.SolSwap{}
-	}
-
-	instructionData.Transfers = removeTransfer(instructionData.Transfers, *instructionData.InnerIndex)
-	//instructionData.Transfers = removeTransfer(instructionData.Transfers, transfer2)
+	wallet := currentTransfer.FromUserAccount
 
 	pair := ""
-	if len(*instructionData.Accounts) == 15 {
-		pair = instructionData.AccountKeys[(*instructionData.Accounts)[4]]
+	if len(currentTransfer.IxAccounts) == 15 {
+		pair = accountKeys[(currentTransfer.IxAccounts)[4]]
 	} else {
-		pair = instructionData.AccountKeys[(*instructionData.Accounts)[2]]
+		pair = accountKeys[(currentTransfer.IxAccounts)[2]]
 	}
 
 	s := types.SolSwap{
 		Pair:      pair,
 		Exchange:  "ORCA",
-		Wallet:    transfer1.FromUserAccount,
-		TokenOut:  transfer1.Mint,
-		AmountOut: transfer1.Amount,
-		TokenIn:   transfer2.Mint,
-		AmountIn:  transfer2.Amount,
+		Wallet:    wallet,
+		TokenOut:  currentTransfer.Mint,
+		TokenIn:   nextTransfer.Mint,
+		AmountIn:  nextTransfer.Amount,
+		AmountOut: currentTransfer.Amount,
 	}
-	return s
+
+	return s, 1
+
 }

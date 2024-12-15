@@ -12,6 +12,9 @@ import (
 	"os/signal"
 )
 
+//https://github.com/rpcpool/yellowstone-grpc/blob/master/examples/golang/cmd/grpc-client/main.go
+//TODO: implement a grpc client
+
 func main() {
 
 	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt, os.Kill)

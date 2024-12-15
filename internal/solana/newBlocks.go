@@ -32,7 +32,7 @@ func subscribeToBlocks(client *websocket.Conn) error {
 }
 
 type SolanaBlockListener struct {
-	solanaSockerURL    string
+	solanaSocketURL    string
 	lastProcessedBlock int
 	solSvc             *SolanaService
 	pRepo              SwapsRepo
@@ -40,9 +40,9 @@ type SolanaBlockListener struct {
 	errorMutex         sync.Mutex
 }
 
-func NewBlockListener(solanaSockerURL string, solSvc *SolanaService, pRepo SwapsRepo, qHandler *SolanaQueueHandler) *SolanaBlockListener {
+func NewBlockListener(wssUrl string, solSvc *SolanaService, pRepo SwapsRepo, qHandler *SolanaQueueHandler) *SolanaBlockListener {
 	return &SolanaBlockListener{
-		solanaSockerURL: solanaSockerURL,
+		solanaSocketURL: wssUrl,
 		solSvc:          solSvc,
 		pRepo:           pRepo,
 		queueHandler:    qHandler,
@@ -61,7 +61,7 @@ func (s *SolanaBlockListener) Listen(ctx context.Context) error {
 			return nil
 		}
 
-		client, _, err := websocket.DefaultDialer.Dial(s.solanaSockerURL, nil)
+		client, _, err := websocket.DefaultDialer.Dial(s.solanaSocketURL, nil)
 		if err != nil {
 			log.Printf("setupWSSClient error: %v; retrying in 5 seconds...", err)
 			time.Sleep(5 * time.Second)

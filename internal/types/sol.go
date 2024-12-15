@@ -240,6 +240,7 @@ type SolTransfer struct {
 	ToTokenAccount   string
 	FromUserAccount  string
 	FromTokenAccount string
+	Authority        string
 
 	Mint     string
 	Decimals int

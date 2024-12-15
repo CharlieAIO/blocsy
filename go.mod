@@ -1,6 +1,8 @@
 module blocsy
 
-go 1.21.6
+go 1.22
+
+toolchain go1.22.10
 
 require (
 	github.com/blocto/solana-go-sdk v1.30.0
@@ -17,6 +19,7 @@ require (
 	github.com/streadway/amqp v1.1.0
 	go.mongodb.org/mongo-driver v1.17.1
 	golang.org/x/time v0.7.0
+	google.golang.org/grpc v1.69.0
 )
 
 require (
@@ -41,9 +44,12 @@ require (
 	go.uber.org/atomic v1.7.0 // indirect
 	go.uber.org/multierr v1.6.0 // indirect
 	go.uber.org/zap v1.21.0 // indirect
-	golang.org/x/crypto v0.27.0 // indirect
+	golang.org/x/crypto v0.28.0 // indirect
+	golang.org/x/net v0.30.0 // indirect
 	golang.org/x/sync v0.8.0 // indirect
-	golang.org/x/sys v0.25.0 // indirect
-	golang.org/x/term v0.24.0 // indirect
-	golang.org/x/text v0.18.0 // indirect
+	golang.org/x/sys v0.26.0 // indirect
+	golang.org/x/term v0.25.0 // indirect
+	golang.org/x/text v0.19.0 // indirect
+	google.golang.org/genproto/googleapis/rpc v0.0.0-20241015192408-796eee8c2d53 // indirect
+	google.golang.org/protobuf v1.35.1 // indirect
 )

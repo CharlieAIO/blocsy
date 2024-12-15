@@ -2,52 +2,29 @@ package dex
 
 import "blocsy/internal/types"
 
-func HandleMeteoraSwaps(instructionData *types.ProcessInstructionData) types.SolSwap {
-	if len(*instructionData.Accounts) == 0 || len(instructionData.AccountKeys) < (*instructionData.Accounts)[0] {
-		return types.SolSwap{}
+func HandleMeteoraSwaps(index int, transfers []types.SolTransfer, accountKeys []string) (types.SolSwap, int) {
+	currentTransfer := transfers[index]
+	nextTransfer := transfers[index+1]
+	if currentTransfer.ParentProgramId != nextTransfer.ParentProgramId {
+		return types.SolSwap{}, 0
 	}
 
-	tf1Index := 1
-	tf2Index := 2
-
-	transfer1, ok := FindTransfer(instructionData.Transfers, *instructionData.InnerIndex, (instructionData.InnerInstructionIndex)+tf1Index)
-	if !ok {
-		return types.SolSwap{}
-	}
-	for transfer1.Type != "token" {
-		tf1Index++
-		tf2Index++
-
-		transfer1, ok = FindTransfer(instructionData.Transfers, *instructionData.InnerIndex, (instructionData.InnerInstructionIndex)+tf1Index)
-		if !ok {
-			return types.SolSwap{}
-		}
+	if len(currentTransfer.IxAccounts) == 0 || len(accountKeys) < (currentTransfer.IxAccounts)[0] {
+		return types.SolSwap{}, 0
 	}
 
-	transfer2, ok := FindTransfer(instructionData.Transfers, *instructionData.InnerIndex, tf2Index+(instructionData.InnerInstructionIndex))
-	if !ok {
-		return types.SolSwap{}
-	}
-	for transfer2.Type != "token" {
-		tf2Index++
-
-		transfer2, ok = FindTransfer(instructionData.Transfers, *instructionData.InnerIndex, tf2Index+(instructionData.InnerInstructionIndex))
-		if !ok {
-			return types.SolSwap{}
-		}
-	}
-
-	instructionData.Transfers = removeTransfer(instructionData.Transfers, *instructionData.InnerIndex)
-	//instructionData.Transfers = removeTransfer(instructionData.Transfers, transfer2)
+	wallet := accountKeys[(currentTransfer.IxAccounts)[10]]
 
 	s := types.SolSwap{
-		Pair:      instructionData.AccountKeys[(*instructionData.Accounts)[0]],
+		Pair:      accountKeys[(currentTransfer.IxAccounts)[0]],
 		Exchange:  "METEORA",
-		Wallet:    transfer1.FromUserAccount,
-		TokenOut:  transfer1.Mint,
-		TokenIn:   transfer2.Mint,
-		AmountIn:  transfer2.Amount,
-		AmountOut: transfer1.Amount,
+		Wallet:    wallet,
+		TokenOut:  currentTransfer.Mint,
+		TokenIn:   nextTransfer.Mint,
+		AmountIn:  nextTransfer.Amount,
+		AmountOut: currentTransfer.Amount,
 	}
-	return s
+
+	return s, 1
+
 }

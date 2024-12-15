@@ -89,13 +89,25 @@ func GetAllTransfers(tx *types.SolanaTx) []types.SolTransfer {
 	for instructionIndex := range tx.Transaction.Message.Instructions {
 		instruction := tx.Transaction.Message.Instructions[instructionIndex]
 		transfer, found := buildTransfer(instruction, AccountKeysMap, balanceDiffMap, nativeBalanceDiffMap, tx, -1, instructionIndex)
-
 		if found {
 			parentProgramId, parentAccounts := findParentProgram(instructionIndex, tx, -1, -1, accountKeys)
 			transfer.IxAccounts = parentAccounts
 			transfer.ParentProgramId = parentProgramId
-
-			transfers = append(transfers, transfer)
+			if transfer.Amount == "" {
+				transfer.Amount = findTransferAmount(
+					transfer.ParentProgramId,
+					AccountKeysMap,
+					balanceDiffMap,
+					transfer.Authority,
+					transfer.IxAccounts,
+					accountKeys,
+					transfer.FromTokenAccount,
+					transfer.ToTokenAccount,
+				)
+			}
+			if transfer.Amount != "" && transfer.Amount != "0" {
+				transfers = append(transfers, transfer)
+			}
 		}
 
 		// Now check if there are anny inner instructions for this instruction
@@ -111,8 +123,22 @@ func GetAllTransfers(tx *types.SolanaTx) []types.SolTransfer {
 					parentProgramId, parentAccounts := findParentProgram(instructionIndex, tx, innerIxIndex, ixIndex, accountKeys)
 					innerTransfer.IxAccounts = parentAccounts
 					innerTransfer.ParentProgramId = parentProgramId
+					if innerTransfer.Amount == "" {
+						innerTransfer.Amount = findTransferAmount(
+							innerTransfer.ParentProgramId,
+							AccountKeysMap,
+							balanceDiffMap,
+							innerTransfer.Authority,
+							innerTransfer.IxAccounts,
+							accountKeys,
+							innerTransfer.FromTokenAccount,
+							innerTransfer.ToTokenAccount,
+						)
+					}
 
-					transfers = append(transfers, innerTransfer)
+					if innerTransfer.Amount != "" && innerTransfer.Amount != "0" {
+						transfers = append(transfers, innerTransfer)
+					}
 				}
 			}
 		}
@@ -194,6 +220,7 @@ func buildTransfer(
 			Amount:          amount,
 			Mint:            "So11111111111111111111111111111111111111112", // this is WSOL address
 			Type:            "native",
+			Authority:       "",
 		}
 		if transfer.Amount == "" {
 
@@ -214,59 +241,39 @@ func buildTransfer(
 			}
 		}
 
-		amount := ""
-		source := ""
-		destination := ""
+		var amount, source, destination, authority, mint, toUserAccount string
+		var decimals = -1
 
 		//transferChecked
 		if len(ix.Accounts) == 4 {
 			source = accountKeys[ix.Accounts[0]]
 			//mint = accountKeys[ix.Accounts[1]]
 			destination = accountKeys[ix.Accounts[2]]
-			//authority := accountKeys[ix.Accounts[3]]
+			authority = accountKeys[ix.Accounts[3]]
 		}
 		//transfer
 		if len(ix.Accounts) == 3 {
 			source = accountKeys[ix.Accounts[0]]
 			destination = accountKeys[ix.Accounts[1]]
-			//authority := accountKeys[ix.Accounts[2]]
+			authority = accountKeys[ix.Accounts[2]]
 		}
 		tType := "token"
 
 		if destination != "" {
-			toUserAccount := ""
-			mint := ""
-			decimals := -1
-
-			if balanceDiff, ok := FindAccountKeyIndex(AccountKeysMap, destination); ok {
-				if balanceDiffMap[balanceDiff].Owner != "" {
-					toUserAccount = balanceDiffMap[balanceDiff].Owner
-					mint = balanceDiffMap[balanceDiff].Mint
-					decimals = balanceDiffMap[balanceDiff].Decimals
-					amount = balanceDiffMap[balanceDiff].Amount
-				}
-			}
-			if toUserAccount == "" {
-				tokenAccount, found := findUserAccount(destination, tx)
-				if found {
-					toUserAccount = tokenAccount.UserAccount
-					mint = tokenAccount.MintAddress
-					decimals = tokenAccount.Decimals
-				}
-			}
 
 			fromUserAccount := ""
 			if balanceDiffSource, ok := FindAccountKeyIndex(AccountKeysMap, source); ok {
 				if balanceDiffMap[balanceDiffSource].Owner != "" {
 					fromUserAccount = balanceDiffMap[balanceDiffSource].Owner
-					if amount == "" || amount == "0" {
-						amountFloat, ok := new(big.Float).SetString(balanceDiffMap[balanceDiffSource].Amount)
-						if !ok {
-							amountFloat = new(big.Float).SetInt64(0)
-						}
-						amountFloat.Abs(amountFloat)
-						amount = amountFloat.Text('f', -1)
-					}
+					//amount = balanceDiffMap[balanceDiffSource].Amount
+					//if amount == "" || amount == "0" {
+					//	amountFloat, ok := new(big.Float).SetString(balanceDiffMap[balanceDiffSource].Amount)
+					//	if !ok {
+					//		amountFloat = new(big.Float).SetInt64(0)
+					//	}
+					//	amountFloat.Abs(amountFloat)
+					//	amount = amountFloat.Text('f', -1)
+					//}
 				}
 			}
 			if fromUserAccount == "" {
@@ -276,6 +283,22 @@ func buildTransfer(
 					decimals = tokenAccount.Decimals
 				} else {
 					tType = "mint"
+				}
+			}
+
+			if balanceDiff, ok := FindAccountKeyIndex(AccountKeysMap, destination); ok {
+				if balanceDiffMap[balanceDiff].Owner != "" {
+					toUserAccount = balanceDiffMap[balanceDiff].Owner
+					mint = balanceDiffMap[balanceDiff].Mint
+					decimals = balanceDiffMap[balanceDiff].Decimals
+				}
+			}
+			if toUserAccount == "" {
+				tokenAccount, found := findUserAccount(destination, tx)
+				if found {
+					toUserAccount = tokenAccount.UserAccount
+					mint = tokenAccount.MintAddress
+					decimals = tokenAccount.Decimals
 				}
 			}
 
@@ -290,10 +313,7 @@ func buildTransfer(
 				Mint:             mint,
 				Decimals:         decimals,
 				Type:             tType,
-			}
-
-			if transfer.Amount == "" {
-				return types.SolTransfer{}, false
+				Authority:        authority,
 			}
 
 			return transfer, true
@@ -301,6 +321,50 @@ func buildTransfer(
 	}
 
 	return types.SolTransfer{}, false
+}
+
+func findTransferAmount(
+	programId string,
+	AccountKeysMap map[string]int,
+	balanceDiffMap map[int]types.SolBalanceDiff,
+	authority string,
+	accounts []int,
+	accountKeys []string,
+	source string,
+	destination string) string {
+	reference := -1
+
+	switch programId {
+	case PUMPFUN:
+		reference = accounts[3]
+	case METEORA_DLMM_PROGRAM:
+		reference = accounts[0]
+	case RAYDIUM_LIQ_POOL_V4:
+		reference = accounts[2]
+	case ORCA_WHIRL_PROGRAM_ID:
+		reference = accounts[4]
+	}
+	if reference == -1 {
+		if balIndex, ok := FindAccountKeyIndex(AccountKeysMap, destination); ok {
+			amount := balanceDiffMap[balIndex].Amount
+			return ABSValue(amount)
+		}
+		return ""
+	}
+
+	balAddr := ""
+	if authority == accountKeys[reference] {
+		balAddr = source
+	} else {
+		balAddr = destination
+	}
+
+	if balIndex, ok := FindAccountKeyIndex(AccountKeysMap, balAddr); ok {
+		amount := balanceDiffMap[balIndex].Amount
+		return ABSValue(amount)
+	}
+
+	return ""
 }
 
 func CreateTokenAccountMap(tx *types.SolanaTx) map[string]types.TokenAccountDetails {
