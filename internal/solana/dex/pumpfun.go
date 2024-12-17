@@ -90,25 +90,16 @@ func HandlePumpFunSwaps(index int, transfers []types.SolTransfer, accountKeys []
 		return types.SolSwap{}, 0
 	}
 
-	pair := accountKeys[(currentTransfer.IxAccounts)[3]]
+	incr := 0
 
-	if currentTransfer.ParentProgramId != nextTransfer.ParentProgramId {
-		s := HandlePumpFunSwapData(currentTransfer.EventData)
-		s.Pair = pair
-		return s, 0
+	if currentTransfer.ParentProgramId == nextTransfer.ParentProgramId {
+		incr++
 	}
 
-	s := types.SolSwap{
-		Pair:      pair,
-		Exchange:  "PUMPFUN",
-		Wallet:    accountKeys[(currentTransfer.IxAccounts)[6]],
-		TokenOut:  currentTransfer.Mint,
-		TokenIn:   nextTransfer.Mint,
-		AmountIn:  nextTransfer.Amount,
-		AmountOut: currentTransfer.Amount,
-	}
+	s := HandlePumpFunSwapData(currentTransfer.EventData)
+	s.Pair = accountKeys[(currentTransfer.IxAccounts)[3]]
 
-	return s, 1
+	return s, incr
 
 }
 
