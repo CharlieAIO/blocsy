@@ -2,6 +2,7 @@ package types
 
 import (
 	"errors"
+	"github.com/blocto/solana-go-sdk/common"
 	"github.com/goccy/go-json"
 	jlexer "github.com/mailru/easyjson/jlexer"
 )
@@ -10,6 +11,30 @@ type LogDetails struct {
 	Program string
 	Logs    []string
 	SubLogs []LogDetails
+}
+
+type SystemProgramData struct {
+	RawType   byte
+	Type      string
+	Lamports  uint64
+	Space     uint64
+	ProgramID common.PublicKey
+}
+
+type TokenProgramData struct {
+	RawType byte
+	Type    string
+
+	Decimals int
+	Amount   uint64
+
+	Owner common.PublicKey
+
+	MintAuthority   common.PublicKey
+	FreezeAuthority common.PublicKey
+
+	AuthorityType byte
+	NewAuthority  common.PublicKey
 }
 
 //easyjson:json
@@ -240,13 +265,16 @@ type SolTransfer struct {
 	ToTokenAccount   string
 	FromUserAccount  string
 	FromTokenAccount string
+	Authority        string
 
 	Mint     string
 	Decimals int
 	Amount   string
 
-	Type      string
-	ProgramId string
+	Type            string
+	ParentProgramId string
+	IxAccounts      []int
+	EventData       string
 }
 
 //easyjson:json

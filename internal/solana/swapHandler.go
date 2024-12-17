@@ -22,86 +22,32 @@ func (sh *SwapHandler) HandleSwaps(ctx context.Context, transfers []types.SolTra
 	swaps := make([]types.SolSwap, 0)
 	accountKeys := getAllAccountKeys(tx)
 
-	processInstructionData := types.ProcessInstructionData{
-		AccountKeys:           accountKeys,
-		Transfers:             transfers,
-		InnerInstructionIndex: -1,
-		TokenAccountMap:       CreateTokenAccountMap(tx),
-	}
-
-	logs := GetLogs(tx.Meta.LogMessages)
-	for index, instruction := range tx.Transaction.Message.Instructions {
-		accounts := instruction.Accounts
-		innerInstructions, innerIdx := FindInnerIx(tx.Meta.InnerInstructions, index)
-
-		if index < len(logs) {
-			processInstructionData.Logs = logs[index].Logs
+	for i := 0; i < len(transfers); i++ {
+		transfer := transfers[i]
+		if found, _ := IgnoreToUsers[transfer.ToUserAccount]; found {
+			continue
 		}
-
-		if len(accountKeys)-1 < instruction.ProgramIdIndex {
+		if found, _ := IgnorePrograms[transfer.ParentProgramId]; found {
+			continue
+		}
+		swap, inc := processInstruction(i, transfers, accountKeys)
+		if found, _ := IgnoreTokens[swap.TokenOut]; found || IgnoreTokens[swap.TokenIn] {
 			continue
 		}
 
-		programId := accountKeys[instruction.ProgramIdIndex]
-		instructionSource := identifySource(programId)
-
-		processInstructionData.ProgramId = &programId
-		processInstructionData.Accounts = &accounts
-		processInstructionData.InnerIndex = &innerIdx
-		processInstructionData.Data = &instruction.Data
-
-		processInstructionData.InnerInstructionIndex = -1
-
-		swap := processInstruction(&processInstructionData)
-		if swap.TokenOut != "" || swap.TokenIn != "" {
-			swap.Source = instructionSource
+		if swap.Wallet != "" && swap.Pair != "" && validateSupportedDex(transfer.ParentProgramId) {
 			swaps = append(swaps, swap)
+		} else if transfer.Type != "native" && (validateSupportedDex(transfer.ParentProgramId) || transfer.ParentProgramId == "") {
+			transferSwap := types.SolSwap{
+				TokenIn:   transfer.Mint,
+				Wallet:    transfer.ToUserAccount,
+				AmountIn:  transfer.Amount,
+				AmountOut: "0",
+			}
+			swaps = append(swaps, transferSwap)
 		}
-
-		innerSwaps := make([]types.SolSwap, 0)
-		for innerIxIndex, innerIx := range innerInstructions {
-
-			if index < len(logs) && innerIxIndex < len(logs[index].SubLogs) {
-				processInstructionData.Logs = logs[index].SubLogs[innerIxIndex].Logs
-			}
-
-			if len(accountKeys)-1 < innerIx.ProgramIdIndex || innerIx.Data == "" {
-				continue
-			}
-
-			if validateProgramId(accountKeys[innerIx.ProgramIdIndex]) && len(innerIx.Accounts) > 5 {
-				accountsCopy := make([]int, len(innerIx.Accounts))
-				copy(accountsCopy, innerIx.Accounts)
-				processInstructionData.ProgramId = &accountKeys[innerIx.ProgramIdIndex]
-				processInstructionData.Accounts = &accountsCopy
-			}
-
-			processInstructionData.InnerInstructionIndex = innerIxIndex
-			processInstructionData.InnerAccounts = &innerIx.Accounts
-			processInstructionData.Data = &innerIx.Data
-
-			s := processInstruction(&processInstructionData)
-			if s.Pair != "" && s.TokenOut != "" && s.TokenIn != "" {
-				s.Source = instructionSource
-				innerSwaps = append(innerSwaps, s)
-			}
-		}
-		swaps = append(swaps, innerSwaps...)
-
+		i += inc
 	}
-
-	//for _, transfer := range processInstructionData.Transfers {
-	//	if transfer.Type == "token" {
-	//		transferSwap := types.SolSwap{
-	//			TokenIn:   transfer.Mint,
-	//			Wallet:    transfer.ToUserAccount,
-	//			AmountIn:  transfer.Amount,
-	//			AmountOut: "0",
-	//		}
-	//		log.Printf("transferSwap: %+v", transferSwap)
-	//		swaps = append(swaps, transferSwap)
-	//	}
-	//}
 
 	builtSwaps := make([]types.SwapLog, 0)
 	for _, swap := range swaps {
@@ -124,15 +70,20 @@ func (sh *SwapHandler) HandleSwaps(ctx context.Context, transfers []types.SolTra
 
 		token := ""
 		action := ""
-		if _, found := QuoteTokens[swap.TokenOut]; found {
+		if amountOutF == 0 {
+			if _, found := QuoteTokens[swap.TokenIn]; found {
+				continue
+			}
+			token = swap.TokenIn
+			action = "TRANSFER"
+		} else if _, found := QuoteTokens[swap.TokenOut]; found {
 			token = swap.TokenIn
 			action = "BUY"
 		} else if _, found := QuoteTokens[swap.TokenIn]; found {
 			token = swap.TokenOut
 			action = "SELL"
 		} else {
-			token = swap.TokenIn
-			action = "TRANSFER"
+			action = "UNKNOWN"
 		}
 
 		sh.tf.AddToQueue(token)
@@ -163,54 +114,37 @@ func (sh *SwapHandler) HandleSwaps(ctx context.Context, transfers []types.SolTra
 	return builtSwaps
 }
 
-func processInstruction(instructionData *types.ProcessInstructionData) types.SolSwap {
-	type handlerFunc func(data *types.ProcessInstructionData) types.SolSwap
+func processInstruction(index int, transfers []types.SolTransfer, accountKeys []string) (types.SolSwap, int) {
+	if index+1 >= len(transfers) {
+		return types.SolSwap{}, 0
+	}
+	type handlerFunc func(index int, transfers []types.SolTransfer, accountKeys []string) (types.SolSwap, int)
 	handlers := map[string]handlerFunc{
 		RAYDIUM_LIQ_POOL_V4:   dex.HandleRaydiumSwaps,
 		ORCA_WHIRL_PROGRAM_ID: dex.HandleOrcaSwaps,
 		METEORA_DLMM_PROGRAM:  dex.HandleMeteoraSwaps,
-		METEORA_POOLS_PROGRAM: dex.HandleMeteoraSwaps,
-		PUMPFUN:               dex.HandlePumpFunSwaps,
-		//TOKEN_PROGRAM:         dex.HandleTokenSwaps,
+		//METEORA_POOLS_PROGRAM: dex.HandleMeteoraSwaps,
+		PUMPFUN: dex.HandlePumpFunSwaps,
 	}
 
-	accountsLen := len(*instructionData.Accounts)
-	programId := *instructionData.ProgramId
+	accountsLen := len(transfers[index].IxAccounts)
+	programId := transfers[index].ParentProgramId
 
 	handler, exists := handlers[programId]
 	if !exists {
-		return types.SolSwap{}
+		return types.SolSwap{}, 0
 	}
 
 	if programId == ORCA_WHIRL_PROGRAM_ID {
-		if (accountsLen != 15 && accountsLen != 11) || instructionData.AccountKeys[(*instructionData.Accounts)[0]] != TOKEN_PROGRAM {
-			return types.SolSwap{}
+		if (accountsLen != 15 && accountsLen != 11) || accountKeys[transfers[index].IxAccounts[0]] != TOKEN_PROGRAM {
+			return types.SolSwap{}, 0
 		}
 	} else if programId == RAYDIUM_LIQ_POOL_V4 && accountsLen != 18 && accountsLen != 17 {
-		return types.SolSwap{}
+		return types.SolSwap{}, 0
 	} else if programId == METEORA_DLMM_PROGRAM && accountsLen != 18 && accountsLen != 17 {
-		return types.SolSwap{}
+		return types.SolSwap{}, 0
 	}
 
-	return handler(instructionData)
+	return handler(index, transfers, accountKeys)
 
-}
-
-func identifySource(programId string) string {
-	switch programId {
-	case RAYDIUM_LIQ_POOL_V4:
-		return "RAYDIUM"
-	case ORCA_WHIRL_PROGRAM_ID:
-		return "ORCA"
-	case METEORA_DLMM_PROGRAM:
-		return "METEORA"
-	case METEORA_POOLS_PROGRAM:
-		return "METEORA"
-	case PUMPFUN:
-		return "PUMPFUN"
-	case JUPITER_V6_AGGREGATOR:
-		return "JUPITER"
-	default:
-		return "UNKNOWN"
-	}
 }

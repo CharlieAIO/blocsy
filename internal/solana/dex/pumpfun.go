@@ -5,7 +5,6 @@ import (
 	"encoding/base64"
 	"encoding/hex"
 	"github.com/mr-tron/base58"
-	"log"
 	"math"
 	"math/big"
 	"strconv"
@@ -14,17 +13,11 @@ import (
 
 const TRADE_EVENT_DISCRIMINATOR = "bddb7fd34ee661ee"
 
-func HandlePumpFunSwaps(instructionData *types.ProcessInstructionData) types.SolSwap {
-
-	if len(*instructionData.Accounts) < 4 || len(instructionData.AccountKeys) < (*instructionData.Accounts)[3] {
-		log.Printf("Not enough accounts for PUMPFUN swap")
-		return types.SolSwap{}
-	}
-
+func HandlePumpFunSwapData(ixData string) types.SolSwap {
 	s := types.SolSwap{}
 	var tokenOutDecimals, tokenInDecimals int
 
-	bytesData, _ := base58.Decode(*instructionData.Data)
+	bytesData, _ := base58.Decode(ixData)
 	if bytesData == nil {
 		return types.SolSwap{}
 	}
@@ -39,7 +32,11 @@ func HandlePumpFunSwaps(instructionData *types.ProcessInstructionData) types.Sol
 		}
 
 		swap_ := types.PumpFunSwap{}
-		swap_.Decode(decodedBytes)
+		err = swap_.Decode(decodedBytes)
+		if err != nil {
+			return types.SolSwap{}
+		}
+
 		if swap_.Mint.String() == "" {
 			return types.SolSwap{}
 		}
@@ -77,15 +74,33 @@ func HandlePumpFunSwaps(instructionData *types.ProcessInstructionData) types.Sol
 		return types.SolSwap{}
 	}
 
-	instructionData.Transfers = removeTransfer(instructionData.Transfers, *instructionData.InnerIndex)
-
 	amountOutFloat.Quo(amountOutFloat, new(big.Float).SetFloat64(math.Pow10(tokenOutDecimals)))
 	amountInFloat.Quo(amountInFloat, new(big.Float).SetFloat64(math.Pow10(tokenInDecimals)))
-	s.Pair = instructionData.AccountKeys[(*instructionData.Accounts)[3]]
 	s.AmountOut = amountOutFloat.String()
 	s.AmountIn = amountInFloat.String()
 
 	return s
+}
+
+func HandlePumpFunSwaps(index int, transfers []types.SolTransfer, accountKeys []string) (types.SolSwap, int) {
+	currentTransfer := transfers[index]
+	nextTransfer := transfers[index+1]
+
+	if len(currentTransfer.IxAccounts) < 4 || len(accountKeys) < (currentTransfer.IxAccounts)[3] {
+		return types.SolSwap{}, 0
+	}
+
+	incr := 0
+
+	if currentTransfer.ParentProgramId == nextTransfer.ParentProgramId {
+		incr++
+	}
+
+	s := HandlePumpFunSwapData(currentTransfer.EventData)
+	s.Pair = accountKeys[(currentTransfer.IxAccounts)[3]]
+
+	return s, incr
+
 }
 
 func HandlePumpFunNewToken(parsedLogs []types.LogDetails, programId string) []types.PumpFunCreation {

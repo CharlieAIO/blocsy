@@ -8,7 +8,6 @@ import (
 	"log"
 	"os"
 	"os/signal"
-	"strings"
 )
 
 func main() {
@@ -33,16 +32,19 @@ func main() {
 }
 
 func solanaListener(ctx context.Context, pRepo *db.TimescaleRepository) {
-	url := os.Getenv("SOL_HTTPS")
-	if url == "" {
+	url_https := os.Getenv("SOL_HTTPS")
+	if url_https == "" {
 		log.Fatalf("SOL_HTTPS is required")
 	}
-	// Ensure we have a WSS URL instead of HTTP
-	url = strings.Replace(url, "https://", "wss://", 1)
+
+	url_wss := os.Getenv("SOL_WSS")
+	if url_wss == "" {
+		log.Fatalf("SOL_WSS is required")
+	}
 
 	solSvc := solana.NewSolanaService(ctx)
 	queueHandler := solana.NewSolanaQueueHandler(nil, nil)
-	sbl := solana.NewBlockListener(url, solSvc, pRepo, queueHandler)
+	sbl := solana.NewBlockListener(url_wss, solSvc, pRepo, queueHandler)
 
 	go func() {
 		log.Println("Listening for new blocks (solana)...")
