@@ -33,3 +33,23 @@ var QuoteTokens = map[string]string{
 	"Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB": "USDT",
 	"EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v": "USDC",
 }
+
+var IgnoreToUsers = map[string]bool{
+	"CebN5WGQ4jvEPvsVU4EoHEpgzq1VV7AbicfhtW4xC9iM": true,
+}
+
+var IgnoreTokens = map[string]bool{
+	"J1toso1uCk3RLmjorhTtrVwY9HJ7X8V9yYac6Y7kGCPn": true, //JitoSOL
+	"mSoLzYCxHdYgdzU16g5QSh3i5K3z3KZK7ytfqcJm7So":  true, //mSOL
+	"27G8MtK7VtTcCHkpASjSDdkWWYfoqT6ggEuKidVJidD4": true, //JLP
+}
+
+var IgnorePrograms = map[string]bool{
+	PHOENIX:                  true,
+	LIFINITY_SWAP_V2:         true,
+	ORCA_SWAP:                true,
+	ORCA_SWAP_V2:             true,
+	RAYDIUM_CONCENTRATED_LIQ: true,
+	RAYDIUM_CPMM:             true,
+	METEORA_POOLS_PROGRAM:    true,
+}

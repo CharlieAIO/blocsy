@@ -50,6 +50,17 @@ func validateTX(tx *types.SolanaTx) bool {
 	return false
 }
 
+func validateSupportedDex(programId string) bool {
+	switch programId {
+	case PUMPFUN,
+		METEORA_DLMM_PROGRAM,
+		RAYDIUM_LIQ_POOL_V4,
+		ORCA_WHIRL_PROGRAM_ID:
+		return true
+	}
+	return false
+}
+
 func validateProgramIsDex(programId string) bool {
 	switch programId {
 	case PUMPFUN,
@@ -60,15 +71,6 @@ func validateProgramIsDex(programId string) bool {
 		return true
 	}
 	return false
-}
-
-func FindInnerIx(instructions []types.InnerInstruction, idxMatch int) ([]types.Instruction, int) {
-	for i := range instructions {
-		if instructions[i].Index == idxMatch {
-			return instructions[i].Instructions, instructions[i].Index
-		}
-	}
-	return []types.Instruction{}, -1
 }
 
 func FindAccountKeyIndex(keyMap map[string]int, key string) (int, bool) {

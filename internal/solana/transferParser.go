@@ -2,6 +2,7 @@ package solana
 
 import (
 	"blocsy/internal/types"
+	"math"
 	"math/big"
 	"strconv"
 )
@@ -93,18 +94,7 @@ func GetAllTransfers(tx *types.SolanaTx) []types.SolTransfer {
 			parentProgramId, parentAccounts := findParentProgram(instructionIndex, tx, -1, -1, accountKeys)
 			transfer.IxAccounts = parentAccounts
 			transfer.ParentProgramId = parentProgramId
-			if transfer.Amount == "" {
-				transfer.Amount = findTransferAmount(
-					transfer.ParentProgramId,
-					AccountKeysMap,
-					balanceDiffMap,
-					transfer.Authority,
-					transfer.IxAccounts,
-					accountKeys,
-					transfer.FromTokenAccount,
-					transfer.ToTokenAccount,
-				)
-			}
+
 			if transfer.Amount != "" && transfer.Amount != "0" {
 				transfers = append(transfers, transfer)
 			}
@@ -123,18 +113,7 @@ func GetAllTransfers(tx *types.SolanaTx) []types.SolTransfer {
 					parentProgramId, parentAccounts := findParentProgram(instructionIndex, tx, innerIxIndex, ixIndex, accountKeys)
 					innerTransfer.IxAccounts = parentAccounts
 					innerTransfer.ParentProgramId = parentProgramId
-					if innerTransfer.Amount == "" {
-						innerTransfer.Amount = findTransferAmount(
-							innerTransfer.ParentProgramId,
-							AccountKeysMap,
-							balanceDiffMap,
-							innerTransfer.Authority,
-							innerTransfer.IxAccounts,
-							accountKeys,
-							innerTransfer.FromTokenAccount,
-							innerTransfer.ToTokenAccount,
-						)
-					}
+					innerTransfer.EventData = findPumpFunSwapEvent(instructionIndex, tx, innerIxIndex, ixIndex, accountKeys)
 
 					if innerTransfer.Amount != "" && innerTransfer.Amount != "0" {
 						transfers = append(transfers, innerTransfer)
@@ -147,20 +126,52 @@ func GetAllTransfers(tx *types.SolanaTx) []types.SolTransfer {
 	return transfers
 }
 
+func validateProgram(program string, accounts []int, accountKeys []string) bool {
+	if program == ORCA_WHIRL_PROGRAM_ID {
+		if len(accounts) == 15 || (len(accounts) == 11 && accountKeys[accounts[0]] == TOKEN_PROGRAM) {
+			return true
+		}
+	}
+	if program == RAYDIUM_LIQ_POOL_V4 {
+		if len(accounts) == 18 || len(accounts) == 17 {
+			return true
+		}
+	}
+	if program == METEORA_DLMM_PROGRAM {
+		if len(accounts) >= 15 && accountKeys[accounts[14]] == METEORA_DLMM_PROGRAM {
+			return true
+		}
+	}
+	if program == PUMPFUN {
+		if len(accounts) == 12 && accountKeys[accounts[11]] == PUMPFUN {
+			return true
+		}
+	}
+	return false
+}
+
 func findParentProgram(ixIndex int, tx *types.SolanaTx, innerIxIndex int, innerInstructionIxIndex int, accountKeys []string) (string, []int) {
 	if innerIxIndex >= 0 {
 		// If inner instruction, traverse backwards within inner instructions
 		for innerI := innerInstructionIxIndex; innerI >= 0; innerI-- {
 			ix := tx.Meta.InnerInstructions[innerIxIndex].Instructions[innerI]
 			if validateProgramIsDex(accountKeys[ix.ProgramIdIndex]) {
-				return accountKeys[ix.ProgramIdIndex], ix.Accounts
+				var accs []int
+				if validateProgram(accountKeys[ix.ProgramIdIndex], ix.Accounts, accountKeys) {
+					accs = ix.Accounts
+				}
+				return accountKeys[ix.ProgramIdIndex], accs
 			}
 		}
 	}
 
 	baseIx := tx.Transaction.Message.Instructions[ixIndex]
 	if validateProgramIsDex(accountKeys[baseIx.ProgramIdIndex]) {
-		return accountKeys[baseIx.ProgramIdIndex], baseIx.Accounts
+		var accs []int
+		if validateProgram(accountKeys[baseIx.ProgramIdIndex], baseIx.Accounts, accountKeys) {
+			accs = baseIx.Accounts
+		}
+		return accountKeys[baseIx.ProgramIdIndex], accs
 	}
 
 	// Fallback: Default to empty if no parent program is found
@@ -185,8 +196,13 @@ func buildTransfer(
 	}
 	programId := accountKeys[ix.ProgramIdIndex]
 
-	if programId == "11111111111111111111111111111111" {
-		if len(ix.Accounts) != 2 || len(ix.Data) > 30 {
+	//log.Printf("programId %s ~ ix %+v", programId, ix)
+
+	if programId == SYSTEM_PROGRAM {
+
+		var instructionData = DecodeSystemProgramData(ix.Data)
+
+		if instructionData.Type != "Transfer" {
 			return types.SolTransfer{}, false
 		}
 
@@ -201,16 +217,17 @@ func buildTransfer(
 		if destination == "" || source == "" {
 			return types.SolTransfer{}, false
 		}
-		amount := ""
-		if balanceDiff, ok := FindAccountKeyIndex(AccountKeysMap, destination); ok {
-			if balanceDiffMap[balanceDiff].Amount != "" {
-				amount = balanceDiffMap[balanceDiff].Amount
-			} else if nativeBalanceDiffMap[balanceDiff].Amount != "0" {
-				amount = nativeBalanceDiffMap[balanceDiff].Amount
-			}
-		} else {
-			return types.SolTransfer{}, false
-		}
+		//amount := ""
+		//if balanceDiff, ok := FindAccountKeyIndex(AccountKeysMap, destination); ok {
+		//	if balanceDiffMap[balanceDiff].Amount != "" {
+		//		amount = balanceDiffMap[balanceDiff].Amount
+		//	} else if nativeBalanceDiffMap[balanceDiff].Amount != "0" {
+		//		amount = nativeBalanceDiffMap[balanceDiff].Amount
+		//	}
+		//} else {
+		//	return types.SolTransfer{}, false
+		//}
+		amount := new(big.Float).Quo(new(big.Float).SetUint64(instructionData.Lamports), big.NewFloat(1e9)).Text('f', -1)
 
 		transfer := types.SolTransfer{
 			IxIndex:         ixIndex,
@@ -244,20 +261,27 @@ func buildTransfer(
 		var amount, source, destination, authority, mint, toUserAccount string
 		var decimals = -1
 
-		//transferChecked
-		if len(ix.Accounts) == 4 {
+		var instructionData = DecodeTokenProgramData(ix.Data)
+		tType := "token"
+
+		if instructionData.Type == "TransferChecked" {
 			source = accountKeys[ix.Accounts[0]]
-			//mint = accountKeys[ix.Accounts[1]]
+			mint = accountKeys[ix.Accounts[1]]
 			destination = accountKeys[ix.Accounts[2]]
 			authority = accountKeys[ix.Accounts[3]]
-		}
-		//transfer
-		if len(ix.Accounts) == 3 {
+		} else if instructionData.Type == "Transfer" {
+			decimals = instructionData.Decimals
 			source = accountKeys[ix.Accounts[0]]
 			destination = accountKeys[ix.Accounts[1]]
 			authority = accountKeys[ix.Accounts[2]]
+		} else if instructionData.Type == "MintTo" {
+			tType = "mint"
+			mint = accountKeys[ix.Accounts[0]]
+			destination = accountKeys[ix.Accounts[1]] //account
+			authority = accountKeys[ix.Accounts[2]]
+		} else {
+			return types.SolTransfer{}, false
 		}
-		tType := "token"
 
 		if destination != "" {
 
@@ -265,15 +289,6 @@ func buildTransfer(
 			if balanceDiffSource, ok := FindAccountKeyIndex(AccountKeysMap, source); ok {
 				if balanceDiffMap[balanceDiffSource].Owner != "" {
 					fromUserAccount = balanceDiffMap[balanceDiffSource].Owner
-					//amount = balanceDiffMap[balanceDiffSource].Amount
-					//if amount == "" || amount == "0" {
-					//	amountFloat, ok := new(big.Float).SetString(balanceDiffMap[balanceDiffSource].Amount)
-					//	if !ok {
-					//		amountFloat = new(big.Float).SetInt64(0)
-					//	}
-					//	amountFloat.Abs(amountFloat)
-					//	amount = amountFloat.Text('f', -1)
-					//}
 				}
 			}
 			if fromUserAccount == "" {
@@ -281,8 +296,6 @@ func buildTransfer(
 					fromUserAccount = tokenAccount.UserAccount
 					mint = tokenAccount.MintAddress
 					decimals = tokenAccount.Decimals
-				} else {
-					tType = "mint"
 				}
 			}
 
@@ -301,7 +314,7 @@ func buildTransfer(
 					decimals = tokenAccount.Decimals
 				}
 			}
-
+			amount = new(big.Float).Quo(new(big.Float).SetUint64(instructionData.Amount), new(big.Float).SetFloat64(math.Pow10(decimals))).Text('f', -1)
 			transfer := types.SolTransfer{
 				IxIndex:          ixIndex,
 				InnerIndex:       innerIndex,
@@ -332,6 +345,7 @@ func findTransferAmount(
 	accountKeys []string,
 	source string,
 	destination string) string {
+	//log.Printf("Finding Transfer Amount | programId %s | authority %s | source %s | destiantion %s", programId, authority, source, destination)
 	reference := -1
 
 	switch programId {
@@ -353,7 +367,7 @@ func findTransferAmount(
 	}
 
 	balAddr := ""
-	if authority == accountKeys[reference] {
+	if destination == accountKeys[reference] {
 		balAddr = source
 	} else {
 		balAddr = destination
@@ -436,73 +450,66 @@ func findUserAccount(tokenAccount string, tx *types.SolanaTx) (types.TokenAccoun
 }
 
 func findAccount(ix types.Instruction, tokenAccount string, accountKeys []string) (string, string, bool) {
+	var userAccount, mint, foundTokenAccount string
+
 	if len(accountKeys)-1 < ix.ProgramIdIndex {
-		return "", "", false
+		return userAccount, mint, false
 	}
 
 	for _, accountIndex := range ix.Accounts {
 		if accountIndex > len(accountKeys)-1 {
-			return "", "", false
+			return userAccount, mint, false
 		}
 	}
 
 	programId := accountKeys[ix.ProgramIdIndex]
 
-	// Associated Token Account Program | createAssociatedTokenAccount
+	// Associated Token Account Program | createAssociatedTokenAccount`
 	if programId == ASSOCIATED_TOKEN_PROGRAM {
 		if len(ix.Accounts) == 6 {
 
 			//tokenProgram := accountKeys[ix.Accounts[5]]
 			//systemProgram := accountKeys[ix.Accounts[4]]
-			mint := accountKeys[ix.Accounts[3]]
+			mint = accountKeys[ix.Accounts[3]]
 			//source := accountKeys[ix.Accounts[2]]
-			account := accountKeys[ix.Accounts[1]]
-			wallet := accountKeys[ix.Accounts[0]] // same as source
-			if account == tokenAccount {
-				return wallet, mint, true
-			}
+			foundTokenAccount = accountKeys[ix.Accounts[1]]
+			userAccount = accountKeys[ix.Accounts[0]] // same as source
 
 		}
 
 	}
-	//spl-token program | initializeAccount, initializeAccount2, initializeAccount3
 	if programId == TOKEN_PROGRAM {
+		var instructionData = DecodeTokenProgramData(ix.Data)
+		if instructionData.Type == "InitializeAccount3" {
+			foundTokenAccount = accountKeys[ix.Accounts[0]]
+			mint = accountKeys[ix.Accounts[1]]
+			userAccount = instructionData.Owner.String()
+		} else if instructionData.Type == "InitializeAccount" {
+			foundTokenAccount = accountKeys[ix.Accounts[0]]
+			mint = accountKeys[ix.Accounts[1]]
+			userAccount = accountKeys[ix.Accounts[2]]
+		} else if instructionData.Type == "InitializeAccount2" {
+			foundTokenAccount = accountKeys[ix.Accounts[0]]
+			mint = accountKeys[ix.Accounts[1]]
+			userAccount = instructionData.Owner.String()
+		}
 
-		if len(ix.Accounts) == 4 {
-			account := accountKeys[ix.Accounts[0]]
-			mint := accountKeys[ix.Accounts[1]]
-			owner := accountKeys[ix.Accounts[2]]
-			//rentSysvar := accountKeys[ix.Accounts[3]]
-			if account == tokenAccount {
-				return owner, mint, true
-			}
-		}
-		//if len(ix.Accounts) == 3 {
-		//	//source := accountKeys[ix.Accounts[0]]
-		//	destination := accountKeys[ix.Accounts[1]]
-		//	//authority := accountKeys[ix.Accounts[2]]
-		//	//log.Printf("authority: %s | destination: %s | source: %s", authority, destination, source)
-		//	if destination == tokenAccount {
-		//		return "", "", true
-		//	}
-		//}
-		if len(ix.Accounts) == 2 {
-			account := accountKeys[ix.Accounts[0]]
-			mint := accountKeys[ix.Accounts[1]]
-			if account == tokenAccount {
-				return "", mint, true
-			}
-		}
 	}
 
 	if programId == SYSTEM_PROGRAM {
-		if len(ix.Accounts) == 2 {
+		var instructionData = DecodeSystemProgramData(ix.Data)
+
+		if instructionData.Type == "CreateAccount" {
 			source := accountKeys[ix.Accounts[0]]
 			newAccount := accountKeys[ix.Accounts[1]]
 			if newAccount == tokenAccount {
 				return source, "", true
 			}
 		}
+	}
+
+	if foundTokenAccount == tokenAccount {
+		return userAccount, mint, true
 	}
 	return "", "", false
 }
@@ -515,4 +522,24 @@ func findMintInBalances(tx *types.SolanaTx, mint string) int {
 		}
 	}
 	return -1
+}
+
+func findPumpFunSwapEvent(ixIndex int, tx *types.SolanaTx, innerIxIndex int, innerInstructionIxIndex int, accountKeys []string) string {
+	if innerIxIndex >= 0 {
+		// If inner instruction, traverse backwards within inner instructions
+		for innerI := innerInstructionIxIndex; innerI < len(tx.Meta.InnerInstructions[innerIxIndex].Instructions); innerI++ {
+			ix := tx.Meta.InnerInstructions[innerIxIndex].Instructions[innerI]
+			if accountKeys[ix.ProgramIdIndex] == PUMPFUN {
+				return ix.Data
+			}
+		}
+	}
+
+	//baseIx := tx.Transaction.Message.Instructions[ixIndex]
+	//if validateProgramIsDex(accountKeys[baseIx.ProgramIdIndex]) {
+	//	return accountKeys[baseIx.ProgramIdIndex], baseIx.Accounts
+	//}
+
+	// Fallback: Default to empty if no parent program is found
+	return ""
 }

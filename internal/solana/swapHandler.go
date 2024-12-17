@@ -4,7 +4,6 @@ import (
 	"blocsy/internal/solana/dex"
 	"blocsy/internal/types"
 	"context"
-	"log"
 	"math/big"
 	"time"
 )
@@ -25,9 +24,18 @@ func (sh *SwapHandler) HandleSwaps(ctx context.Context, transfers []types.SolTra
 
 	for i := 0; i < len(transfers); i++ {
 		transfer := transfers[i]
+		if found, _ := IgnoreToUsers[transfer.ToUserAccount]; found {
+			continue
+		}
+		if found, _ := IgnorePrograms[transfer.ParentProgramId]; found {
+			continue
+		}
 		swap, inc := processInstruction(i, transfers, accountKeys)
-		log.Printf("incr %d -swap: %+v", inc, swap)
-		if swap.Wallet != "" {
+		if found, _ := IgnoreTokens[swap.TokenOut]; found || IgnoreTokens[swap.TokenIn] {
+			continue
+		}
+
+		if swap.Wallet != "" && swap.Pair != "" && validateSupportedDex(transfer.ParentProgramId) {
 			swaps = append(swaps, swap)
 		} else if transfer.Type != "native" && !validateProgramIsDex(transfer.ParentProgramId) {
 			transferSwap := types.SolSwap{
@@ -62,15 +70,20 @@ func (sh *SwapHandler) HandleSwaps(ctx context.Context, transfers []types.SolTra
 
 		token := ""
 		action := ""
-		if _, found := QuoteTokens[swap.TokenOut]; found {
+		if amountOutF == 0 {
+			if _, found := QuoteTokens[swap.TokenIn]; found {
+				continue
+			}
+			token = swap.TokenIn
+			action = "TRANSFER"
+		} else if _, found := QuoteTokens[swap.TokenOut]; found {
 			token = swap.TokenIn
 			action = "BUY"
 		} else if _, found := QuoteTokens[swap.TokenIn]; found {
 			token = swap.TokenOut
 			action = "SELL"
 		} else {
-			token = swap.TokenIn
-			action = "TRANSFER"
+			action = "UNKNOWN"
 		}
 
 		sh.tf.AddToQueue(token)
