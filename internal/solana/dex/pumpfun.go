@@ -102,10 +102,10 @@ func HandlePumpFunSwaps(index int, transfers []types.SolTransfer, accountKeys []
 		Pair:      pair,
 		Exchange:  "PUMPFUN",
 		Wallet:    accountKeys[(currentTransfer.IxAccounts)[6]],
-		TokenOut:  nextTransfer.Mint,
-		TokenIn:   currentTransfer.Mint,
-		AmountIn:  currentTransfer.Amount,
-		AmountOut: nextTransfer.Amount,
+		TokenOut:  currentTransfer.Mint,
+		TokenIn:   nextTransfer.Mint,
+		AmountIn:  nextTransfer.Amount,
+		AmountOut: currentTransfer.Amount,
 	}
 
 	return s, 1

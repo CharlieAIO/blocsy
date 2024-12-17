@@ -155,6 +155,11 @@ func findParentProgram(ixIndex int, tx *types.SolanaTx, innerIxIndex int, innerI
 		// If inner instruction, traverse backwards within inner instructions
 		for innerI := innerInstructionIxIndex; innerI >= 0; innerI-- {
 			ix := tx.Meta.InnerInstructions[innerIxIndex].Instructions[innerI]
+
+			if validateProgramIsDex(accountKeys[ix.ProgramIdIndex]) && len(ix.Accounts) <= 2 {
+				continue
+			}
+
 			if validateProgramIsDex(accountKeys[ix.ProgramIdIndex]) {
 				var accs []int
 				if validateProgram(accountKeys[ix.ProgramIdIndex], ix.Accounts, accountKeys) {

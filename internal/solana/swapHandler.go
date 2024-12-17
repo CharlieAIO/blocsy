@@ -37,7 +37,7 @@ func (sh *SwapHandler) HandleSwaps(ctx context.Context, transfers []types.SolTra
 
 		if swap.Wallet != "" && swap.Pair != "" && validateSupportedDex(transfer.ParentProgramId) {
 			swaps = append(swaps, swap)
-		} else if transfer.Type != "native" && !validateProgramIsDex(transfer.ParentProgramId) {
+		} else if transfer.Type != "native" && (validateSupportedDex(transfer.ParentProgramId) || transfer.ParentProgramId == "") {
 			transferSwap := types.SolSwap{
 				TokenIn:   transfer.Mint,
 				Wallet:    transfer.ToUserAccount,
