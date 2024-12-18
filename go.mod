@@ -16,6 +16,7 @@ require (
 	github.com/mailru/easyjson v0.7.7
 	github.com/mr-tron/base58 v1.2.0
 	github.com/patrickmn/go-cache v2.1.0+incompatible
+	github.com/rpcpool/yellowstone-grpc/examples/golang v0.0.0-20241216215941-6bfff923478c
 	github.com/streadway/amqp v1.1.0
 	go.mongodb.org/mongo-driver v1.17.1
 	golang.org/x/time v0.7.0

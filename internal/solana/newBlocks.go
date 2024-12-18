@@ -191,11 +191,13 @@ func (s *SolanaBlockListener) HandleBlock(blockTransactions []types.SolanaTx, bl
 	}
 	log.Printf("Block %d has %d transactions to process", block, len(toProcess))
 
-	s.queueHandler.AddToSolanaQueue(types.BlockData{
-		Transactions: toProcess,
-		Block:        block,
-		Timestamp:    blockTime,
-	})
+	if s.queueHandler != nil {
+		s.queueHandler.AddToSolanaQueue(types.BlockData{
+			Transactions: toProcess,
+			Block:        block,
+			Timestamp:    blockTime,
+		})
+	}
 }
 
 func (s *SolanaBlockListener) keepAlive(ctx context.Context, client *websocket.Conn, connectionOpen *bool) {
