@@ -713,16 +713,16 @@ func easyjson791538f0DecodeBlocsyInternalTypes3(in *jlexer.Lexer, out *Transacti
 				in.Delim('[')
 				if out.PostBalances == nil {
 					if !in.IsDelim(']') {
-						out.PostBalances = make([]int64, 0, 8)
+						out.PostBalances = make([]uint64, 0, 8)
 					} else {
-						out.PostBalances = []int64{}
+						out.PostBalances = []uint64{}
 					}
 				} else {
 					out.PostBalances = (out.PostBalances)[:0]
 				}
 				for !in.IsDelim(']') {
-					var v6 int64
-					v6 = int64(in.Int64())
+					var v6 uint64
+					v6 = uint64(in.Uint64())
 					out.PostBalances = append(out.PostBalances, v6)
 					in.WantComma()
 				}
@@ -759,16 +759,16 @@ func easyjson791538f0DecodeBlocsyInternalTypes3(in *jlexer.Lexer, out *Transacti
 				in.Delim('[')
 				if out.PreBalances == nil {
 					if !in.IsDelim(']') {
-						out.PreBalances = make([]int64, 0, 8)
+						out.PreBalances = make([]uint64, 0, 8)
 					} else {
-						out.PreBalances = []int64{}
+						out.PreBalances = []uint64{}
 					}
 				} else {
 					out.PreBalances = (out.PreBalances)[:0]
 				}
 				for !in.IsDelim(']') {
-					var v8 int64
-					v8 = int64(in.Int64())
+					var v8 uint64
+					v8 = uint64(in.Uint64())
 					out.PreBalances = append(out.PreBalances, v8)
 					in.WantComma()
 				}
@@ -798,18 +798,7 @@ func easyjson791538f0DecodeBlocsyInternalTypes3(in *jlexer.Lexer, out *Transacti
 				in.Delim(']')
 			}
 		case "loadedAddresses":
-			if in.IsNull() {
-				in.Skip()
-				out.LoadedAddresses = nil
-			} else {
-				if out.LoadedAddresses == nil {
-					out.LoadedAddresses = new(struct {
-						Readonly []string `json:"readonly"`
-						Writable []string `json:"writable"`
-					})
-				}
-				easyjson791538f0Decode4(in, out.LoadedAddresses)
-			}
+			(out.LoadedAddresses).UnmarshalEasyJSON(in)
 		default:
 			in.SkipRecursive()
 		}
@@ -879,7 +868,7 @@ func easyjson791538f0EncodeBlocsyInternalTypes3(out *jwriter.Writer, in Transact
 				if v14 > 0 {
 					out.RawByte(',')
 				}
-				out.Int64(int64(v15))
+				out.Uint64(uint64(v15))
 			}
 			out.RawByte(']')
 		}
@@ -909,7 +898,7 @@ func easyjson791538f0EncodeBlocsyInternalTypes3(out *jwriter.Writer, in Transact
 				if v18 > 0 {
 					out.RawByte(',')
 				}
-				out.Int64(int64(v19))
+				out.Uint64(uint64(v19))
 			}
 			out.RawByte(']')
 		}
@@ -928,10 +917,10 @@ func easyjson791538f0EncodeBlocsyInternalTypes3(out *jwriter.Writer, in Transact
 			out.RawByte(']')
 		}
 	}
-	if in.LoadedAddresses != nil {
+	if true {
 		const prefix string = ",\"loadedAddresses\":"
 		out.RawString(prefix)
-		easyjson791538f0Encode4(out, *in.LoadedAddresses)
+		(in.LoadedAddresses).MarshalEasyJSON(out)
 	}
 	out.RawByte('}')
 }
@@ -959,125 +948,6 @@ func (v *TransactionMeta) UnmarshalJSON(data []byte) error {
 func (v *TransactionMeta) UnmarshalEasyJSON(l *jlexer.Lexer) {
 	easyjson791538f0DecodeBlocsyInternalTypes3(l, v)
 }
-func easyjson791538f0Decode4(in *jlexer.Lexer, out *struct {
-	Readonly []string `json:"readonly"`
-	Writable []string `json:"writable"`
-}) {
-	isTopLevel := in.IsStart()
-	if in.IsNull() {
-		if isTopLevel {
-			in.Consumed()
-		}
-		in.Skip()
-		return
-	}
-	in.Delim('{')
-	for !in.IsDelim('}') {
-		key := in.UnsafeFieldName(false)
-		in.WantColon()
-		if in.IsNull() {
-			in.Skip()
-			in.WantComma()
-			continue
-		}
-		switch key {
-		case "readonly":
-			if in.IsNull() {
-				in.Skip()
-				out.Readonly = nil
-			} else {
-				in.Delim('[')
-				if out.Readonly == nil {
-					if !in.IsDelim(']') {
-						out.Readonly = make([]string, 0, 4)
-					} else {
-						out.Readonly = []string{}
-					}
-				} else {
-					out.Readonly = (out.Readonly)[:0]
-				}
-				for !in.IsDelim(']') {
-					var v22 string
-					v22 = string(in.String())
-					out.Readonly = append(out.Readonly, v22)
-					in.WantComma()
-				}
-				in.Delim(']')
-			}
-		case "writable":
-			if in.IsNull() {
-				in.Skip()
-				out.Writable = nil
-			} else {
-				in.Delim('[')
-				if out.Writable == nil {
-					if !in.IsDelim(']') {
-						out.Writable = make([]string, 0, 4)
-					} else {
-						out.Writable = []string{}
-					}
-				} else {
-					out.Writable = (out.Writable)[:0]
-				}
-				for !in.IsDelim(']') {
-					var v23 string
-					v23 = string(in.String())
-					out.Writable = append(out.Writable, v23)
-					in.WantComma()
-				}
-				in.Delim(']')
-			}
-		default:
-			in.SkipRecursive()
-		}
-		in.WantComma()
-	}
-	in.Delim('}')
-	if isTopLevel {
-		in.Consumed()
-	}
-}
-func easyjson791538f0Encode4(out *jwriter.Writer, in struct {
-	Readonly []string `json:"readonly"`
-	Writable []string `json:"writable"`
-}) {
-	out.RawByte('{')
-	first := true
-	_ = first
-	{
-		const prefix string = ",\"readonly\":"
-		out.RawString(prefix[1:])
-		if in.Readonly == nil && (out.Flags&jwriter.NilSliceAsEmpty) == 0 {
-			out.RawString("null")
-		} else {
-			out.RawByte('[')
-			for v24, v25 := range in.Readonly {
-				if v24 > 0 {
-					out.RawByte(',')
-				}
-				out.String(string(v25))
-			}
-			out.RawByte(']')
-		}
-	}
-	{
-		const prefix string = ",\"writable\":"
-		out.RawString(prefix)
-		if in.Writable == nil && (out.Flags&jwriter.NilSliceAsEmpty) == 0 {
-			out.RawString("null")
-		} else {
-			out.RawByte('[')
-			for v26, v27 := range in.Writable {
-				if v26 > 0 {
-					out.RawByte(',')
-				}
-				out.String(string(v27))
-			}
-			out.RawByte(']')
-		}
-	}
-	out.RawByte('}')
-}
 func easyjson791538f0DecodeBlocsyInternalTypes4(in *jlexer.Lexer, out *TransactionError) {
 	isTopLevel := in.IsStart()
 	if in.IsNull() {
@@ -1102,17 +972,17 @@ func easyjson791538f0DecodeBlocsyInternalTypes4(in *jlexer.Lexer, out *Transacti
 				in.Skip()
 			} else {
 				in.Delim('[')
-				v28 := 0
+				v22 := 0
 				for !in.IsDelim(']') {
-					if v28 < 2 {
-						if m, ok := (out.InstructionError)[v28].(easyjson.Unmarshaler); ok {
+					if v22 < 2 {
+						if m, ok := (out.InstructionError)[v22].(easyjson.Unmarshaler); ok {
 							m.UnmarshalEasyJSON(in)
-						} else if m, ok := (out.InstructionError)[v28].(json.Unmarshaler); ok {
+						} else if m, ok := (out.InstructionError)[v22].(json.Unmarshaler); ok {
 							_ = m.UnmarshalJSON(in.Raw())
 						} else {
-							(out.InstructionError)[v28] = in.Interface()
+							(out.InstructionError)[v22] = in.Interface()
 						}
-						v28++
+						v22++
 					} else {
 						in.SkipRecursive()
 					}
@@ -1138,16 +1008,16 @@ func easyjson791538f0EncodeBlocsyInternalTypes4(out *jwriter.Writer, in Transact
 		const prefix string = ",\"InstructionError\":"
 		out.RawString(prefix[1:])
 		out.RawByte('[')
-		for v29 := range in.InstructionError {
-			if v29 > 0 {
+		for v23 := range in.InstructionError {
+			if v23 > 0 {
 				out.RawByte(',')
 			}
-			if m, ok := (in.InstructionError)[v29].(easyjson.Marshaler); ok {
+			if m, ok := (in.InstructionError)[v23].(easyjson.Marshaler); ok {
 				m.MarshalEasyJSON(out)
-			} else if m, ok := (in.InstructionError)[v29].(json.Marshaler); ok {
+			} else if m, ok := (in.InstructionError)[v23].(json.Marshaler); ok {
 				out.Raw(m.MarshalJSON())
 			} else {
-				out.Raw(json.Marshal((in.InstructionError)[v29]))
+				out.Raw(json.Marshal((in.InstructionError)[v23]))
 			}
 		}
 		out.RawByte(']')
@@ -1215,9 +1085,9 @@ func easyjson791538f0DecodeBlocsyInternalTypes5(in *jlexer.Lexer, out *Transacti
 					out.Signatures = (out.Signatures)[:0]
 				}
 				for !in.IsDelim(']') {
-					var v30 string
-					v30 = string(in.String())
-					out.Signatures = append(out.Signatures, v30)
+					var v24 string
+					v24 = string(in.String())
+					out.Signatures = append(out.Signatures, v24)
 					in.WantComma()
 				}
 				in.Delim(']')
@@ -1248,11 +1118,11 @@ func easyjson791538f0EncodeBlocsyInternalTypes5(out *jwriter.Writer, in Transact
 			out.RawString("null")
 		} else {
 			out.RawByte('[')
-			for v31, v32 := range in.Signatures {
-				if v31 > 0 {
+			for v25, v26 := range in.Signatures {
+				if v25 > 0 {
 					out.RawByte(',')
 				}
-				out.String(string(v32))
+				out.String(string(v26))
 			}
 			out.RawByte(']')
 		}
@@ -1283,7 +1153,137 @@ func (v *TransactionData) UnmarshalJSON(data []byte) error {
 func (v *TransactionData) UnmarshalEasyJSON(l *jlexer.Lexer) {
 	easyjson791538f0DecodeBlocsyInternalTypes5(l, v)
 }
-func easyjson791538f0DecodeBlocsyInternalTypes6(in *jlexer.Lexer, out *TokenInOutData) {
+func easyjson791538f0DecodeBlocsyInternalTypes6(in *jlexer.Lexer, out *TokenProgramData) {
+	isTopLevel := in.IsStart()
+	if in.IsNull() {
+		if isTopLevel {
+			in.Consumed()
+		}
+		in.Skip()
+		return
+	}
+	in.Delim('{')
+	for !in.IsDelim('}') {
+		key := in.UnsafeFieldName(false)
+		in.WantColon()
+		if in.IsNull() {
+			in.Skip()
+			in.WantComma()
+			continue
+		}
+		switch key {
+		case "RawType":
+			out.RawType = uint8(in.Uint8())
+		case "Type":
+			out.Type = string(in.String())
+		case "Decimals":
+			out.Decimals = int(in.Int())
+		case "Amount":
+			out.Amount = uint64(in.Uint64())
+		case "Owner":
+			if data := in.Raw(); in.Ok() {
+				in.AddError((out.Owner).UnmarshalJSON(data))
+			}
+		case "MintAuthority":
+			if data := in.Raw(); in.Ok() {
+				in.AddError((out.MintAuthority).UnmarshalJSON(data))
+			}
+		case "FreezeAuthority":
+			if data := in.Raw(); in.Ok() {
+				in.AddError((out.FreezeAuthority).UnmarshalJSON(data))
+			}
+		case "AuthorityType":
+			out.AuthorityType = uint8(in.Uint8())
+		case "NewAuthority":
+			if data := in.Raw(); in.Ok() {
+				in.AddError((out.NewAuthority).UnmarshalJSON(data))
+			}
+		default:
+			in.SkipRecursive()
+		}
+		in.WantComma()
+	}
+	in.Delim('}')
+	if isTopLevel {
+		in.Consumed()
+	}
+}
+func easyjson791538f0EncodeBlocsyInternalTypes6(out *jwriter.Writer, in TokenProgramData) {
+	out.RawByte('{')
+	first := true
+	_ = first
+	{
+		const prefix string = ",\"RawType\":"
+		out.RawString(prefix[1:])
+		out.Uint8(uint8(in.RawType))
+	}
+	{
+		const prefix string = ",\"Type\":"
+		out.RawString(prefix)
+		out.String(string(in.Type))
+	}
+	{
+		const prefix string = ",\"Decimals\":"
+		out.RawString(prefix)
+		out.Int(int(in.Decimals))
+	}
+	{
+		const prefix string = ",\"Amount\":"
+		out.RawString(prefix)
+		out.Uint64(uint64(in.Amount))
+	}
+	{
+		const prefix string = ",\"Owner\":"
+		out.RawString(prefix)
+		out.Raw((in.Owner).MarshalJSON())
+	}
+	{
+		const prefix string = ",\"MintAuthority\":"
+		out.RawString(prefix)
+		out.Raw((in.MintAuthority).MarshalJSON())
+	}
+	{
+		const prefix string = ",\"FreezeAuthority\":"
+		out.RawString(prefix)
+		out.Raw((in.FreezeAuthority).MarshalJSON())
+	}
+	{
+		const prefix string = ",\"AuthorityType\":"
+		out.RawString(prefix)
+		out.Uint8(uint8(in.AuthorityType))
+	}
+	{
+		const prefix string = ",\"NewAuthority\":"
+		out.RawString(prefix)
+		out.Raw((in.NewAuthority).MarshalJSON())
+	}
+	out.RawByte('}')
+}
+
+// MarshalJSON supports json.Marshaler interface
+func (v TokenProgramData) MarshalJSON() ([]byte, error) {
+	w := jwriter.Writer{}
+	easyjson791538f0EncodeBlocsyInternalTypes6(&w, v)
+	return w.Buffer.BuildBytes(), w.Error
+}
+
+// MarshalEasyJSON supports easyjson.Marshaler interface
+func (v TokenProgramData) MarshalEasyJSON(w *jwriter.Writer) {
+	easyjson791538f0EncodeBlocsyInternalTypes6(w, v)
+}
+
+// UnmarshalJSON supports json.Unmarshaler interface
+func (v *TokenProgramData) UnmarshalJSON(data []byte) error {
+	r := jlexer.Lexer{Data: data}
+	easyjson791538f0DecodeBlocsyInternalTypes6(&r, v)
+	return r.Error()
+}
+
+// UnmarshalEasyJSON supports easyjson.Unmarshaler interface
+func (v *TokenProgramData) UnmarshalEasyJSON(l *jlexer.Lexer) {
+	easyjson791538f0DecodeBlocsyInternalTypes6(l, v)
+}
+func easyjson791538f0DecodeBlocsyInternalTypes7(in *jlexer.Lexer, out *TokenInOutData) {
 	isTopLevel := in.IsStart()
 	if in.IsNull() {
 		if isTopLevel {
@@ -1309,7 +1309,7 @@ func easyjson791538f0DecodeBlocsyInternalTypes6(in *jlexer.Lexer, out *TokenInOu
 		case "mint":
 			out.Mint = string(in.String())
 		case "TokenAmount":
-			easyjson791538f0Decode5(in, &out.TokenAmount)
+			easyjson791538f0Decode4(in, &out.TokenAmount)
 		default:
 			in.SkipRecursive()
 		}
@@ -1320,7 +1320,7 @@ func easyjson791538f0DecodeBlocsyInternalTypes6(in *jlexer.Lexer, out *TokenInOu
 		in.Consumed()
 	}
 }
-func easyjson791538f0EncodeBlocsyInternalTypes6(out *jwriter.Writer, in TokenInOutData) {
+func easyjson791538f0EncodeBlocsyInternalTypes7(out *jwriter.Writer, in TokenInOutData) {
 	out.RawByte('{')
 	first := true
 	_ = first
@@ -1342,7 +1342,7 @@ func easyjson791538f0EncodeBlocsyInternalTypes6(out *jwriter.Writer, in TokenInO
 	{
 		const prefix string = ",\"TokenAmount\":"
 		out.RawString(prefix)
-		easyjson791538f0Encode5(out, in.TokenAmount)
+		easyjson791538f0Encode4(out, in.TokenAmount)
 	}
 	out.RawByte('}')
 }
@@ -1350,27 +1350,27 @@ func easyjson791538f0EncodeBlocsyInternalTypes6(out *jwriter.Writer, in TokenInO
 // MarshalJSON supports json.Marshaler interface
 func (v TokenInOutData) MarshalJSON() ([]byte, error) {
 	w := jwriter.Writer{}
-	easyjson791538f0EncodeBlocsyInternalTypes6(&w, v)
+	easyjson791538f0EncodeBlocsyInternalTypes7(&w, v)
 	return w.Buffer.BuildBytes(), w.Error
 }
 
 // MarshalEasyJSON supports easyjson.Marshaler interface
 func (v TokenInOutData) MarshalEasyJSON(w *jwriter.Writer) {
-	easyjson791538f0EncodeBlocsyInternalTypes6(w, v)
+	easyjson791538f0EncodeBlocsyInternalTypes7(w, v)
 }
 
 // UnmarshalJSON supports json.Unmarshaler interface
 func (v *TokenInOutData) UnmarshalJSON(data []byte) error {
 	r := jlexer.Lexer{Data: data}
-	easyjson791538f0DecodeBlocsyInternalTypes6(&r, v)
+	easyjson791538f0DecodeBlocsyInternalTypes7(&r, v)
 	return r.Error()
 }
 
 // UnmarshalEasyJSON supports easyjson.Unmarshaler interface
 func (v *TokenInOutData) UnmarshalEasyJSON(l *jlexer.Lexer) {
-	easyjson791538f0DecodeBlocsyInternalTypes6(l, v)
+	easyjson791538f0DecodeBlocsyInternalTypes7(l, v)
 }
-func easyjson791538f0Decode5(in *jlexer.Lexer, out *struct {
+func easyjson791538f0Decode4(in *jlexer.Lexer, out *struct {
 	Amount   string `json:"amount"`
 	Decimals int    `json:"decimals"`
 }) {
@@ -1406,7 +1406,7 @@ func easyjson791538f0Decode5(in *jlexer.Lexer, out *struct {
 		in.Consumed()
 	}
 }
-func easyjson791538f0Encode5(out *jwriter.Writer, in struct {
+func easyjson791538f0Encode4(out *jwriter.Writer, in struct {
 	Amount   string `json:"amount"`
 	Decimals int    `json:"decimals"`
 }) {
@@ -1425,7 +1425,7 @@ func easyjson791538f0Encode5(out *jwriter.Writer, in struct {
 	}
 	out.RawByte('}')
 }
-func easyjson791538f0DecodeBlocsyInternalTypes7(in *jlexer.Lexer, out *TokenBalance) {
+func easyjson791538f0DecodeBlocsyInternalTypes8(in *jlexer.Lexer, out *TokenBalance) {
 	isTopLevel := in.IsStart()
 	if in.IsNull() {
 		if isTopLevel {
@@ -1464,7 +1464,7 @@ func easyjson791538f0DecodeBlocsyInternalTypes7(in *jlexer.Lexer, out *TokenBala
 		in.Consumed()
 	}
 }
-func easyjson791538f0EncodeBlocsyInternalTypes7(out *jwriter.Writer, in TokenBalance) {
+func easyjson791538f0EncodeBlocsyInternalTypes8(out *jwriter.Writer, in TokenBalance) {
 	out.RawByte('{')
 	first := true
 	_ = first
@@ -1499,27 +1499,123 @@ func easyjson791538f0EncodeBlocsyInternalTypes7(out *jwriter.Writer, in TokenBal
 // MarshalJSON supports json.Marshaler interface
 func (v TokenBalance) MarshalJSON() ([]byte, error) {
 	w := jwriter.Writer{}
-	easyjson791538f0EncodeBlocsyInternalTypes7(&w, v)
+	easyjson791538f0EncodeBlocsyInternalTypes8(&w, v)
 	return w.Buffer.BuildBytes(), w.Error
 }
 
 // MarshalEasyJSON supports easyjson.Marshaler interface
 func (v TokenBalance) MarshalEasyJSON(w *jwriter.Writer) {
-	easyjson791538f0EncodeBlocsyInternalTypes7(w, v)
+	easyjson791538f0EncodeBlocsyInternalTypes8(w, v)
 }
 
 // UnmarshalJSON supports json.Unmarshaler interface
 func (v *TokenBalance) UnmarshalJSON(data []byte) error {
 	r := jlexer.Lexer{Data: data}
-	easyjson791538f0DecodeBlocsyInternalTypes7(&r, v)
+	easyjson791538f0DecodeBlocsyInternalTypes8(&r, v)
 	return r.Error()
 }
 
 // UnmarshalEasyJSON supports easyjson.Unmarshaler interface
 func (v *TokenBalance) UnmarshalEasyJSON(l *jlexer.Lexer) {
-	easyjson791538f0DecodeBlocsyInternalTypes7(l, v)
+	easyjson791538f0DecodeBlocsyInternalTypes8(l, v)
 }
-func easyjson791538f0DecodeBlocsyInternalTypes8(in *jlexer.Lexer, out *SwapBaseOutLog) {
+func easyjson791538f0DecodeBlocsyInternalTypes9(in *jlexer.Lexer, out *SystemProgramData) {
+	isTopLevel := in.IsStart()
+	if in.IsNull() {
+		if isTopLevel {
+			in.Consumed()
+		}
+		in.Skip()
+		return
+	}
+	in.Delim('{')
+	for !in.IsDelim('}') {
+		key := in.UnsafeFieldName(false)
+		in.WantColon()
+		if in.IsNull() {
+			in.Skip()
+			in.WantComma()
+			continue
+		}
+		switch key {
+		case "RawType":
+			out.RawType = uint8(in.Uint8())
+		case "Type":
+			out.Type = string(in.String())
+		case "Lamports":
+			out.Lamports = uint64(in.Uint64())
+		case "Space":
+			out.Space = uint64(in.Uint64())
+		case "ProgramID":
+			if data := in.Raw(); in.Ok() {
+				in.AddError((out.ProgramID).UnmarshalJSON(data))
+			}
+		default:
+			in.SkipRecursive()
+		}
+		in.WantComma()
+	}
+	in.Delim('}')
+	if isTopLevel {
+		in.Consumed()
+	}
+}
+func easyjson791538f0EncodeBlocsyInternalTypes9(out *jwriter.Writer, in SystemProgramData) {
+	out.RawByte('{')
+	first := true
+	_ = first
+	{
+		const prefix string = ",\"RawType\":"
+		out.RawString(prefix[1:])
+		out.Uint8(uint8(in.RawType))
+	}
+	{
+		const prefix string = ",\"Type\":"
+		out.RawString(prefix)
+		out.String(string(in.Type))
+	}
+	{
+		const prefix string = ",\"Lamports\":"
+		out.RawString(prefix)
+		out.Uint64(uint64(in.Lamports))
+	}
+	{
+		const prefix string = ",\"Space\":"
+		out.RawString(prefix)
+		out.Uint64(uint64(in.Space))
+	}
+	{
+		const prefix string = ",\"ProgramID\":"
+		out.RawString(prefix)
+		out.Raw((in.ProgramID).MarshalJSON())
+	}
+	out.RawByte('}')
+}
+
+// MarshalJSON supports json.Marshaler interface
+func (v SystemProgramData) MarshalJSON() ([]byte, error) {
+	w := jwriter.Writer{}
+	easyjson791538f0EncodeBlocsyInternalTypes9(&w, v)
+	return w.Buffer.BuildBytes(), w.Error
+}
+
+// MarshalEasyJSON supports easyjson.Marshaler interface
+func (v SystemProgramData) MarshalEasyJSON(w *jwriter.Writer) {
+	easyjson791538f0EncodeBlocsyInternalTypes9(w, v)
+}
+
+// UnmarshalJSON supports json.Unmarshaler interface
+func (v *SystemProgramData) UnmarshalJSON(data []byte) error {
+	r := jlexer.Lexer{Data: data}
+	easyjson791538f0DecodeBlocsyInternalTypes9(&r, v)
+	return r.Error()
+}
+
+// UnmarshalEasyJSON supports easyjson.Unmarshaler interface
+func (v *SystemProgramData) UnmarshalEasyJSON(l *jlexer.Lexer) {
+	easyjson791538f0DecodeBlocsyInternalTypes9(l, v)
+}
+func easyjson791538f0DecodeBlocsyInternalTypes10(in *jlexer.Lexer, out *SwapBaseOutLog) {
 	isTopLevel := in.IsStart()
 	if in.IsNull() {
 		if isTopLevel {
@@ -1564,7 +1660,7 @@ func easyjson791538f0DecodeBlocsyInternalTypes8(in *jlexer.Lexer, out *SwapBaseO
 		in.Consumed()
 	}
 }
-func easyjson791538f0EncodeBlocsyInternalTypes8(out *jwriter.Writer, in SwapBaseOutLog) {
+func easyjson791538f0EncodeBlocsyInternalTypes10(out *jwriter.Writer, in SwapBaseOutLog) {
 	out.RawByte('{')
 	first := true
 	_ = first
@@ -1614,27 +1710,27 @@ func easyjson791538f0EncodeBlocsyInternalTypes8(out *jwriter.Writer, in SwapBase
 // MarshalJSON supports json.Marshaler interface
 func (v SwapBaseOutLog) MarshalJSON() ([]byte, error) {
 	w := jwriter.Writer{}
-	easyjson791538f0EncodeBlocsyInternalTypes8(&w, v)
+	easyjson791538f0EncodeBlocsyInternalTypes10(&w, v)
 	return w.Buffer.BuildBytes(), w.Error
 }
 
 // MarshalEasyJSON supports easyjson.Marshaler interface
 func (v SwapBaseOutLog) MarshalEasyJSON(w *jwriter.Writer) {
-	easyjson791538f0EncodeBlocsyInternalTypes8(w, v)
+	easyjson791538f0EncodeBlocsyInternalTypes10(w, v)
 }
 
 // UnmarshalJSON supports json.Unmarshaler interface
 func (v *SwapBaseOutLog) UnmarshalJSON(data []byte) error {
 	r := jlexer.Lexer{Data: data}
-	easyjson791538f0DecodeBlocsyInternalTypes8(&r, v)
+	easyjson791538f0DecodeBlocsyInternalTypes10(&r, v)
 	return r.Error()
 }
 
 // UnmarshalEasyJSON supports easyjson.Unmarshaler interface
 func (v *SwapBaseOutLog) UnmarshalEasyJSON(l *jlexer.Lexer) {
-	easyjson791538f0DecodeBlocsyInternalTypes8(l, v)
+	easyjson791538f0DecodeBlocsyInternalTypes10(l, v)
 }
-func easyjson791538f0DecodeBlocsyInternalTypes9(in *jlexer.Lexer, out *SwapBaseInLog) {
+func easyjson791538f0DecodeBlocsyInternalTypes11(in *jlexer.Lexer, out *SwapBaseInLog) {
 	isTopLevel := in.IsStart()
 	if in.IsNull() {
 		if isTopLevel {
@@ -1679,7 +1775,7 @@ func easyjson791538f0DecodeBlocsyInternalTypes9(in *jlexer.Lexer, out *SwapBaseI
 		in.Consumed()
 	}
 }
-func easyjson791538f0EncodeBlocsyInternalTypes9(out *jwriter.Writer, in SwapBaseInLog) {
+func easyjson791538f0EncodeBlocsyInternalTypes11(out *jwriter.Writer, in SwapBaseInLog) {
 	out.RawByte('{')
 	first := true
 	_ = first
@@ -1729,27 +1825,27 @@ func easyjson791538f0EncodeBlocsyInternalTypes9(out *jwriter.Writer, in SwapBase
 // MarshalJSON supports json.Marshaler interface
 func (v SwapBaseInLog) MarshalJSON() ([]byte, error) {
 	w := jwriter.Writer{}
-	easyjson791538f0EncodeBlocsyInternalTypes9(&w, v)
+	easyjson791538f0EncodeBlocsyInternalTypes11(&w, v)
 	return w.Buffer.BuildBytes(), w.Error
 }
 
 // MarshalEasyJSON supports easyjson.Marshaler interface
 func (v SwapBaseInLog) MarshalEasyJSON(w *jwriter.Writer) {
-	easyjson791538f0EncodeBlocsyInternalTypes9(w, v)
+	easyjson791538f0EncodeBlocsyInternalTypes11(w, v)
 }
 
 // UnmarshalJSON supports json.Unmarshaler interface
 func (v *SwapBaseInLog) UnmarshalJSON(data []byte) error {
 	r := jlexer.Lexer{Data: data}
-	easyjson791538f0DecodeBlocsyInternalTypes9(&r, v)
+	easyjson791538f0DecodeBlocsyInternalTypes11(&r, v)
 	return r.Error()
 }
 
 // UnmarshalEasyJSON supports easyjson.Unmarshaler interface
 func (v *SwapBaseInLog) UnmarshalEasyJSON(l *jlexer.Lexer) {
-	easyjson791538f0DecodeBlocsyInternalTypes9(l, v)
+	easyjson791538f0DecodeBlocsyInternalTypes11(l, v)
 }
-func easyjson791538f0DecodeBlocsyInternalTypes10(in *jlexer.Lexer, out *SolanaTx) {
+func easyjson791538f0DecodeBlocsyInternalTypes12(in *jlexer.Lexer, out *SolanaTx) {
 	isTopLevel := in.IsStart()
 	if in.IsNull() {
 		if isTopLevel {
@@ -1782,7 +1878,7 @@ func easyjson791538f0DecodeBlocsyInternalTypes10(in *jlexer.Lexer, out *SolanaTx
 		in.Consumed()
 	}
 }
-func easyjson791538f0EncodeBlocsyInternalTypes10(out *jwriter.Writer, in SolanaTx) {
+func easyjson791538f0EncodeBlocsyInternalTypes12(out *jwriter.Writer, in SolanaTx) {
 	out.RawByte('{')
 	first := true
 	_ = first
@@ -1802,27 +1898,27 @@ func easyjson791538f0EncodeBlocsyInternalTypes10(out *jwriter.Writer, in SolanaT
 // MarshalJSON supports json.Marshaler interface
 func (v SolanaTx) MarshalJSON() ([]byte, error) {
 	w := jwriter.Writer{}
-	easyjson791538f0EncodeBlocsyInternalTypes10(&w, v)
+	easyjson791538f0EncodeBlocsyInternalTypes12(&w, v)
 	return w.Buffer.BuildBytes(), w.Error
 }
 
 // MarshalEasyJSON supports easyjson.Marshaler interface
 func (v SolanaTx) MarshalEasyJSON(w *jwriter.Writer) {
-	easyjson791538f0EncodeBlocsyInternalTypes10(w, v)
+	easyjson791538f0EncodeBlocsyInternalTypes12(w, v)
 }
 
 // UnmarshalJSON supports json.Unmarshaler interface
 func (v *SolanaTx) UnmarshalJSON(data []byte) error {
 	r := jlexer.Lexer{Data: data}
-	easyjson791538f0DecodeBlocsyInternalTypes10(&r, v)
+	easyjson791538f0DecodeBlocsyInternalTypes12(&r, v)
 	return r.Error()
 }
 
 // UnmarshalEasyJSON supports easyjson.Unmarshaler interface
 func (v *SolanaTx) UnmarshalEasyJSON(l *jlexer.Lexer) {
-	easyjson791538f0DecodeBlocsyInternalTypes10(l, v)
+	easyjson791538f0DecodeBlocsyInternalTypes12(l, v)
 }
-func easyjson791538f0DecodeBlocsyInternalTypes11(in *jlexer.Lexer, out *SolanaBlockTx) {
+func easyjson791538f0DecodeBlocsyInternalTypes13(in *jlexer.Lexer, out *SolanaBlockTx) {
 	isTopLevel := in.IsStart()
 	if in.IsNull() {
 		if isTopLevel {
@@ -1857,7 +1953,7 @@ func easyjson791538f0DecodeBlocsyInternalTypes11(in *jlexer.Lexer, out *SolanaBl
 		in.Consumed()
 	}
 }
-func easyjson791538f0EncodeBlocsyInternalTypes11(out *jwriter.Writer, in SolanaBlockTx) {
+func easyjson791538f0EncodeBlocsyInternalTypes13(out *jwriter.Writer, in SolanaBlockTx) {
 	out.RawByte('{')
 	first := true
 	_ = first
@@ -1882,27 +1978,27 @@ func easyjson791538f0EncodeBlocsyInternalTypes11(out *jwriter.Writer, in SolanaB
 // MarshalJSON supports json.Marshaler interface
 func (v SolanaBlockTx) MarshalJSON() ([]byte, error) {
 	w := jwriter.Writer{}
-	easyjson791538f0EncodeBlocsyInternalTypes11(&w, v)
+	easyjson791538f0EncodeBlocsyInternalTypes13(&w, v)
 	return w.Buffer.BuildBytes(), w.Error
 }
 
 // MarshalEasyJSON supports easyjson.Marshaler interface
 func (v SolanaBlockTx) MarshalEasyJSON(w *jwriter.Writer) {
-	easyjson791538f0EncodeBlocsyInternalTypes11(w, v)
+	easyjson791538f0EncodeBlocsyInternalTypes13(w, v)
 }
 
 // UnmarshalJSON supports json.Unmarshaler interface
 func (v *SolanaBlockTx) UnmarshalJSON(data []byte) error {
 	r := jlexer.Lexer{Data: data}
-	easyjson791538f0DecodeBlocsyInternalTypes11(&r, v)
+	easyjson791538f0DecodeBlocsyInternalTypes13(&r, v)
 	return r.Error()
 }
 
 // UnmarshalEasyJSON supports easyjson.Unmarshaler interface
 func (v *SolanaBlockTx) UnmarshalEasyJSON(l *jlexer.Lexer) {
-	easyjson791538f0DecodeBlocsyInternalTypes11(l, v)
+	easyjson791538f0DecodeBlocsyInternalTypes13(l, v)
 }
-func easyjson791538f0DecodeBlocsyInternalTypes12(in *jlexer.Lexer, out *SolTransfer) {
+func easyjson791538f0DecodeBlocsyInternalTypes14(in *jlexer.Lexer, out *SolTransfer) {
 	isTopLevel := in.IsStart()
 	if in.IsNull() {
 		if isTopLevel {
@@ -1933,6 +2029,8 @@ func easyjson791538f0DecodeBlocsyInternalTypes12(in *jlexer.Lexer, out *SolTrans
 			out.FromUserAccount = string(in.String())
 		case "FromTokenAccount":
 			out.FromTokenAccount = string(in.String())
+		case "Authority":
+			out.Authority = string(in.String())
 		case "Mint":
 			out.Mint = string(in.String())
 		case "Decimals":
@@ -1941,6 +2039,33 @@ func easyjson791538f0DecodeBlocsyInternalTypes12(in *jlexer.Lexer, out *SolTrans
 			out.Amount = string(in.String())
 		case "Type":
 			out.Type = string(in.String())
+		case "ParentProgramId":
+			out.ParentProgramId = string(in.String())
+		case "IxAccounts":
+			if in.IsNull() {
+				in.Skip()
+				out.IxAccounts = nil
+			} else {
+				in.Delim('[')
+				if out.IxAccounts == nil {
+					if !in.IsDelim(']') {
+						out.IxAccounts = make([]int, 0, 8)
+					} else {
+						out.IxAccounts = []int{}
+					}
+				} else {
+					out.IxAccounts = (out.IxAccounts)[:0]
+				}
+				for !in.IsDelim(']') {
+					var v27 int
+					v27 = int(in.Int())
+					out.IxAccounts = append(out.IxAccounts, v27)
+					in.WantComma()
+				}
+				in.Delim(']')
+			}
+		case "EventData":
+			out.EventData = string(in.String())
 		default:
 			in.SkipRecursive()
 		}
@@ -1951,7 +2076,7 @@ func easyjson791538f0DecodeBlocsyInternalTypes12(in *jlexer.Lexer, out *SolTrans
 		in.Consumed()
 	}
 }
-func easyjson791538f0EncodeBlocsyInternalTypes12(out *jwriter.Writer, in SolTransfer) {
+func easyjson791538f0EncodeBlocsyInternalTypes14(out *jwriter.Writer, in SolTransfer) {
 	out.RawByte('{')
 	first := true
 	_ = first
@@ -1986,6 +2111,11 @@ func easyjson791538f0EncodeBlocsyInternalTypes12(out *jwriter.Writer, in SolTran
 		out.String(string(in.FromTokenAccount))
 	}
 	{
+		const prefix string = ",\"Authority\":"
+		out.RawString(prefix)
+		out.String(string(in.Authority))
+	}
+	{
 		const prefix string = ",\"Mint\":"
 		out.RawString(prefix)
 		out.String(string(in.Mint))
@@ -2005,33 +2135,59 @@ func easyjson791538f0EncodeBlocsyInternalTypes12(out *jwriter.Writer, in SolTran
 		out.RawString(prefix)
 		out.String(string(in.Type))
 	}
+	{
+		const prefix string = ",\"ParentProgramId\":"
+		out.RawString(prefix)
+		out.String(string(in.ParentProgramId))
+	}
+	{
+		const prefix string = ",\"IxAccounts\":"
+		out.RawString(prefix)
+		if in.IxAccounts == nil && (out.Flags&jwriter.NilSliceAsEmpty) == 0 {
+			out.RawString("null")
+		} else {
+			out.RawByte('[')
+			for v28, v29 := range in.IxAccounts {
+				if v28 > 0 {
+					out.RawByte(',')
+				}
+				out.Int(int(v29))
+			}
+			out.RawByte(']')
+		}
+	}
+	{
+		const prefix string = ",\"EventData\":"
+		out.RawString(prefix)
+		out.String(string(in.EventData))
+	}
 	out.RawByte('}')
 }
 
 // MarshalJSON supports json.Marshaler interface
 func (v SolTransfer) MarshalJSON() ([]byte, error) {
 	w := jwriter.Writer{}
-	easyjson791538f0EncodeBlocsyInternalTypes12(&w, v)
+	easyjson791538f0EncodeBlocsyInternalTypes14(&w, v)
 	return w.Buffer.BuildBytes(), w.Error
 }
 
 // MarshalEasyJSON supports easyjson.Marshaler interface
 func (v SolTransfer) MarshalEasyJSON(w *jwriter.Writer) {
-	easyjson791538f0EncodeBlocsyInternalTypes12(w, v)
+	easyjson791538f0EncodeBlocsyInternalTypes14(w, v)
 }
 
 // UnmarshalJSON supports json.Unmarshaler interface
 func (v *SolTransfer) UnmarshalJSON(data []byte) error {
 	r := jlexer.Lexer{Data: data}
-	easyjson791538f0DecodeBlocsyInternalTypes12(&r, v)
+	easyjson791538f0DecodeBlocsyInternalTypes14(&r, v)
 	return r.Error()
 }
 
 // UnmarshalEasyJSON supports easyjson.Unmarshaler interface
 func (v *SolTransfer) UnmarshalEasyJSON(l *jlexer.Lexer) {
-	easyjson791538f0DecodeBlocsyInternalTypes12(l, v)
+	easyjson791538f0DecodeBlocsyInternalTypes14(l, v)
 }
-func easyjson791538f0DecodeBlocsyInternalTypes13(in *jlexer.Lexer, out *SolSwapData) {
+func easyjson791538f0DecodeBlocsyInternalTypes15(in *jlexer.Lexer, out *SolSwapData) {
 	isTopLevel := in.IsStart()
 	if in.IsNull() {
 		if isTopLevel {
@@ -2070,9 +2226,9 @@ func easyjson791538f0DecodeBlocsyInternalTypes13(in *jlexer.Lexer, out *SolSwapD
 					out.TokenInputs = (out.TokenInputs)[:0]
 				}
 				for !in.IsDelim(']') {
-					var v33 TokenInOutData
-					(v33).UnmarshalEasyJSON(in)
-					out.TokenInputs = append(out.TokenInputs, v33)
+					var v30 TokenInOutData
+					(v30).UnmarshalEasyJSON(in)
+					out.TokenInputs = append(out.TokenInputs, v30)
 					in.WantComma()
 				}
 				in.Delim(']')
@@ -2093,9 +2249,9 @@ func easyjson791538f0DecodeBlocsyInternalTypes13(in *jlexer.Lexer, out *SolSwapD
 					out.TokenOutputs = (out.TokenOutputs)[:0]
 				}
 				for !in.IsDelim(']') {
-					var v34 TokenInOutData
-					(v34).UnmarshalEasyJSON(in)
-					out.TokenOutputs = append(out.TokenOutputs, v34)
+					var v31 TokenInOutData
+					(v31).UnmarshalEasyJSON(in)
+					out.TokenOutputs = append(out.TokenOutputs, v31)
 					in.WantComma()
 				}
 				in.Delim(']')
@@ -2116,9 +2272,9 @@ func easyjson791538f0DecodeBlocsyInternalTypes13(in *jlexer.Lexer, out *SolSwapD
 					out.InnerSwaps = (out.InnerSwaps)[:0]
 				}
 				for !in.IsDelim(']') {
-					var v35 InnerSwap
-					(v35).UnmarshalEasyJSON(in)
-					out.InnerSwaps = append(out.InnerSwaps, v35)
+					var v32 InnerSwap
+					(v32).UnmarshalEasyJSON(in)
+					out.InnerSwaps = append(out.InnerSwaps, v32)
 					in.WantComma()
 				}
 				in.Delim(']')
@@ -2133,7 +2289,7 @@ func easyjson791538f0DecodeBlocsyInternalTypes13(in *jlexer.Lexer, out *SolSwapD
 		in.Consumed()
 	}
 }
-func easyjson791538f0EncodeBlocsyInternalTypes13(out *jwriter.Writer, in SolSwapData) {
+func easyjson791538f0EncodeBlocsyInternalTypes15(out *jwriter.Writer, in SolSwapData) {
 	out.RawByte('{')
 	first := true
 	_ = first
@@ -2154,11 +2310,11 @@ func easyjson791538f0EncodeBlocsyInternalTypes13(out *jwriter.Writer, in SolSwap
 			out.RawString("null")
 		} else {
 			out.RawByte('[')
-			for v36, v37 := range in.TokenInputs {
-				if v36 > 0 {
+			for v33, v34 := range in.TokenInputs {
+				if v33 > 0 {
 					out.RawByte(',')
 				}
-				(v37).MarshalEasyJSON(out)
+				(v34).MarshalEasyJSON(out)
 			}
 			out.RawByte(']')
 		}
@@ -2170,11 +2326,11 @@ func easyjson791538f0EncodeBlocsyInternalTypes13(out *jwriter.Writer, in SolSwap
 			out.RawString("null")
 		} else {
 			out.RawByte('[')
-			for v38, v39 := range in.TokenOutputs {
-				if v38 > 0 {
+			for v35, v36 := range in.TokenOutputs {
+				if v35 > 0 {
 					out.RawByte(',')
 				}
-				(v39).MarshalEasyJSON(out)
+				(v36).MarshalEasyJSON(out)
 			}
 			out.RawByte(']')
 		}
@@ -2186,11 +2342,11 @@ func easyjson791538f0EncodeBlocsyInternalTypes13(out *jwriter.Writer, in SolSwap
 			out.RawString("null")
 		} else {
 			out.RawByte('[')
-			for v40, v41 := range in.InnerSwaps {
-				if v40 > 0 {
+			for v37, v38 := range in.InnerSwaps {
+				if v37 > 0 {
 					out.RawByte(',')
 				}
-				(v41).MarshalEasyJSON(out)
+				(v38).MarshalEasyJSON(out)
 			}
 			out.RawByte(']')
 		}
@@ -2201,27 +2357,27 @@ func easyjson791538f0EncodeBlocsyInternalTypes13(out *jwriter.Writer, in SolSwap
 // MarshalJSON supports json.Marshaler interface
 func (v SolSwapData) MarshalJSON() ([]byte, error) {
 	w := jwriter.Writer{}
-	easyjson791538f0EncodeBlocsyInternalTypes13(&w, v)
+	easyjson791538f0EncodeBlocsyInternalTypes15(&w, v)
 	return w.Buffer.BuildBytes(), w.Error
 }
 
 // MarshalEasyJSON supports easyjson.Marshaler interface
 func (v SolSwapData) MarshalEasyJSON(w *jwriter.Writer) {
-	easyjson791538f0EncodeBlocsyInternalTypes13(w, v)
+	easyjson791538f0EncodeBlocsyInternalTypes15(w, v)
 }
 
 // UnmarshalJSON supports json.Unmarshaler interface
 func (v *SolSwapData) UnmarshalJSON(data []byte) error {
 	r := jlexer.Lexer{Data: data}
-	easyjson791538f0DecodeBlocsyInternalTypes13(&r, v)
+	easyjson791538f0DecodeBlocsyInternalTypes15(&r, v)
 	return r.Error()
 }
 
 // UnmarshalEasyJSON supports easyjson.Unmarshaler interface
 func (v *SolSwapData) UnmarshalEasyJSON(l *jlexer.Lexer) {
-	easyjson791538f0DecodeBlocsyInternalTypes13(l, v)
+	easyjson791538f0DecodeBlocsyInternalTypes15(l, v)
 }
-func easyjson791538f0DecodeBlocsyInternalTypes14(in *jlexer.Lexer, out *SolSwap) {
+func easyjson791538f0DecodeBlocsyInternalTypes16(in *jlexer.Lexer, out *SolSwap) {
 	isTopLevel := in.IsStart()
 	if in.IsNull() {
 		if isTopLevel {
@@ -2254,6 +2410,8 @@ func easyjson791538f0DecodeBlocsyInternalTypes14(in *jlexer.Lexer, out *SolSwap)
 			out.AmountIn = string(in.String())
 		case "Wallet":
 			out.Wallet = string(in.String())
+		case "Source":
+			out.Source = string(in.String())
 		default:
 			in.SkipRecursive()
 		}
@@ -2264,7 +2422,7 @@ func easyjson791538f0DecodeBlocsyInternalTypes14(in *jlexer.Lexer, out *SolSwap)
 		in.Consumed()
 	}
 }
-func easyjson791538f0EncodeBlocsyInternalTypes14(out *jwriter.Writer, in SolSwap) {
+func easyjson791538f0EncodeBlocsyInternalTypes16(out *jwriter.Writer, in SolSwap) {
 	out.RawByte('{')
 	first := true
 	_ = first
@@ -2303,33 +2461,38 @@ func easyjson791538f0EncodeBlocsyInternalTypes14(out *jwriter.Writer, in SolSwap
 		out.RawString(prefix)
 		out.String(string(in.Wallet))
 	}
+	{
+		const prefix string = ",\"Source\":"
+		out.RawString(prefix)
+		out.String(string(in.Source))
+	}
 	out.RawByte('}')
 }
 
 // MarshalJSON supports json.Marshaler interface
 func (v SolSwap) MarshalJSON() ([]byte, error) {
 	w := jwriter.Writer{}
-	easyjson791538f0EncodeBlocsyInternalTypes14(&w, v)
+	easyjson791538f0EncodeBlocsyInternalTypes16(&w, v)
 	return w.Buffer.BuildBytes(), w.Error
 }
 
 // MarshalEasyJSON supports easyjson.Marshaler interface
 func (v SolSwap) MarshalEasyJSON(w *jwriter.Writer) {
-	easyjson791538f0EncodeBlocsyInternalTypes14(w, v)
+	easyjson791538f0EncodeBlocsyInternalTypes16(w, v)
 }
 
 // UnmarshalJSON supports json.Unmarshaler interface
 func (v *SolSwap) UnmarshalJSON(data []byte) error {
 	r := jlexer.Lexer{Data: data}
-	easyjson791538f0DecodeBlocsyInternalTypes14(&r, v)
+	easyjson791538f0DecodeBlocsyInternalTypes16(&r, v)
 	return r.Error()
 }
 
 // UnmarshalEasyJSON supports easyjson.Unmarshaler interface
 func (v *SolSwap) UnmarshalEasyJSON(l *jlexer.Lexer) {
-	easyjson791538f0DecodeBlocsyInternalTypes14(l, v)
+	easyjson791538f0DecodeBlocsyInternalTypes16(l, v)
 }
-func easyjson791538f0DecodeBlocsyInternalTypes15(in *jlexer.Lexer, out *SolBalanceDiff) {
+func easyjson791538f0DecodeBlocsyInternalTypes17(in *jlexer.Lexer, out *SolBalanceDiff) {
 	isTopLevel := in.IsStart()
 	if in.IsNull() {
 		if isTopLevel {
@@ -2366,7 +2529,7 @@ func easyjson791538f0DecodeBlocsyInternalTypes15(in *jlexer.Lexer, out *SolBalan
 		in.Consumed()
 	}
 }
-func easyjson791538f0EncodeBlocsyInternalTypes15(out *jwriter.Writer, in SolBalanceDiff) {
+func easyjson791538f0EncodeBlocsyInternalTypes17(out *jwriter.Writer, in SolBalanceDiff) {
 	out.RawByte('{')
 	first := true
 	_ = first
@@ -2396,27 +2559,27 @@ func easyjson791538f0EncodeBlocsyInternalTypes15(out *jwriter.Writer, in SolBala
 // MarshalJSON supports json.Marshaler interface
 func (v SolBalanceDiff) MarshalJSON() ([]byte, error) {
 	w := jwriter.Writer{}
-	easyjson791538f0EncodeBlocsyInternalTypes15(&w, v)
+	easyjson791538f0EncodeBlocsyInternalTypes17(&w, v)
 	return w.Buffer.BuildBytes(), w.Error
 }
 
 // MarshalEasyJSON supports easyjson.Marshaler interface
 func (v SolBalanceDiff) MarshalEasyJSON(w *jwriter.Writer) {
-	easyjson791538f0EncodeBlocsyInternalTypes15(w, v)
+	easyjson791538f0EncodeBlocsyInternalTypes17(w, v)
 }
 
 // UnmarshalJSON supports json.Unmarshaler interface
 func (v *SolBalanceDiff) UnmarshalJSON(data []byte) error {
 	r := jlexer.Lexer{Data: data}
-	easyjson791538f0DecodeBlocsyInternalTypes15(&r, v)
+	easyjson791538f0DecodeBlocsyInternalTypes17(&r, v)
 	return r.Error()
 }
 
 // UnmarshalEasyJSON supports easyjson.Unmarshaler interface
 func (v *SolBalanceDiff) UnmarshalEasyJSON(l *jlexer.Lexer) {
-	easyjson791538f0DecodeBlocsyInternalTypes15(l, v)
+	easyjson791538f0DecodeBlocsyInternalTypes17(l, v)
 }
-func easyjson791538f0DecodeBlocsyInternalTypes16(in *jlexer.Lexer, out *RaySwapLog) {
+func easyjson791538f0DecodeBlocsyInternalTypes18(in *jlexer.Lexer, out *RaySwapLog) {
 	isTopLevel := in.IsStart()
 	if in.IsNull() {
 		if isTopLevel {
@@ -2467,7 +2630,7 @@ func easyjson791538f0DecodeBlocsyInternalTypes16(in *jlexer.Lexer, out *RaySwapL
 		in.Consumed()
 	}
 }
-func easyjson791538f0EncodeBlocsyInternalTypes16(out *jwriter.Writer, in RaySwapLog) {
+func easyjson791538f0EncodeBlocsyInternalTypes18(out *jwriter.Writer, in RaySwapLog) {
 	out.RawByte('{')
 	first := true
 	_ = first
@@ -2532,27 +2695,27 @@ func easyjson791538f0EncodeBlocsyInternalTypes16(out *jwriter.Writer, in RaySwap
 // MarshalJSON supports json.Marshaler interface
 func (v RaySwapLog) MarshalJSON() ([]byte, error) {
 	w := jwriter.Writer{}
-	easyjson791538f0EncodeBlocsyInternalTypes16(&w, v)
+	easyjson791538f0EncodeBlocsyInternalTypes18(&w, v)
 	return w.Buffer.BuildBytes(), w.Error
 }
 
 // MarshalEasyJSON supports easyjson.Marshaler interface
 func (v RaySwapLog) MarshalEasyJSON(w *jwriter.Writer) {
-	easyjson791538f0EncodeBlocsyInternalTypes16(w, v)
+	easyjson791538f0EncodeBlocsyInternalTypes18(w, v)
 }
 
 // UnmarshalJSON supports json.Unmarshaler interface
 func (v *RaySwapLog) UnmarshalJSON(data []byte) error {
 	r := jlexer.Lexer{Data: data}
-	easyjson791538f0DecodeBlocsyInternalTypes16(&r, v)
+	easyjson791538f0DecodeBlocsyInternalTypes18(&r, v)
 	return r.Error()
 }
 
 // UnmarshalEasyJSON supports easyjson.Unmarshaler interface
 func (v *RaySwapLog) UnmarshalEasyJSON(l *jlexer.Lexer) {
-	easyjson791538f0DecodeBlocsyInternalTypes16(l, v)
+	easyjson791538f0DecodeBlocsyInternalTypes18(l, v)
 }
-func easyjson791538f0DecodeBlocsyInternalTypes17(in *jlexer.Lexer, out *PoolInit) {
+func easyjson791538f0DecodeBlocsyInternalTypes19(in *jlexer.Lexer, out *PoolInit) {
 	isTopLevel := in.IsStart()
 	if in.IsNull() {
 		if isTopLevel {
@@ -2589,7 +2752,7 @@ func easyjson791538f0DecodeBlocsyInternalTypes17(in *jlexer.Lexer, out *PoolInit
 		in.Consumed()
 	}
 }
-func easyjson791538f0EncodeBlocsyInternalTypes17(out *jwriter.Writer, in PoolInit) {
+func easyjson791538f0EncodeBlocsyInternalTypes19(out *jwriter.Writer, in PoolInit) {
 	out.RawByte('{')
 	first := true
 	_ = first
@@ -2619,27 +2782,27 @@ func easyjson791538f0EncodeBlocsyInternalTypes17(out *jwriter.Writer, in PoolIni
 // MarshalJSON supports json.Marshaler interface
 func (v PoolInit) MarshalJSON() ([]byte, error) {
 	w := jwriter.Writer{}
-	easyjson791538f0EncodeBlocsyInternalTypes17(&w, v)
+	easyjson791538f0EncodeBlocsyInternalTypes19(&w, v)
 	return w.Buffer.BuildBytes(), w.Error
 }
 
 // MarshalEasyJSON supports easyjson.Marshaler interface
 func (v PoolInit) MarshalEasyJSON(w *jwriter.Writer) {
-	easyjson791538f0EncodeBlocsyInternalTypes17(w, v)
+	easyjson791538f0EncodeBlocsyInternalTypes19(w, v)
 }
 
 // UnmarshalJSON supports json.Unmarshaler interface
 func (v *PoolInit) UnmarshalJSON(data []byte) error {
 	r := jlexer.Lexer{Data: data}
-	easyjson791538f0DecodeBlocsyInternalTypes17(&r, v)
+	easyjson791538f0DecodeBlocsyInternalTypes19(&r, v)
 	return r.Error()
 }
 
 // UnmarshalEasyJSON supports easyjson.Unmarshaler interface
 func (v *PoolInit) UnmarshalEasyJSON(l *jlexer.Lexer) {
-	easyjson791538f0DecodeBlocsyInternalTypes17(l, v)
+	easyjson791538f0DecodeBlocsyInternalTypes19(l, v)
 }
-func easyjson791538f0DecodeBlocsyInternalTypes18(in *jlexer.Lexer, out *ParsedDataInfo) {
+func easyjson791538f0DecodeBlocsyInternalTypes20(in *jlexer.Lexer, out *ParsedDataInfo) {
 	isTopLevel := in.IsStart()
 	if in.IsNull() {
 		if isTopLevel {
@@ -2778,7 +2941,7 @@ func easyjson791538f0DecodeBlocsyInternalTypes18(in *jlexer.Lexer, out *ParsedDa
 		in.Consumed()
 	}
 }
-func easyjson791538f0EncodeBlocsyInternalTypes18(out *jwriter.Writer, in ParsedDataInfo) {
+func easyjson791538f0EncodeBlocsyInternalTypes20(out *jwriter.Writer, in ParsedDataInfo) {
 	out.RawByte('{')
 	first := true
 	_ = first
@@ -2894,27 +3057,27 @@ func easyjson791538f0EncodeBlocsyInternalTypes18(out *jwriter.Writer, in ParsedD
 // MarshalJSON supports json.Marshaler interface
 func (v ParsedDataInfo) MarshalJSON() ([]byte, error) {
 	w := jwriter.Writer{}
-	easyjson791538f0EncodeBlocsyInternalTypes18(&w, v)
+	easyjson791538f0EncodeBlocsyInternalTypes20(&w, v)
 	return w.Buffer.BuildBytes(), w.Error
 }
 
 // MarshalEasyJSON supports easyjson.Marshaler interface
 func (v ParsedDataInfo) MarshalEasyJSON(w *jwriter.Writer) {
-	easyjson791538f0EncodeBlocsyInternalTypes18(w, v)
+	easyjson791538f0EncodeBlocsyInternalTypes20(w, v)
 }
 
 // UnmarshalJSON supports json.Unmarshaler interface
 func (v *ParsedDataInfo) UnmarshalJSON(data []byte) error {
 	r := jlexer.Lexer{Data: data}
-	easyjson791538f0DecodeBlocsyInternalTypes18(&r, v)
+	easyjson791538f0DecodeBlocsyInternalTypes20(&r, v)
 	return r.Error()
 }
 
 // UnmarshalEasyJSON supports easyjson.Unmarshaler interface
 func (v *ParsedDataInfo) UnmarshalEasyJSON(l *jlexer.Lexer) {
-	easyjson791538f0DecodeBlocsyInternalTypes18(l, v)
+	easyjson791538f0DecodeBlocsyInternalTypes20(l, v)
 }
-func easyjson791538f0DecodeBlocsyInternalTypes19(in *jlexer.Lexer, out *NativeInOutData) {
+func easyjson791538f0DecodeBlocsyInternalTypes21(in *jlexer.Lexer, out *NativeInOutData) {
 	isTopLevel := in.IsStart()
 	if in.IsNull() {
 		if isTopLevel {
@@ -2947,7 +3110,7 @@ func easyjson791538f0DecodeBlocsyInternalTypes19(in *jlexer.Lexer, out *NativeIn
 		in.Consumed()
 	}
 }
-func easyjson791538f0EncodeBlocsyInternalTypes19(out *jwriter.Writer, in NativeInOutData) {
+func easyjson791538f0EncodeBlocsyInternalTypes21(out *jwriter.Writer, in NativeInOutData) {
 	out.RawByte('{')
 	first := true
 	_ = first
@@ -2967,27 +3130,27 @@ func easyjson791538f0EncodeBlocsyInternalTypes19(out *jwriter.Writer, in NativeI
 // MarshalJSON supports json.Marshaler interface
 func (v NativeInOutData) MarshalJSON() ([]byte, error) {
 	w := jwriter.Writer{}
-	easyjson791538f0EncodeBlocsyInternalTypes19(&w, v)
+	easyjson791538f0EncodeBlocsyInternalTypes21(&w, v)
 	return w.Buffer.BuildBytes(), w.Error
 }
 
 // MarshalEasyJSON supports easyjson.Marshaler interface
 func (v NativeInOutData) MarshalEasyJSON(w *jwriter.Writer) {
-	easyjson791538f0EncodeBlocsyInternalTypes19(w, v)
+	easyjson791538f0EncodeBlocsyInternalTypes21(w, v)
 }
 
 // UnmarshalJSON supports json.Unmarshaler interface
 func (v *NativeInOutData) UnmarshalJSON(data []byte) error {
 	r := jlexer.Lexer{Data: data}
-	easyjson791538f0DecodeBlocsyInternalTypes19(&r, v)
+	easyjson791538f0DecodeBlocsyInternalTypes21(&r, v)
 	return r.Error()
 }
 
 // UnmarshalEasyJSON supports easyjson.Unmarshaler interface
 func (v *NativeInOutData) UnmarshalEasyJSON(l *jlexer.Lexer) {
-	easyjson791538f0DecodeBlocsyInternalTypes19(l, v)
+	easyjson791538f0DecodeBlocsyInternalTypes21(l, v)
 }
-func easyjson791538f0DecodeBlocsyInternalTypes20(in *jlexer.Lexer, out *Message) {
+func easyjson791538f0DecodeBlocsyInternalTypes22(in *jlexer.Lexer, out *Message) {
 	isTopLevel := in.IsStart()
 	if in.IsNull() {
 		if isTopLevel {
@@ -3022,9 +3185,9 @@ func easyjson791538f0DecodeBlocsyInternalTypes20(in *jlexer.Lexer, out *Message)
 					out.AccountKeys = (out.AccountKeys)[:0]
 				}
 				for !in.IsDelim(']') {
-					var v42 string
-					v42 = string(in.String())
-					out.AccountKeys = append(out.AccountKeys, v42)
+					var v39 string
+					v39 = string(in.String())
+					out.AccountKeys = append(out.AccountKeys, v39)
 					in.WantComma()
 				}
 				in.Delim(']')
@@ -3045,9 +3208,9 @@ func easyjson791538f0DecodeBlocsyInternalTypes20(in *jlexer.Lexer, out *Message)
 					out.AddressTableLookups = (out.AddressTableLookups)[:0]
 				}
 				for !in.IsDelim(']') {
-					var v43 AddressTableLookup
-					(v43).UnmarshalEasyJSON(in)
-					out.AddressTableLookups = append(out.AddressTableLookups, v43)
+					var v40 AddressTableLookup
+					(v40).UnmarshalEasyJSON(in)
+					out.AddressTableLookups = append(out.AddressTableLookups, v40)
 					in.WantComma()
 				}
 				in.Delim(']')
@@ -3068,9 +3231,9 @@ func easyjson791538f0DecodeBlocsyInternalTypes20(in *jlexer.Lexer, out *Message)
 					out.Instructions = (out.Instructions)[:0]
 				}
 				for !in.IsDelim(']') {
-					var v44 Instruction
-					(v44).UnmarshalEasyJSON(in)
-					out.Instructions = append(out.Instructions, v44)
+					var v41 Instruction
+					(v41).UnmarshalEasyJSON(in)
+					out.Instructions = append(out.Instructions, v41)
 					in.WantComma()
 				}
 				in.Delim(']')
@@ -3095,7 +3258,7 @@ func easyjson791538f0DecodeBlocsyInternalTypes20(in *jlexer.Lexer, out *Message)
 		in.Consumed()
 	}
 }
-func easyjson791538f0EncodeBlocsyInternalTypes20(out *jwriter.Writer, in Message) {
+func easyjson791538f0EncodeBlocsyInternalTypes22(out *jwriter.Writer, in Message) {
 	out.RawByte('{')
 	first := true
 	_ = first
@@ -3106,11 +3269,11 @@ func easyjson791538f0EncodeBlocsyInternalTypes20(out *jwriter.Writer, in Message
 			out.RawString("null")
 		} else {
 			out.RawByte('[')
-			for v45, v46 := range in.AccountKeys {
-				if v45 > 0 {
+			for v42, v43 := range in.AccountKeys {
+				if v42 > 0 {
 					out.RawByte(',')
 				}
-				out.String(string(v46))
+				out.String(string(v43))
 			}
 			out.RawByte(']')
 		}
@@ -3122,11 +3285,11 @@ func easyjson791538f0EncodeBlocsyInternalTypes20(out *jwriter.Writer, in Message
 			out.RawString("null")
 		} else {
 			out.RawByte('[')
-			for v47, v48 := range in.AddressTableLookups {
-				if v47 > 0 {
+			for v44, v45 := range in.AddressTableLookups {
+				if v44 > 0 {
 					out.RawByte(',')
 				}
-				(v48).MarshalEasyJSON(out)
+				(v45).MarshalEasyJSON(out)
 			}
 			out.RawByte(']')
 		}
@@ -3138,11 +3301,11 @@ func easyjson791538f0EncodeBlocsyInternalTypes20(out *jwriter.Writer, in Message
 			out.RawString("null")
 		} else {
 			out.RawByte('[')
-			for v49, v50 := range in.Instructions {
-				if v49 > 0 {
+			for v46, v47 := range in.Instructions {
+				if v46 > 0 {
 					out.RawByte(',')
 				}
-				(v50).MarshalEasyJSON(out)
+				(v47).MarshalEasyJSON(out)
 			}
 			out.RawByte(']')
 		}
@@ -3169,27 +3332,308 @@ func easyjson791538f0EncodeBlocsyInternalTypes20(out *jwriter.Writer, in Message
 // MarshalJSON supports json.Marshaler interface
 func (v Message) MarshalJSON() ([]byte, error) {
 	w := jwriter.Writer{}
-	easyjson791538f0EncodeBlocsyInternalTypes20(&w, v)
+	easyjson791538f0EncodeBlocsyInternalTypes22(&w, v)
 	return w.Buffer.BuildBytes(), w.Error
 }
 
 // MarshalEasyJSON supports easyjson.Marshaler interface
 func (v Message) MarshalEasyJSON(w *jwriter.Writer) {
-	easyjson791538f0EncodeBlocsyInternalTypes20(w, v)
+	easyjson791538f0EncodeBlocsyInternalTypes22(w, v)
 }
 
 // UnmarshalJSON supports json.Unmarshaler interface
 func (v *Message) UnmarshalJSON(data []byte) error {
 	r := jlexer.Lexer{Data: data}
-	easyjson791538f0DecodeBlocsyInternalTypes20(&r, v)
+	easyjson791538f0DecodeBlocsyInternalTypes22(&r, v)
 	return r.Error()
 }
 
 // UnmarshalEasyJSON supports easyjson.Unmarshaler interface
 func (v *Message) UnmarshalEasyJSON(l *jlexer.Lexer) {
-	easyjson791538f0DecodeBlocsyInternalTypes20(l, v)
+	easyjson791538f0DecodeBlocsyInternalTypes22(l, v)
 }
-func easyjson791538f0DecodeBlocsyInternalTypes21(in *jlexer.Lexer, out *Instruction) {
+func easyjson791538f0DecodeBlocsyInternalTypes23(in *jlexer.Lexer, out *LogDetails) {
+	isTopLevel := in.IsStart()
+	if in.IsNull() {
+		if isTopLevel {
+			in.Consumed()
+		}
+		in.Skip()
+		return
+	}
+	in.Delim('{')
+	for !in.IsDelim('}') {
+		key := in.UnsafeFieldName(false)
+		in.WantColon()
+		if in.IsNull() {
+			in.Skip()
+			in.WantComma()
+			continue
+		}
+		switch key {
+		case "Program":
+			out.Program = string(in.String())
+		case "Logs":
+			if in.IsNull() {
+				in.Skip()
+				out.Logs = nil
+			} else {
+				in.Delim('[')
+				if out.Logs == nil {
+					if !in.IsDelim(']') {
+						out.Logs = make([]string, 0, 4)
+					} else {
+						out.Logs = []string{}
+					}
+				} else {
+					out.Logs = (out.Logs)[:0]
+				}
+				for !in.IsDelim(']') {
+					var v48 string
+					v48 = string(in.String())
+					out.Logs = append(out.Logs, v48)
+					in.WantComma()
+				}
+				in.Delim(']')
+			}
+		case "SubLogs":
+			if in.IsNull() {
+				in.Skip()
+				out.SubLogs = nil
+			} else {
+				in.Delim('[')
+				if out.SubLogs == nil {
+					if !in.IsDelim(']') {
+						out.SubLogs = make([]LogDetails, 0, 1)
+					} else {
+						out.SubLogs = []LogDetails{}
+					}
+				} else {
+					out.SubLogs = (out.SubLogs)[:0]
+				}
+				for !in.IsDelim(']') {
+					var v49 LogDetails
+					(v49).UnmarshalEasyJSON(in)
+					out.SubLogs = append(out.SubLogs, v49)
+					in.WantComma()
+				}
+				in.Delim(']')
+			}
+		default:
+			in.SkipRecursive()
+		}
+		in.WantComma()
+	}
+	in.Delim('}')
+	if isTopLevel {
+		in.Consumed()
+	}
+}
+func easyjson791538f0EncodeBlocsyInternalTypes23(out *jwriter.Writer, in LogDetails) {
+	out.RawByte('{')
+	first := true
+	_ = first
+	{
+		const prefix string = ",\"Program\":"
+		out.RawString(prefix[1:])
+		out.String(string(in.Program))
+	}
+	{
+		const prefix string = ",\"Logs\":"
+		out.RawString(prefix)
+		if in.Logs == nil && (out.Flags&jwriter.NilSliceAsEmpty) == 0 {
+			out.RawString("null")
+		} else {
+			out.RawByte('[')
+			for v50, v51 := range in.Logs {
+				if v50 > 0 {
+					out.RawByte(',')
+				}
+				out.String(string(v51))
+			}
+			out.RawByte(']')
+		}
+	}
+	{
+		const prefix string = ",\"SubLogs\":"
+		out.RawString(prefix)
+		if in.SubLogs == nil && (out.Flags&jwriter.NilSliceAsEmpty) == 0 {
+			out.RawString("null")
+		} else {
+			out.RawByte('[')
+			for v52, v53 := range in.SubLogs {
+				if v52 > 0 {
+					out.RawByte(',')
+				}
+				(v53).MarshalEasyJSON(out)
+			}
+			out.RawByte(']')
+		}
+	}
+	out.RawByte('}')
+}
+
+// MarshalJSON supports json.Marshaler interface
+func (v LogDetails) MarshalJSON() ([]byte, error) {
+	w := jwriter.Writer{}
+	easyjson791538f0EncodeBlocsyInternalTypes23(&w, v)
+	return w.Buffer.BuildBytes(), w.Error
+}
+
+// MarshalEasyJSON supports easyjson.Marshaler interface
+func (v LogDetails) MarshalEasyJSON(w *jwriter.Writer) {
+	easyjson791538f0EncodeBlocsyInternalTypes23(w, v)
+}
+
+// UnmarshalJSON supports json.Unmarshaler interface
+func (v *LogDetails) UnmarshalJSON(data []byte) error {
+	r := jlexer.Lexer{Data: data}
+	easyjson791538f0DecodeBlocsyInternalTypes23(&r, v)
+	return r.Error()
+}
+
+// UnmarshalEasyJSON supports easyjson.Unmarshaler interface
+func (v *LogDetails) UnmarshalEasyJSON(l *jlexer.Lexer) {
+	easyjson791538f0DecodeBlocsyInternalTypes23(l, v)
+}
+func easyjson791538f0DecodeBlocsyInternalTypes24(in *jlexer.Lexer, out *LoadedAddresses) {
+	isTopLevel := in.IsStart()
+	if in.IsNull() {
+		if isTopLevel {
+			in.Consumed()
+		}
+		in.Skip()
+		return
+	}
+	in.Delim('{')
+	for !in.IsDelim('}') {
+		key := in.UnsafeFieldName(false)
+		in.WantColon()
+		if in.IsNull() {
+			in.Skip()
+			in.WantComma()
+			continue
+		}
+		switch key {
+		case "readonly":
+			if in.IsNull() {
+				in.Skip()
+				out.Readonly = nil
+			} else {
+				in.Delim('[')
+				if out.Readonly == nil {
+					if !in.IsDelim(']') {
+						out.Readonly = make([]string, 0, 4)
+					} else {
+						out.Readonly = []string{}
+					}
+				} else {
+					out.Readonly = (out.Readonly)[:0]
+				}
+				for !in.IsDelim(']') {
+					var v54 string
+					v54 = string(in.String())
+					out.Readonly = append(out.Readonly, v54)
+					in.WantComma()
+				}
+				in.Delim(']')
+			}
+		case "writable":
+			if in.IsNull() {
+				in.Skip()
+				out.Writable = nil
+			} else {
+				in.Delim('[')
+				if out.Writable == nil {
+					if !in.IsDelim(']') {
+						out.Writable = make([]string, 0, 4)
+					} else {
+						out.Writable = []string{}
+					}
+				} else {
+					out.Writable = (out.Writable)[:0]
+				}
+				for !in.IsDelim(']') {
+					var v55 string
+					v55 = string(in.String())
+					out.Writable = append(out.Writable, v55)
+					in.WantComma()
+				}
+				in.Delim(']')
+			}
+		default:
+			in.SkipRecursive()
+		}
+		in.WantComma()
+	}
+	in.Delim('}')
+	if isTopLevel {
+		in.Consumed()
+	}
+}
+func easyjson791538f0EncodeBlocsyInternalTypes24(out *jwriter.Writer, in LoadedAddresses) {
+	out.RawByte('{')
+	first := true
+	_ = first
+	{
+		const prefix string = ",\"readonly\":"
+		out.RawString(prefix[1:])
+		if in.Readonly == nil && (out.Flags&jwriter.NilSliceAsEmpty) == 0 {
+			out.RawString("null")
+		} else {
+			out.RawByte('[')
+			for v56, v57 := range in.Readonly {
+				if v56 > 0 {
+					out.RawByte(',')
+				}
+				out.String(string(v57))
+			}
+			out.RawByte(']')
+		}
+	}
+	{
+		const prefix string = ",\"writable\":"
+		out.RawString(prefix)
+		if in.Writable == nil && (out.Flags&jwriter.NilSliceAsEmpty) == 0 {
+			out.RawString("null")
+		} else {
+			out.RawByte('[')
+			for v58, v59 := range in.Writable {
+				if v58 > 0 {
+					out.RawByte(',')
+				}
+				out.String(string(v59))
+			}
+			out.RawByte(']')
+		}
+	}
+	out.RawByte('}')
+}
+
+// MarshalJSON supports json.Marshaler interface
+func (v LoadedAddresses) MarshalJSON() ([]byte, error) {
+	w := jwriter.Writer{}
+	easyjson791538f0EncodeBlocsyInternalTypes24(&w, v)
+	return w.Buffer.BuildBytes(), w.Error
+}
+
+// MarshalEasyJSON supports easyjson.Marshaler interface
+func (v LoadedAddresses) MarshalEasyJSON(w *jwriter.Writer) {
+	easyjson791538f0EncodeBlocsyInternalTypes24(w, v)
+}
+
+// UnmarshalJSON supports json.Unmarshaler interface
+func (v *LoadedAddresses) UnmarshalJSON(data []byte) error {
+	r := jlexer.Lexer{Data: data}
+	easyjson791538f0DecodeBlocsyInternalTypes24(&r, v)
+	return r.Error()
+}
+
+// UnmarshalEasyJSON supports easyjson.Unmarshaler interface
+func (v *LoadedAddresses) UnmarshalEasyJSON(l *jlexer.Lexer) {
+	easyjson791538f0DecodeBlocsyInternalTypes24(l, v)
+}
+func easyjson791538f0DecodeBlocsyInternalTypes25(in *jlexer.Lexer, out *Instruction) {
 	isTopLevel := in.IsStart()
 	if in.IsNull() {
 		if isTopLevel {
@@ -3224,9 +3668,9 @@ func easyjson791538f0DecodeBlocsyInternalTypes21(in *jlexer.Lexer, out *Instruct
 					out.Accounts = (out.Accounts)[:0]
 				}
 				for !in.IsDelim(']') {
-					var v51 int
-					v51 = int(in.Int())
-					out.Accounts = append(out.Accounts, v51)
+					var v60 int
+					v60 = int(in.Int())
+					out.Accounts = append(out.Accounts, v60)
 					in.WantComma()
 				}
 				in.Delim(']')
@@ -3245,7 +3689,7 @@ func easyjson791538f0DecodeBlocsyInternalTypes21(in *jlexer.Lexer, out *Instruct
 		in.Consumed()
 	}
 }
-func easyjson791538f0EncodeBlocsyInternalTypes21(out *jwriter.Writer, in Instruction) {
+func easyjson791538f0EncodeBlocsyInternalTypes25(out *jwriter.Writer, in Instruction) {
 	out.RawByte('{')
 	first := true
 	_ = first
@@ -3256,11 +3700,11 @@ func easyjson791538f0EncodeBlocsyInternalTypes21(out *jwriter.Writer, in Instruc
 			out.RawString("null")
 		} else {
 			out.RawByte('[')
-			for v52, v53 := range in.Accounts {
-				if v52 > 0 {
+			for v61, v62 := range in.Accounts {
+				if v61 > 0 {
 					out.RawByte(',')
 				}
-				out.Int(int(v53))
+				out.Int(int(v62))
 			}
 			out.RawByte(']')
 		}
@@ -3281,27 +3725,27 @@ func easyjson791538f0EncodeBlocsyInternalTypes21(out *jwriter.Writer, in Instruc
 // MarshalJSON supports json.Marshaler interface
 func (v Instruction) MarshalJSON() ([]byte, error) {
 	w := jwriter.Writer{}
-	easyjson791538f0EncodeBlocsyInternalTypes21(&w, v)
+	easyjson791538f0EncodeBlocsyInternalTypes25(&w, v)
 	return w.Buffer.BuildBytes(), w.Error
 }
 
 // MarshalEasyJSON supports easyjson.Marshaler interface
 func (v Instruction) MarshalEasyJSON(w *jwriter.Writer) {
-	easyjson791538f0EncodeBlocsyInternalTypes21(w, v)
+	easyjson791538f0EncodeBlocsyInternalTypes25(w, v)
 }
 
 // UnmarshalJSON supports json.Unmarshaler interface
 func (v *Instruction) UnmarshalJSON(data []byte) error {
 	r := jlexer.Lexer{Data: data}
-	easyjson791538f0DecodeBlocsyInternalTypes21(&r, v)
+	easyjson791538f0DecodeBlocsyInternalTypes25(&r, v)
 	return r.Error()
 }
 
 // UnmarshalEasyJSON supports easyjson.Unmarshaler interface
 func (v *Instruction) UnmarshalEasyJSON(l *jlexer.Lexer) {
-	easyjson791538f0DecodeBlocsyInternalTypes21(l, v)
+	easyjson791538f0DecodeBlocsyInternalTypes25(l, v)
 }
-func easyjson791538f0DecodeBlocsyInternalTypes22(in *jlexer.Lexer, out *InnerSwap) {
+func easyjson791538f0DecodeBlocsyInternalTypes26(in *jlexer.Lexer, out *InnerSwap) {
 	isTopLevel := in.IsStart()
 	if in.IsNull() {
 		if isTopLevel {
@@ -3336,9 +3780,9 @@ func easyjson791538f0DecodeBlocsyInternalTypes22(in *jlexer.Lexer, out *InnerSwa
 					out.TokenInputs = (out.TokenInputs)[:0]
 				}
 				for !in.IsDelim(']') {
-					var v54 TokenInOutData
-					(v54).UnmarshalEasyJSON(in)
-					out.TokenInputs = append(out.TokenInputs, v54)
+					var v63 TokenInOutData
+					(v63).UnmarshalEasyJSON(in)
+					out.TokenInputs = append(out.TokenInputs, v63)
 					in.WantComma()
 				}
 				in.Delim(']')
@@ -3359,15 +3803,15 @@ func easyjson791538f0DecodeBlocsyInternalTypes22(in *jlexer.Lexer, out *InnerSwa
 					out.TokenOutputs = (out.TokenOutputs)[:0]
 				}
 				for !in.IsDelim(']') {
-					var v55 TokenInOutData
-					(v55).UnmarshalEasyJSON(in)
-					out.TokenOutputs = append(out.TokenOutputs, v55)
+					var v64 TokenInOutData
+					(v64).UnmarshalEasyJSON(in)
+					out.TokenOutputs = append(out.TokenOutputs, v64)
 					in.WantComma()
 				}
 				in.Delim(']')
 			}
 		case "ProgramInfo":
-			easyjson791538f0Decode6(in, &out.ProgramInfo)
+			easyjson791538f0Decode5(in, &out.ProgramInfo)
 		default:
 			in.SkipRecursive()
 		}
@@ -3378,7 +3822,7 @@ func easyjson791538f0DecodeBlocsyInternalTypes22(in *jlexer.Lexer, out *InnerSwa
 		in.Consumed()
 	}
 }
-func easyjson791538f0EncodeBlocsyInternalTypes22(out *jwriter.Writer, in InnerSwap) {
+func easyjson791538f0EncodeBlocsyInternalTypes26(out *jwriter.Writer, in InnerSwap) {
 	out.RawByte('{')
 	first := true
 	_ = first
@@ -3389,11 +3833,11 @@ func easyjson791538f0EncodeBlocsyInternalTypes22(out *jwriter.Writer, in InnerSw
 			out.RawString("null")
 		} else {
 			out.RawByte('[')
-			for v56, v57 := range in.TokenInputs {
-				if v56 > 0 {
+			for v65, v66 := range in.TokenInputs {
+				if v65 > 0 {
 					out.RawByte(',')
 				}
-				(v57).MarshalEasyJSON(out)
+				(v66).MarshalEasyJSON(out)
 			}
 			out.RawByte(']')
 		}
@@ -3405,11 +3849,11 @@ func easyjson791538f0EncodeBlocsyInternalTypes22(out *jwriter.Writer, in InnerSw
 			out.RawString("null")
 		} else {
 			out.RawByte('[')
-			for v58, v59 := range in.TokenOutputs {
-				if v58 > 0 {
+			for v67, v68 := range in.TokenOutputs {
+				if v67 > 0 {
 					out.RawByte(',')
 				}
-				(v59).MarshalEasyJSON(out)
+				(v68).MarshalEasyJSON(out)
 			}
 			out.RawByte(']')
 		}
@@ -3417,7 +3861,7 @@ func easyjson791538f0EncodeBlocsyInternalTypes22(out *jwriter.Writer, in InnerSw
 	{
 		const prefix string = ",\"ProgramInfo\":"
 		out.RawString(prefix)
-		easyjson791538f0Encode6(out, in.ProgramInfo)
+		easyjson791538f0Encode5(out, in.ProgramInfo)
 	}
 	out.RawByte('}')
 }
@@ -3425,27 +3869,27 @@ func easyjson791538f0EncodeBlocsyInternalTypes22(out *jwriter.Writer, in InnerSw
 // MarshalJSON supports json.Marshaler interface
 func (v InnerSwap) MarshalJSON() ([]byte, error) {
 	w := jwriter.Writer{}
-	easyjson791538f0EncodeBlocsyInternalTypes22(&w, v)
+	easyjson791538f0EncodeBlocsyInternalTypes26(&w, v)
 	return w.Buffer.BuildBytes(), w.Error
 }
 
 // MarshalEasyJSON supports easyjson.Marshaler interface
 func (v InnerSwap) MarshalEasyJSON(w *jwriter.Writer) {
-	easyjson791538f0EncodeBlocsyInternalTypes22(w, v)
+	easyjson791538f0EncodeBlocsyInternalTypes26(w, v)
 }
 
 // UnmarshalJSON supports json.Unmarshaler interface
 func (v *InnerSwap) UnmarshalJSON(data []byte) error {
 	r := jlexer.Lexer{Data: data}
-	easyjson791538f0DecodeBlocsyInternalTypes22(&r, v)
+	easyjson791538f0DecodeBlocsyInternalTypes26(&r, v)
 	return r.Error()
 }
 
 // UnmarshalEasyJSON supports easyjson.Unmarshaler interface
 func (v *InnerSwap) UnmarshalEasyJSON(l *jlexer.Lexer) {
-	easyjson791538f0DecodeBlocsyInternalTypes22(l, v)
+	easyjson791538f0DecodeBlocsyInternalTypes26(l, v)
 }
-func easyjson791538f0Decode6(in *jlexer.Lexer, out *struct {
+func easyjson791538f0Decode5(in *jlexer.Lexer, out *struct {
 	Source      string `json:"source"`
 	Account     string `json:"account"`
 	ProgramName string `json:"programName"`
@@ -3484,7 +3928,7 @@ func easyjson791538f0Decode6(in *jlexer.Lexer, out *struct {
 		in.Consumed()
 	}
 }
-func easyjson791538f0Encode6(out *jwriter.Writer, in struct {
+func easyjson791538f0Encode5(out *jwriter.Writer, in struct {
 	Source      string `json:"source"`
 	Account     string `json:"account"`
 	ProgramName string `json:"programName"`
@@ -3509,7 +3953,7 @@ func easyjson791538f0Encode6(out *jwriter.Writer, in struct {
 	}
 	out.RawByte('}')
 }
-func easyjson791538f0DecodeBlocsyInternalTypes23(in *jlexer.Lexer, out *InnerInstruction) {
+func easyjson791538f0DecodeBlocsyInternalTypes27(in *jlexer.Lexer, out *InnerInstruction) {
 	isTopLevel := in.IsStart()
 	if in.IsNull() {
 		if isTopLevel {
@@ -3546,9 +3990,9 @@ func easyjson791538f0DecodeBlocsyInternalTypes23(in *jlexer.Lexer, out *InnerIns
 					out.Instructions = (out.Instructions)[:0]
 				}
 				for !in.IsDelim(']') {
-					var v60 Instruction
-					(v60).UnmarshalEasyJSON(in)
-					out.Instructions = append(out.Instructions, v60)
+					var v69 Instruction
+					(v69).UnmarshalEasyJSON(in)
+					out.Instructions = append(out.Instructions, v69)
 					in.WantComma()
 				}
 				in.Delim(']')
@@ -3563,7 +4007,7 @@ func easyjson791538f0DecodeBlocsyInternalTypes23(in *jlexer.Lexer, out *InnerIns
 		in.Consumed()
 	}
 }
-func easyjson791538f0EncodeBlocsyInternalTypes23(out *jwriter.Writer, in InnerInstruction) {
+func easyjson791538f0EncodeBlocsyInternalTypes27(out *jwriter.Writer, in InnerInstruction) {
 	out.RawByte('{')
 	first := true
 	_ = first
@@ -3579,11 +4023,11 @@ func easyjson791538f0EncodeBlocsyInternalTypes23(out *jwriter.Writer, in InnerIn
 			out.RawString("null")
 		} else {
 			out.RawByte('[')
-			for v61, v62 := range in.Instructions {
-				if v61 > 0 {
+			for v70, v71 := range in.Instructions {
+				if v70 > 0 {
 					out.RawByte(',')
 				}
-				(v62).MarshalEasyJSON(out)
+				(v71).MarshalEasyJSON(out)
 			}
 			out.RawByte(']')
 		}
@@ -3594,27 +4038,27 @@ func easyjson791538f0EncodeBlocsyInternalTypes23(out *jwriter.Writer, in InnerIn
 // MarshalJSON supports json.Marshaler interface
 func (v InnerInstruction) MarshalJSON() ([]byte, error) {
 	w := jwriter.Writer{}
-	easyjson791538f0EncodeBlocsyInternalTypes23(&w, v)
+	easyjson791538f0EncodeBlocsyInternalTypes27(&w, v)
 	return w.Buffer.BuildBytes(), w.Error
 }
 
 // MarshalEasyJSON supports easyjson.Marshaler interface
 func (v InnerInstruction) MarshalEasyJSON(w *jwriter.Writer) {
-	easyjson791538f0EncodeBlocsyInternalTypes23(w, v)
+	easyjson791538f0EncodeBlocsyInternalTypes27(w, v)
 }
 
 // UnmarshalJSON supports json.Unmarshaler interface
 func (v *InnerInstruction) UnmarshalJSON(data []byte) error {
 	r := jlexer.Lexer{Data: data}
-	easyjson791538f0DecodeBlocsyInternalTypes23(&r, v)
+	easyjson791538f0DecodeBlocsyInternalTypes27(&r, v)
 	return r.Error()
 }
 
 // UnmarshalEasyJSON supports easyjson.Unmarshaler interface
 func (v *InnerInstruction) UnmarshalEasyJSON(l *jlexer.Lexer) {
-	easyjson791538f0DecodeBlocsyInternalTypes23(l, v)
+	easyjson791538f0DecodeBlocsyInternalTypes27(l, v)
 }
-func easyjson791538f0DecodeBlocsyInternalTypes24(in *jlexer.Lexer, out *HTTPTxMessage) {
+func easyjson791538f0DecodeBlocsyInternalTypes28(in *jlexer.Lexer, out *HTTPTxMessage) {
 	isTopLevel := in.IsStart()
 	if in.IsNull() {
 		if isTopLevel {
@@ -3645,7 +4089,7 @@ func easyjson791538f0DecodeBlocsyInternalTypes24(in *jlexer.Lexer, out *HTTPTxMe
 		in.Consumed()
 	}
 }
-func easyjson791538f0EncodeBlocsyInternalTypes24(out *jwriter.Writer, in HTTPTxMessage) {
+func easyjson791538f0EncodeBlocsyInternalTypes28(out *jwriter.Writer, in HTTPTxMessage) {
 	out.RawByte('{')
 	first := true
 	_ = first
@@ -3661,27 +4105,27 @@ func easyjson791538f0EncodeBlocsyInternalTypes24(out *jwriter.Writer, in HTTPTxM
 // MarshalJSON supports json.Marshaler interface
 func (v HTTPTxMessage) MarshalJSON() ([]byte, error) {
 	w := jwriter.Writer{}
-	easyjson791538f0EncodeBlocsyInternalTypes24(&w, v)
+	easyjson791538f0EncodeBlocsyInternalTypes28(&w, v)
 	return w.Buffer.BuildBytes(), w.Error
 }
 
 // MarshalEasyJSON supports easyjson.Marshaler interface
 func (v HTTPTxMessage) MarshalEasyJSON(w *jwriter.Writer) {
-	easyjson791538f0EncodeBlocsyInternalTypes24(w, v)
+	easyjson791538f0EncodeBlocsyInternalTypes28(w, v)
 }
 
 // UnmarshalJSON supports json.Unmarshaler interface
 func (v *HTTPTxMessage) UnmarshalJSON(data []byte) error {
 	r := jlexer.Lexer{Data: data}
-	easyjson791538f0DecodeBlocsyInternalTypes24(&r, v)
+	easyjson791538f0DecodeBlocsyInternalTypes28(&r, v)
 	return r.Error()
 }
 
 // UnmarshalEasyJSON supports easyjson.Unmarshaler interface
 func (v *HTTPTxMessage) UnmarshalEasyJSON(l *jlexer.Lexer) {
-	easyjson791538f0DecodeBlocsyInternalTypes24(l, v)
+	easyjson791538f0DecodeBlocsyInternalTypes28(l, v)
 }
-func easyjson791538f0DecodeBlocsyInternalTypes25(in *jlexer.Lexer, out *HTTPBlockMessage) {
+func easyjson791538f0DecodeBlocsyInternalTypes29(in *jlexer.Lexer, out *HTTPBlockMessage) {
 	isTopLevel := in.IsStart()
 	if in.IsNull() {
 		if isTopLevel {
@@ -3721,7 +4165,7 @@ func easyjson791538f0DecodeBlocsyInternalTypes25(in *jlexer.Lexer, out *HTTPBloc
 						Message string `json:"message"`
 					})
 				}
-				easyjson791538f0Decode7(in, out.Error)
+				easyjson791538f0Decode6(in, out.Error)
 			}
 		default:
 			in.SkipRecursive()
@@ -3733,7 +4177,7 @@ func easyjson791538f0DecodeBlocsyInternalTypes25(in *jlexer.Lexer, out *HTTPBloc
 		in.Consumed()
 	}
 }
-func easyjson791538f0EncodeBlocsyInternalTypes25(out *jwriter.Writer, in HTTPBlockMessage) {
+func easyjson791538f0EncodeBlocsyInternalTypes29(out *jwriter.Writer, in HTTPBlockMessage) {
 	out.RawByte('{')
 	first := true
 	_ = first
@@ -3751,7 +4195,7 @@ func easyjson791538f0EncodeBlocsyInternalTypes25(out *jwriter.Writer, in HTTPBlo
 		} else {
 			out.RawString(prefix)
 		}
-		easyjson791538f0Encode7(out, *in.Error)
+		easyjson791538f0Encode6(out, *in.Error)
 	}
 	out.RawByte('}')
 }
@@ -3759,27 +4203,27 @@ func easyjson791538f0EncodeBlocsyInternalTypes25(out *jwriter.Writer, in HTTPBlo
 // MarshalJSON supports json.Marshaler interface
 func (v HTTPBlockMessage) MarshalJSON() ([]byte, error) {
 	w := jwriter.Writer{}
-	easyjson791538f0EncodeBlocsyInternalTypes25(&w, v)
+	easyjson791538f0EncodeBlocsyInternalTypes29(&w, v)
 	return w.Buffer.BuildBytes(), w.Error
 }
 
 // MarshalEasyJSON supports easyjson.Marshaler interface
 func (v HTTPBlockMessage) MarshalEasyJSON(w *jwriter.Writer) {
-	easyjson791538f0EncodeBlocsyInternalTypes25(w, v)
+	easyjson791538f0EncodeBlocsyInternalTypes29(w, v)
 }
 
 // UnmarshalJSON supports json.Unmarshaler interface
 func (v *HTTPBlockMessage) UnmarshalJSON(data []byte) error {
 	r := jlexer.Lexer{Data: data}
-	easyjson791538f0DecodeBlocsyInternalTypes25(&r, v)
+	easyjson791538f0DecodeBlocsyInternalTypes29(&r, v)
 	return r.Error()
 }
 
 // UnmarshalEasyJSON supports easyjson.Unmarshaler interface
 func (v *HTTPBlockMessage) UnmarshalEasyJSON(l *jlexer.Lexer) {
-	easyjson791538f0DecodeBlocsyInternalTypes25(l, v)
+	easyjson791538f0DecodeBlocsyInternalTypes29(l, v)
 }
-func easyjson791538f0Decode7(in *jlexer.Lexer, out *struct {
+func easyjson791538f0Decode6(in *jlexer.Lexer, out *struct {
 	Code    int    `json:"code"`
 	Message string `json:"message"`
 }) {
@@ -3815,7 +4259,7 @@ func easyjson791538f0Decode7(in *jlexer.Lexer, out *struct {
 		in.Consumed()
 	}
 }
-func easyjson791538f0Encode7(out *jwriter.Writer, in struct {
+func easyjson791538f0Encode6(out *jwriter.Writer, in struct {
 	Code    int    `json:"code"`
 	Message string `json:"message"`
 }) {
@@ -3834,7 +4278,7 @@ func easyjson791538f0Encode7(out *jwriter.Writer, in struct {
 	}
 	out.RawByte('}')
 }
-func easyjson791538f0DecodeBlocsyInternalTypes26(in *jlexer.Lexer, out *BlockResult) {
+func easyjson791538f0DecodeBlocsyInternalTypes30(in *jlexer.Lexer, out *BlockResult) {
 	isTopLevel := in.IsStart()
 	if in.IsNull() {
 		if isTopLevel {
@@ -3873,9 +4317,9 @@ func easyjson791538f0DecodeBlocsyInternalTypes26(in *jlexer.Lexer, out *BlockRes
 					out.Transactions = (out.Transactions)[:0]
 				}
 				for !in.IsDelim(']') {
-					var v63 SolanaTx
-					(v63).UnmarshalEasyJSON(in)
-					out.Transactions = append(out.Transactions, v63)
+					var v72 SolanaTx
+					(v72).UnmarshalEasyJSON(in)
+					out.Transactions = append(out.Transactions, v72)
 					in.WantComma()
 				}
 				in.Delim(']')
@@ -3890,7 +4334,7 @@ func easyjson791538f0DecodeBlocsyInternalTypes26(in *jlexer.Lexer, out *BlockRes
 		in.Consumed()
 	}
 }
-func easyjson791538f0EncodeBlocsyInternalTypes26(out *jwriter.Writer, in BlockResult) {
+func easyjson791538f0EncodeBlocsyInternalTypes30(out *jwriter.Writer, in BlockResult) {
 	out.RawByte('{')
 	first := true
 	_ = first
@@ -3911,11 +4355,11 @@ func easyjson791538f0EncodeBlocsyInternalTypes26(out *jwriter.Writer, in BlockRe
 			out.RawString("null")
 		} else {
 			out.RawByte('[')
-			for v64, v65 := range in.Transactions {
-				if v64 > 0 {
+			for v73, v74 := range in.Transactions {
+				if v73 > 0 {
 					out.RawByte(',')
 				}
-				(v65).MarshalEasyJSON(out)
+				(v74).MarshalEasyJSON(out)
 			}
 			out.RawByte(']')
 		}
@@ -3926,27 +4370,27 @@ func easyjson791538f0EncodeBlocsyInternalTypes26(out *jwriter.Writer, in BlockRe
 // MarshalJSON supports json.Marshaler interface
 func (v BlockResult) MarshalJSON() ([]byte, error) {
 	w := jwriter.Writer{}
-	easyjson791538f0EncodeBlocsyInternalTypes26(&w, v)
+	easyjson791538f0EncodeBlocsyInternalTypes30(&w, v)
 	return w.Buffer.BuildBytes(), w.Error
 }
 
 // MarshalEasyJSON supports easyjson.Marshaler interface
 func (v BlockResult) MarshalEasyJSON(w *jwriter.Writer) {
-	easyjson791538f0EncodeBlocsyInternalTypes26(w, v)
+	easyjson791538f0EncodeBlocsyInternalTypes30(w, v)
 }
 
 // UnmarshalJSON supports json.Unmarshaler interface
 func (v *BlockResult) UnmarshalJSON(data []byte) error {
 	r := jlexer.Lexer{Data: data}
-	easyjson791538f0DecodeBlocsyInternalTypes26(&r, v)
+	easyjson791538f0DecodeBlocsyInternalTypes30(&r, v)
 	return r.Error()
 }
 
 // UnmarshalEasyJSON supports easyjson.Unmarshaler interface
 func (v *BlockResult) UnmarshalEasyJSON(l *jlexer.Lexer) {
-	easyjson791538f0DecodeBlocsyInternalTypes26(l, v)
+	easyjson791538f0DecodeBlocsyInternalTypes30(l, v)
 }
-func easyjson791538f0DecodeBlocsyInternalTypes27(in *jlexer.Lexer, out *BlockData) {
+func easyjson791538f0DecodeBlocsyInternalTypes31(in *jlexer.Lexer, out *BlockData) {
 	isTopLevel := in.IsStart()
 	if in.IsNull() {
 		if isTopLevel {
@@ -3981,9 +4425,9 @@ func easyjson791538f0DecodeBlocsyInternalTypes27(in *jlexer.Lexer, out *BlockDat
 					out.Transactions = (out.Transactions)[:0]
 				}
 				for !in.IsDelim(']') {
-					var v66 SolanaTx
-					(v66).UnmarshalEasyJSON(in)
-					out.Transactions = append(out.Transactions, v66)
+					var v75 SolanaTx
+					(v75).UnmarshalEasyJSON(in)
+					out.Transactions = append(out.Transactions, v75)
 					in.WantComma()
 				}
 				in.Delim(']')
@@ -4004,7 +4448,7 @@ func easyjson791538f0DecodeBlocsyInternalTypes27(in *jlexer.Lexer, out *BlockDat
 		in.Consumed()
 	}
 }
-func easyjson791538f0EncodeBlocsyInternalTypes27(out *jwriter.Writer, in BlockData) {
+func easyjson791538f0EncodeBlocsyInternalTypes31(out *jwriter.Writer, in BlockData) {
 	out.RawByte('{')
 	first := true
 	_ = first
@@ -4015,11 +4459,11 @@ func easyjson791538f0EncodeBlocsyInternalTypes27(out *jwriter.Writer, in BlockDa
 			out.RawString("null")
 		} else {
 			out.RawByte('[')
-			for v67, v68 := range in.Transactions {
-				if v67 > 0 {
+			for v76, v77 := range in.Transactions {
+				if v76 > 0 {
 					out.RawByte(',')
 				}
-				(v68).MarshalEasyJSON(out)
+				(v77).MarshalEasyJSON(out)
 			}
 			out.RawByte(']')
 		}
@@ -4045,27 +4489,27 @@ func easyjson791538f0EncodeBlocsyInternalTypes27(out *jwriter.Writer, in BlockDa
 // MarshalJSON supports json.Marshaler interface
 func (v BlockData) MarshalJSON() ([]byte, error) {
 	w := jwriter.Writer{}
-	easyjson791538f0EncodeBlocsyInternalTypes27(&w, v)
+	easyjson791538f0EncodeBlocsyInternalTypes31(&w, v)
 	return w.Buffer.BuildBytes(), w.Error
 }
 
 // MarshalEasyJSON supports easyjson.Marshaler interface
 func (v BlockData) MarshalEasyJSON(w *jwriter.Writer) {
-	easyjson791538f0EncodeBlocsyInternalTypes27(w, v)
+	easyjson791538f0EncodeBlocsyInternalTypes31(w, v)
 }
 
 // UnmarshalJSON supports json.Unmarshaler interface
 func (v *BlockData) UnmarshalJSON(data []byte) error {
 	r := jlexer.Lexer{Data: data}
-	easyjson791538f0DecodeBlocsyInternalTypes27(&r, v)
+	easyjson791538f0DecodeBlocsyInternalTypes31(&r, v)
 	return r.Error()
 }
 
 // UnmarshalEasyJSON supports easyjson.Unmarshaler interface
 func (v *BlockData) UnmarshalEasyJSON(l *jlexer.Lexer) {
-	easyjson791538f0DecodeBlocsyInternalTypes27(l, v)
+	easyjson791538f0DecodeBlocsyInternalTypes31(l, v)
 }
-func easyjson791538f0DecodeBlocsyInternalTypes28(in *jlexer.Lexer, out *AddressTableLookup) {
+func easyjson791538f0DecodeBlocsyInternalTypes32(in *jlexer.Lexer, out *AddressTableLookup) {
 	isTopLevel := in.IsStart()
 	if in.IsNull() {
 		if isTopLevel {
@@ -4102,9 +4546,9 @@ func easyjson791538f0DecodeBlocsyInternalTypes28(in *jlexer.Lexer, out *AddressT
 					out.ReadonlyIndexes = (out.ReadonlyIndexes)[:0]
 				}
 				for !in.IsDelim(']') {
-					var v69 int
-					v69 = int(in.Int())
-					out.ReadonlyIndexes = append(out.ReadonlyIndexes, v69)
+					var v78 int
+					v78 = int(in.Int())
+					out.ReadonlyIndexes = append(out.ReadonlyIndexes, v78)
 					in.WantComma()
 				}
 				in.Delim(']')
@@ -4125,9 +4569,9 @@ func easyjson791538f0DecodeBlocsyInternalTypes28(in *jlexer.Lexer, out *AddressT
 					out.WritableIndexes = (out.WritableIndexes)[:0]
 				}
 				for !in.IsDelim(']') {
-					var v70 int
-					v70 = int(in.Int())
-					out.WritableIndexes = append(out.WritableIndexes, v70)
+					var v79 int
+					v79 = int(in.Int())
+					out.WritableIndexes = append(out.WritableIndexes, v79)
 					in.WantComma()
 				}
 				in.Delim(']')
@@ -4142,7 +4586,7 @@ func easyjson791538f0DecodeBlocsyInternalTypes28(in *jlexer.Lexer, out *AddressT
 		in.Consumed()
 	}
 }
-func easyjson791538f0EncodeBlocsyInternalTypes28(out *jwriter.Writer, in AddressTableLookup) {
+func easyjson791538f0EncodeBlocsyInternalTypes32(out *jwriter.Writer, in AddressTableLookup) {
 	out.RawByte('{')
 	first := true
 	_ = first
@@ -4158,11 +4602,11 @@ func easyjson791538f0EncodeBlocsyInternalTypes28(out *jwriter.Writer, in Address
 			out.RawString("null")
 		} else {
 			out.RawByte('[')
-			for v71, v72 := range in.ReadonlyIndexes {
-				if v71 > 0 {
+			for v80, v81 := range in.ReadonlyIndexes {
+				if v80 > 0 {
 					out.RawByte(',')
 				}
-				out.Int(int(v72))
+				out.Int(int(v81))
 			}
 			out.RawByte(']')
 		}
@@ -4174,11 +4618,11 @@ func easyjson791538f0EncodeBlocsyInternalTypes28(out *jwriter.Writer, in Address
 			out.RawString("null")
 		} else {
 			out.RawByte('[')
-			for v73, v74 := range in.WritableIndexes {
-				if v73 > 0 {
+			for v82, v83 := range in.WritableIndexes {
+				if v82 > 0 {
 					out.RawByte(',')
 				}
-				out.Int(int(v74))
+				out.Int(int(v83))
 			}
 			out.RawByte(']')
 		}
@@ -4189,27 +4633,27 @@ func easyjson791538f0EncodeBlocsyInternalTypes28(out *jwriter.Writer, in Address
 // MarshalJSON supports json.Marshaler interface
 func (v AddressTableLookup) MarshalJSON() ([]byte, error) {
 	w := jwriter.Writer{}
-	easyjson791538f0EncodeBlocsyInternalTypes28(&w, v)
+	easyjson791538f0EncodeBlocsyInternalTypes32(&w, v)
 	return w.Buffer.BuildBytes(), w.Error
 }
 
 // MarshalEasyJSON supports easyjson.Marshaler interface
 func (v AddressTableLookup) MarshalEasyJSON(w *jwriter.Writer) {
-	easyjson791538f0EncodeBlocsyInternalTypes28(w, v)
+	easyjson791538f0EncodeBlocsyInternalTypes32(w, v)
 }
 
 // UnmarshalJSON supports json.Unmarshaler interface
 func (v *AddressTableLookup) UnmarshalJSON(data []byte) error {
 	r := jlexer.Lexer{Data: data}
-	easyjson791538f0DecodeBlocsyInternalTypes28(&r, v)
+	easyjson791538f0DecodeBlocsyInternalTypes32(&r, v)
 	return r.Error()
 }
 
 // UnmarshalEasyJSON supports easyjson.Unmarshaler interface
 func (v *AddressTableLookup) UnmarshalEasyJSON(l *jlexer.Lexer) {
-	easyjson791538f0DecodeBlocsyInternalTypes28(l, v)
+	easyjson791538f0DecodeBlocsyInternalTypes32(l, v)
 }
-func easyjson791538f0DecodeBlocsyInternalTypes29(in *jlexer.Lexer, out *AccountKey) {
+func easyjson791538f0DecodeBlocsyInternalTypes33(in *jlexer.Lexer, out *AccountKey) {
 	isTopLevel := in.IsStart()
 	if in.IsNull() {
 		if isTopLevel {
@@ -4246,7 +4690,7 @@ func easyjson791538f0DecodeBlocsyInternalTypes29(in *jlexer.Lexer, out *AccountK
 		in.Consumed()
 	}
 }
-func easyjson791538f0EncodeBlocsyInternalTypes29(out *jwriter.Writer, in AccountKey) {
+func easyjson791538f0EncodeBlocsyInternalTypes33(out *jwriter.Writer, in AccountKey) {
 	out.RawByte('{')
 	first := true
 	_ = first
@@ -4276,23 +4720,23 @@ func easyjson791538f0EncodeBlocsyInternalTypes29(out *jwriter.Writer, in Account
 // MarshalJSON supports json.Marshaler interface
 func (v AccountKey) MarshalJSON() ([]byte, error) {
 	w := jwriter.Writer{}
-	easyjson791538f0EncodeBlocsyInternalTypes29(&w, v)
+	easyjson791538f0EncodeBlocsyInternalTypes33(&w, v)
 	return w.Buffer.BuildBytes(), w.Error
 }
 
 // MarshalEasyJSON supports easyjson.Marshaler interface
 func (v AccountKey) MarshalEasyJSON(w *jwriter.Writer) {
-	easyjson791538f0EncodeBlocsyInternalTypes29(w, v)
+	easyjson791538f0EncodeBlocsyInternalTypes33(w, v)
 }
 
 // UnmarshalJSON supports json.Unmarshaler interface
 func (v *AccountKey) UnmarshalJSON(data []byte) error {
 	r := jlexer.Lexer{Data: data}
-	easyjson791538f0DecodeBlocsyInternalTypes29(&r, v)
+	easyjson791538f0DecodeBlocsyInternalTypes33(&r, v)
 	return r.Error()
 }
 
 // UnmarshalEasyJSON supports easyjson.Unmarshaler interface
 func (v *AccountKey) UnmarshalEasyJSON(l *jlexer.Lexer) {
-	easyjson791538f0DecodeBlocsyInternalTypes29(l, v)
+	easyjson791538f0DecodeBlocsyInternalTypes33(l, v)
 }

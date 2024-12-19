@@ -7,6 +7,17 @@ import (
 	jlexer "github.com/mailru/easyjson/jlexer"
 )
 
+type ArrayFlags []string
+
+func (i *ArrayFlags) String() string {
+	return "string representation of flag"
+}
+
+func (i *ArrayFlags) Set(value string) error {
+	*i = append(*i, value)
+	return nil
+}
+
 type LogDetails struct {
 	Program string
 	Logs    []string
@@ -64,14 +75,16 @@ type TransactionMeta struct {
 	Fee               int64              `json:"fee"`
 	InnerInstructions []InnerInstruction `json:"innerInstructions,omitempty"`
 	LogMessages       []string           `json:"logMessages,omitempty"`
-	PostBalances      []int64            `json:"postBalances"`
+	PostBalances      []uint64           `json:"postBalances"`
 	PostTokenBalances []TokenBalance     `json:"postTokenBalances,omitempty"`
-	PreBalances       []int64            `json:"preBalances"`
+	PreBalances       []uint64           `json:"preBalances"`
 	PreTokenBalances  []TokenBalance     `json:"preTokenBalances,omitempty"`
-	LoadedAddresses   *struct {
-		Readonly []string `json:"readonly"`
-		Writable []string `json:"writable"`
-	} `json:"loadedAddresses,omitempty"`
+	LoadedAddresses   LoadedAddresses    `json:"loadedAddresses,omitempty"`
+}
+
+type LoadedAddresses struct {
+	Readonly []string `json:"readonly"`
+	Writable []string `json:"writable"`
 }
 
 //easyjson:json
