@@ -2,6 +2,8 @@ package solana
 
 import (
 	"blocsy/internal/types"
+	"github.com/mr-tron/base58"
+	pb "github.com/rpcpool/yellowstone-grpc/examples/golang/proto"
 	"math/big"
 	"strings"
 )
@@ -124,4 +126,63 @@ func ABSValue(amount string) string {
 	amountFloat.Abs(amountFloat)
 	amount = amountFloat.Text('f', -1)
 	return amount
+}
+
+func convertToIntSlice(b []byte) []int {
+	ints := make([]int, len(b))
+	for i, v := range b {
+		ints[i] = int(v)
+	}
+	return ints
+}
+
+func convertToBase58Strings(byteArrays [][]byte) []string {
+	strings := make([]string, len(byteArrays))
+	for i, b := range byteArrays {
+		strings[i] = base58.Encode(b)
+	}
+	return strings
+}
+
+func convertToTokenBalanceSlice(input []*pb.TokenBalance) []types.TokenBalance {
+	output := make([]types.TokenBalance, len(input))
+	for i, v := range input {
+		output[i] = types.TokenBalance{
+			AccountIndex: int(v.AccountIndex),
+			Mint:         v.Mint,
+			Owner:        v.Owner,
+			ProgramId:    v.ProgramId,
+			UITokenAmount: types.UITokenAmount{
+				Amount:         v.UiTokenAmount.Amount,
+				Decimals:       int(v.UiTokenAmount.Decimals),
+				UiAmount:       v.UiTokenAmount.UiAmount,
+				UiAmountString: v.UiTokenAmount.UiAmountString,
+			},
+		}
+	}
+	return output
+}
+
+func convertToInstructions(instructions_ []*pb.CompiledInstruction) []types.Instruction {
+	instructions := make([]types.Instruction, len(instructions_))
+	for i, instr := range instructions_ {
+		instructions[i] = types.Instruction{
+			ProgramIdIndex: int(instr.ProgramIdIndex),
+			Data:           base58.Encode(instr.Data),
+			Accounts:       convertToIntSlice(instr.Accounts),
+		}
+	}
+	return instructions
+}
+
+func convertToInnerInstructions(instructions_ []*pb.InnerInstruction) []types.Instruction {
+	instructions := make([]types.Instruction, len(instructions_))
+	for i, instr := range instructions_ {
+		instructions[i] = types.Instruction{
+			ProgramIdIndex: int(instr.ProgramIdIndex),
+			Data:           base58.Encode(instr.Data),
+			Accounts:       convertToIntSlice(instr.Accounts),
+		}
+	}
+	return instructions
 }

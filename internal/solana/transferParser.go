@@ -51,7 +51,7 @@ func GetNativeBalanceDiffs(tx *types.SolanaTx) map[int]types.SolBalanceDiff {
 	for i := range tx.Meta.PostBalances {
 		swap := types.SolBalanceDiff{
 			Mint:     "",
-			Amount:   strconv.FormatInt(tx.Meta.PostBalances[i], 10),
+			Amount:   strconv.FormatUint(tx.Meta.PostBalances[i], 10),
 			Decimals: 9,
 			Owner:    "",
 		}
@@ -64,9 +64,9 @@ func GetNativeBalanceDiffs(tx *types.SolanaTx) map[int]types.SolBalanceDiff {
 			continue
 		}
 
-		postAmount := new(big.Float).SetInt64(tx.Meta.PostBalances[i])
+		postAmount := new(big.Float).SetInt64(int64(tx.Meta.PostBalances[i]))
 
-		preAmount := new(big.Float).SetInt64(tx.Meta.PreBalances[i])
+		preAmount := new(big.Float).SetInt64(int64(tx.Meta.PreBalances[i]))
 
 		difference := new(big.Float).Sub(postAmount, preAmount)
 		swap.Amount = difference.Text('f', -1)

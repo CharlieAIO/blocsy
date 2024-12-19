@@ -37,19 +37,19 @@ func solanaListener(ctx context.Context, pRepo *db.TimescaleRepository) {
 		log.Fatalf("SOL_HTTPS is required")
 	}
 
-	url_wss := os.Getenv("SOL_WSS")
-	if url_wss == "" {
-		log.Fatalf("SOL_WSS is required")
+	grpc_address := os.Getenv("SOL_GRPC")
+	if grpc_address == "" {
+		log.Fatalf("SOL_GRPC is required")
 	}
 
 	solSvc := solana.NewSolanaService(ctx)
 	queueHandler := solana.NewSolanaQueueHandler(nil, nil)
-	sbl := solana.NewBlockListener(url_wss, solSvc, pRepo, queueHandler)
+	sbl := solana.NewBlockListener(grpc_address, solSvc, pRepo, queueHandler)
 
 	go func() {
 		log.Println("Listening for new blocks (solana)...")
 		defer log.Println("Stopped listening for new blocks (solana)...")
-		if err := sbl.Listen(ctx); err != nil {
+		if err := sbl.Listen(); err != nil {
 			log.Fatalf("failed to listen, err: %v", err)
 		}
 
