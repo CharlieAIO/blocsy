@@ -226,7 +226,7 @@ func (s *SolanaBlockListener) grpcSubscribe(conn *grpc.ClientConn) error {
 	subscription.Commitment = &confirmed
 	subscriptionJson, err := json.Marshal(&subscription)
 	if err != nil {
-		log.Printf("Failed to marshal subscription request: %v", subscriptionJson)
+		log.Printf("Failed to marshal subscription request: %v", err)
 	}
 	log.Printf("Subscription request: %s", string(subscriptionJson))
 
@@ -238,11 +238,20 @@ func (s *SolanaBlockListener) grpcSubscribe(conn *grpc.ClientConn) error {
 
 	stream, err := client.Subscribe(ctx)
 	if err != nil {
-		return fmt.Errorf("%v", err)
+		return fmt.Errorf("subscribe: %v", err)
 	}
 	err = stream.Send(&subscription)
 	if err != nil {
-		return fmt.Errorf("%v", err)
+		return fmt.Errorf("send: %v", err)
+	}
+
+	// Check for unexpected content-type
+	header, err := stream.Header()
+	if err != nil {
+		return fmt.Errorf("failed to get header: %v", err)
+	}
+	if contentType := header.Get("content-type"); len(contentType) > 0 && contentType[0] != "application/grpc" {
+		return fmt.Errorf("unexpected content-type: %s", contentType)
 	}
 
 	var blockNumber uint64
