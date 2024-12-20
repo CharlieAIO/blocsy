@@ -7,8 +7,6 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
-	"github.com/gorilla/websocket"
-	"github.com/mailru/easyjson"
 	"github.com/mr-tron/base58"
 	pb "github.com/rpcpool/yellowstone-grpc/examples/golang/proto"
 	"google.golang.org/grpc"
@@ -47,26 +45,6 @@ var kacp = keepalive.ClientParameters{
 	Time:                10 * time.Second, // send pings every 10 seconds if there is no activity
 	Timeout:             20 * time.Second,
 	PermitWithoutStream: true, // send pings even without active streams
-}
-
-func subscribeToBlocks(client *websocket.Conn) error {
-	const msg = `{
-        "jsonrpc": "2.0",
-        "id": "1",
-        "method": "blockSubscribe",
-        "params": [
-			"all",
-            {
-				"commitment": "confirmed",
-				"encoding": "json",
-				"showRewards": false,
-				"transactionDetails": "full",
-				"maxSupportedTransactionVersion": 2
-            }
-        ]
-    }`
-
-	return client.WriteMessage(websocket.TextMessage, []byte(msg))
 }
 
 type SolanaBlockListener struct {
@@ -324,13 +302,6 @@ func (s *SolanaBlockListener) grpcSubscribe(conn *grpc.ClientConn) error {
 				}
 			}
 
-			//jsonData, err := json.MarshalIndent(solanaTx, "", "  ")
-			//if err != nil {
-			//	continue
-			//}
-
-			// Log the final decoded transaction
-			//log.Printf("Decoded Transaction: %s", string(jsonData))
 		}
 
 		if len(solanaTx.Transaction.Signatures) > 0 {
@@ -342,89 +313,6 @@ func (s *SolanaBlockListener) grpcSubscribe(conn *grpc.ClientConn) error {
 		}
 	}
 
-}
-
-func (s *SolanaBlockListener) processMessage(ctx context.Context, message []byte, firstNewBlock *int, errorOccurred *bool) error {
-
-	var blockMessage types.WSBlockMessage
-	if err := easyjson.Unmarshal(message, &blockMessage); err != nil {
-		return fmt.Errorf("Error decoding message: %w", err)
-	}
-
-	if blockMessage.Result != nil {
-		log.Printf("Subscription Connected %d", *blockMessage.Result)
-		return nil
-	}
-
-	if blockMessage.Params == nil {
-		return nil
-	}
-
-	block := blockMessage.Params.Result.Value.Block
-	slot := 0
-	if block.ParentSlot != nil {
-		slot = *blockMessage.Params.Result.Value.Slot
-	}
-
-	s.errorMutex.Lock()
-	if *errorOccurred {
-		*errorOccurred = false
-		*firstNewBlock = slot
-
-		if s.lastProcessedBlock != 0 {
-			bf := NewBackfillService(s.solSvc, s.pRepo, s.queueHandler)
-
-			startBlock := s.lastProcessedBlock + 1
-			endBlock := *firstNewBlock - 1
-
-			s.errorMutex.Unlock()
-
-			go func(start, end int) {
-				err := bf.HandleBackFill(ctx, start, end, false)
-				if err != nil {
-					log.Printf("HandleBackFill error: %v", err)
-				}
-			}(startBlock, endBlock)
-		} else {
-			s.errorMutex.Unlock()
-		}
-	} else {
-		s.errorMutex.Unlock()
-	}
-
-	timestamp := time.Now().Unix()
-	if block.BlockTime != nil {
-		timestamp = *block.BlockTime
-	}
-
-	s.lastProcessedBlock = slot
-	go func() {
-		s.HandleBlock(block.Transactions, timestamp, uint64(slot))
-	}()
-	_ = s.pRepo.MarkBlockProcessed(ctx, slot)
-
-	return nil
-}
-
-func (s *SolanaBlockListener) HandleBlock(blockTransactions []types.SolanaTx, blockTime int64, block uint64) {
-
-	toProcess := make([]types.SolanaTx, 0)
-	for i := range blockTransactions {
-		if blockTransactions[i].Meta.Err != nil || !validateTX(&blockTransactions[i]) {
-			continue
-		}
-		toProcess = append(toProcess, blockTransactions[i])
-
-	}
-	log.Printf("Block %d has %d transactions to process", block, len(toProcess))
-
-	if s.queueHandler != nil {
-		s.queueHandler.AddToSolanaQueue(types.BlockData{
-			Transactions: toProcess,
-			Block:        block,
-			Timestamp:    blockTime,
-		})
-	}
 }
 
 func (s *SolanaBlockListener) HandleTransaction(transaction types.SolanaTx, blockTime int64, block uint64) {

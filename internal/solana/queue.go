@@ -316,6 +316,7 @@ func (qh *SolanaQueueHandler) insertBatch(ctx context.Context, swaps []types.Swa
 	const maxRetries = 3
 
 	for retry := 0; retry < maxRetries; retry++ {
+		log.Printf("inserting %+v", swaps)
 		if err := qh.pRepo.InsertSwaps(ctx, swaps); err != nil {
 			log.Printf("Failed to insert swaps batch (attempt %d): %v", retry+1, err)
 			time.Sleep(2 * time.Second)
