@@ -26,6 +26,8 @@ func (t *TxHandler) ProcessTransaction(ctx context.Context, tx *types.SolanaTx, 
 	swaps := t.sh.HandleSwaps(ctx, transfers, tx, timestamp, block)
 	pumpFunTokens := dex.HandlePumpFunNewToken(logs, PUMPFUN)
 
+	log.Printf("Processing %s ~ got %d swaps", tx.Transaction.Signatures[0], len(swaps))
+
 	if t.Websocket != nil && !ignoreWS {
 		go func() {
 			t.Websocket.BroadcastSwaps(swaps)
