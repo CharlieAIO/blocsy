@@ -264,9 +264,6 @@ func (qh *SolanaQueueHandler) solanaWorker(ctx context.Context) {
 				go func() {
 					defer wg.Done()
 					for tx := range txChan {
-						if tx.Meta.Err != nil {
-							continue
-						}
 						processedSwaps, err := qh.txHandler.ProcessTransaction(ctx, &tx, blockData.Timestamp, blockData.Block, blockData.IgnoreWS)
 						if err != nil {
 							continue
@@ -294,13 +291,15 @@ func (qh *SolanaQueueHandler) solanaWorker(ctx context.Context) {
 				swaps = append(swaps, result...)
 			}
 
-			err := qh.insertBatch(ctx, swaps)
-			if err != nil {
-				log.Printf("Failed to insert swaps: %v", err)
-				return
+			if len(swaps) > 0 {
+				err := qh.insertBatch(ctx, swaps)
+				if err != nil {
+					log.Printf("Failed to insert swaps: %v", err)
+					return
+				}
 			}
 
-			err = x.Ack(false)
+			err := x.Ack(false)
 			if err != nil {
 				log.Printf("Failed to ack message: %v", err)
 				return
