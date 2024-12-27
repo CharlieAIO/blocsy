@@ -89,7 +89,7 @@ func (repo *TimescaleRepository) InsertSwaps(ctx context.Context, swaps []types.
 		`"processed"`,
 	}
 
-	query := fmt.Sprintf(`INSERT INTO "%s" (%s) VALUES `, swapLogTable, strings.Join(columns, ", "))
+	query := fmt.Sprintf(`INSERT INTO "%s" (%s) VALUES`, swapLogTable, strings.Join(columns, ", "))
 
 	valueStrings := []string{}
 	valueArgs := []interface{}{}
@@ -231,8 +231,11 @@ func (repo *TimescaleRepository) FindWalletTokenHoldings(ctx context.Context, to
 	var query = fmt.Sprintf(`
 		SELECT COALESCE(SUM(
 			CASE 
-				WHEN action = 'BUY' THEN "amountIn" 
+				WHEN action = 'BUY' THEN "amountIn"
+			    WHEN action = 'TRANSFER' THEN "amountIn" 
 				WHEN action = 'SELL' THEN -"amountOut" 
+			    WHEN action = 'RECEIVE' THEN -"amountOut" 
+
 				ELSE 0 
 			END
 		), 0) as totalTokens

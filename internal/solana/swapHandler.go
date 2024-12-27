@@ -44,7 +44,13 @@ func (sh *SwapHandler) HandleSwaps(ctx context.Context, transfers []types.SolTra
 				AmountIn:  transfer.Amount,
 				AmountOut: "0",
 			}
-			swaps = append(swaps, transferSwap)
+			transferSwap2 := types.SolSwap{
+				TokenOut:  transfer.Mint,
+				Wallet:    transfer.FromUserAccount,
+				AmountIn:  "0",
+				AmountOut: transfer.Amount,
+			}
+			swaps = append(swaps, transferSwap, transferSwap2)
 		}
 		i += inc
 	}
@@ -71,12 +77,21 @@ func (sh *SwapHandler) HandleSwaps(ctx context.Context, transfers []types.SolTra
 		token := ""
 		action := ""
 		if amountOutF == 0 {
-			if _, found := QuoteTokens[swap.TokenIn]; found {
+			if _, foundIn := QuoteTokens[swap.TokenIn]; foundIn {
 				continue
 			}
 			token = swap.TokenIn
+			action = "RECEIVE"
+		}
+		if amountInF == 0 {
+			if _, foundOut := QuoteTokens[swap.TokenOut]; foundOut {
+				continue
+			}
+			token = swap.TokenOut
 			action = "TRANSFER"
-		} else if _, found := QuoteTokens[swap.TokenOut]; found {
+		}
+
+		if _, found := QuoteTokens[swap.TokenOut]; found {
 			token = swap.TokenIn
 			action = "BUY"
 		} else if _, found := QuoteTokens[swap.TokenIn]; found {
