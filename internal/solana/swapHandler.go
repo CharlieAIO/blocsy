@@ -76,20 +76,6 @@ func (sh *SwapHandler) HandleSwaps(ctx context.Context, transfers []types.SolTra
 
 		token := ""
 		action := ""
-		if amountOutF == 0 {
-			if _, foundIn := QuoteTokens[swap.TokenIn]; foundIn {
-				continue
-			}
-			token = swap.TokenIn
-			action = "RECEIVE"
-		}
-		if amountInF == 0 {
-			if _, foundOut := QuoteTokens[swap.TokenOut]; foundOut {
-				continue
-			}
-			token = swap.TokenOut
-			action = "TRANSFER"
-		}
 
 		if _, found := QuoteTokens[swap.TokenOut]; found {
 			token = swap.TokenIn
@@ -99,6 +85,23 @@ func (sh *SwapHandler) HandleSwaps(ctx context.Context, transfers []types.SolTra
 			action = "SELL"
 		} else {
 			action = "UNKNOWN"
+		}
+
+		if action == "UNKNOWN" {
+			if amountOutF == 0 {
+				if _, foundIn := QuoteTokens[swap.TokenIn]; foundIn {
+					continue
+				}
+				token = swap.TokenIn
+				action = "RECEIVE"
+			}
+			if amountInF == 0 {
+				if _, foundOut := QuoteTokens[swap.TokenOut]; foundOut {
+					continue
+				}
+				token = swap.TokenOut
+				action = "TRANSFER"
+			}
 		}
 
 		sh.tf.AddToQueue(token)
