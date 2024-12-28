@@ -34,22 +34,6 @@ func (h *Handler) FindSwapHandler(w http.ResponseWriter, r *http.Request) {
 	amount := stringToFloat64(amountStr)
 	timestamp := stringToInt64(timestampStr)
 
-	//_, pairs, err := h.tokenFinder.FindToken(ctx, address, true)
-	//if err != nil {
-	//	http.Error(w, err.Error(), http.StatusInternalServerError)
-	//	return
-	//}
-	//if pairs == nil {
-	//	http.Error(w, "No pairs found", http.StatusNotFound)
-	//	return
-	//}
-	//
-	//pairAddresses := make([]string, len(*pairs))
-	//for i, pair := range *pairs {
-	//	pairAddresses[i] = pair.Address
-	//}
-	//pairAddresses = append(pairAddresses, address)
-
 	swap, err := h.swapsRepo.FindSwap(ctx, timestamp, address, amount)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)

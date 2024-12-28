@@ -36,6 +36,10 @@ var QuoteTokens = map[string]string{
 
 var IgnoreToUsers = map[string]bool{
 	"CebN5WGQ4jvEPvsVU4EoHEpgzq1VV7AbicfhtW4xC9iM": true,
+	"JD1dHSqYkrXvqUVL8s6gzL1yB7kpYymsHfwsGxgwp55h": true,
+	"5PvhfrBkVsmXqKvo4vvHArLxzgGz9WXqaE9QPeLKodrj": true,
+	"CpoD6tWAsMDeyvVG2q2rD1JbDY6d4AujnvAn2NdrhZV2": true,
+	"5ioytVEBHJKxbekKwAYMfyu6GXbFmFaVnQGa3agUutMG": true,
 }
 
 var IgnoreTokens = map[string]bool{
