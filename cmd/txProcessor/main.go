@@ -66,7 +66,7 @@ func solanaTxHandler(ctx context.Context, c *cache.Cache, mRepo *db.MongoReposit
 
 	sh := solana.NewSwapHandler(tf, pf)
 
-	txHandler := solana.NewTxHandler(sh, solSvc, mRepo, pRepo, websocketServer)
+	txHandler := solana.NewTxHandler(sh, mRepo, pRepo, websocketServer)
 
 	queueHandler := solana.NewSolanaQueueHandler(txHandler, pRepo)
 

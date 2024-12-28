@@ -47,10 +47,9 @@ type PairProcessorQueue struct {
 }
 
 type TxHandler struct {
-	sh     *SwapHandler
-	solSvc *SolanaService
-	repo   TokensAndPairsRepo
-	pRepo  SwapsRepo
+	sh    *SwapHandler
+	repo  TokensAndPairsRepo
+	pRepo SwapsRepo
 
 	Wg        sync.WaitGroup
 	TxChan    chan types.SolanaBlockTx

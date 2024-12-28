@@ -30,13 +30,13 @@ services:
       context: .
       dockerfile: Dockerfile.listener
     env_file:
-      - .env.development
+      - .env
     networks:
       - my_network
     depends_on:
       - rabbitmq
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:5672"]
+      test: ["CMD", "curl", "-f", "http://rabbitmq:15672"]
       interval: 30s
       timeout: 10s
       retries: 5
@@ -55,7 +55,7 @@ services:
       context: .
       dockerfile: Dockerfile.txprocessor
     env_file:
-      - .env.development
+      - .env
     networks:
       - my_network
     ports:
@@ -66,7 +66,7 @@ services:
       resources:
         limits:
           memory: 25g
-          cpus: "1"
+          cpus: "6"
         reservations:
           memory: 10g
 
@@ -77,15 +77,13 @@ services:
       context: .
       dockerfile: Dockerfile.api
     env_file:
-      - .env.development
+      - .env
     networks:
       - my_network
     ports:
       - "8080:8080"
-    depends_on:
-      - rabbitmq
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:5672"]
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
       interval: 30s
       timeout: 10s
       retries: 5
@@ -104,7 +102,7 @@ services:
       context: .
       dockerfile: Dockerfile.backfill
     env_file:
-      - .env.development
+      - .env
     networks:
       - my_network
     depends_on:
@@ -126,20 +124,20 @@ services:
       - rabbitmq_data:/var/lib/rabbitmq
     environment:
       RABBITMQ_DEFAULT_USER: guest
-      RABBITMQ_DEFAULT_PASS: guest
+      RABBITMQ_DEFAULT_PASS: LmBiB.@GYg6d4DuK6ABq
       RABBITMQ_ERLANG_COOKIE: 'e9b1c3d4e5f6a7b8c9d0e1f2a3b4c5d6'
     networks:
       - my_network
     restart: always
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:15672"]
+      test: ["CMD", "rabbitmq-diagnostics", "ping"]
       interval: 30s
       timeout: 10s
       retries: 5
     deploy:
       resources:
         limits:
-          memory: 2g
+          memory: 12g
           cpus: "2"
         reservations:
           memory: 1g

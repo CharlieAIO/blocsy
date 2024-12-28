@@ -21,7 +21,7 @@ func NewSolanaService(ctx context.Context) *SolanaService {
 	solCli := solClient.NewClient(endpoint)
 
 	if _, err := solCli.GetVersion(ctx); err != nil {
-		log.Fatalf("failed to version info, err: %v", err)
+		log.Printf("failed to get version info, err: %v", err)
 	}
 
 	return &SolanaService{

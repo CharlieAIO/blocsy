@@ -48,19 +48,16 @@ var kacp = keepalive.ClientParameters{
 }
 
 type SolanaBlockListener struct {
-	//solanaSocketURL    string
 	grpcAddress        string
 	lastProcessedBlock int
-	solSvc             *SolanaService
 	pRepo              SwapsRepo
 	queueHandler       *SolanaQueueHandler
 	errorMutex         sync.Mutex
 }
 
-func NewBlockListener(grpc string, solSvc *SolanaService, pRepo SwapsRepo, qHandler *SolanaQueueHandler) *SolanaBlockListener {
+func NewBlockListener(grpc string, pRepo SwapsRepo, qHandler *SolanaQueueHandler) *SolanaBlockListener {
 	return &SolanaBlockListener{
 		grpcAddress:  grpc,
-		solSvc:       solSvc,
 		pRepo:        pRepo,
 		queueHandler: qHandler,
 	}

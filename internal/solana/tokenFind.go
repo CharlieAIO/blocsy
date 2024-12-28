@@ -40,6 +40,7 @@ func (tf *TokenFinder) FindToken(ctx context.Context, address string, miss bool)
 
 	newToken, err := tf.lookupToken(ctx, address)
 	if err != nil {
+		log.Printf("failed to lookup token: %w", err)
 		return nil, nil, fmt.Errorf("failed to lookup token: %w", err)
 	}
 
