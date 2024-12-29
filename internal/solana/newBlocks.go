@@ -217,7 +217,7 @@ func (s *SolanaBlockListener) grpcSubscribe(conn *grpc.ClientConn) error {
 	}
 
 	header, err := stream.Header()
-	header.Set("content-type", "application/grpc")
+	log.Printf("Header: %v", header)
 	if err != nil {
 		return fmt.Errorf("failed to get header: %v", err)
 	}
