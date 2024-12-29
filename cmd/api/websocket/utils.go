@@ -15,6 +15,9 @@ func filterRelevantSwaps(swaps []types.SwapLog, wallets []string) []types.SwapLo
 
 	for _, swap := range swaps {
 		if _, exists := walletSet[swap.Wallet]; exists {
+			if swap.Action != "BUY" && swap.Action != "SELL" {
+				continue
+			}
 			relevantSwaps = append(relevantSwaps, swap)
 		}
 	}

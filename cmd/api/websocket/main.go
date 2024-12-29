@@ -86,7 +86,7 @@ func (ws *WebSocketServer) handleConnections(w http.ResponseWriter, r *http.Requ
 			break
 		}
 
-		log.Printf("Client %v connected with type %v", conn.RemoteAddr(), clientData.ClientType)
+		log.Printf("Client %v connected with type %v and %d wallets", conn.RemoteAddr(), clientData.ClientType, len(clientData.Wallets))
 
 		ws.mu.Lock()
 		ws.clients[conn] = clientData

@@ -84,7 +84,7 @@ func (ps *PairsService) lookupPair(ctx context.Context, address string, token_ *
 
 	exchange, quoteToken, token, identifier, err := identifyPair(owner.String(), accInfo, token_)
 	if err != nil {
-		log.Printf("failed to identify pair: %v", err)
+		//log.Printf("failed to identify pair: %v", err)
 		return types.Pair{}, fmt.Errorf("failed to identify pair: %w", err)
 	}
 
