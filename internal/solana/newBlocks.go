@@ -225,10 +225,10 @@ func (s *SolanaBlockListener) grpcSubscribe(conn *grpc.ClientConn) error {
 	log.Printf("Header: %v", header)
 
 	// Check the content-type header
-	contentType := header.Get("content-type")[0]
-	if contentType != "" && contentType != "application/grpc" {
-		return fmt.Errorf("unexpected content-type: %s", contentType)
-	}
+	//contentType := header.Get("content-type")[0]
+	//if contentType != "" && contentType != "application/grpc" {
+	//	return fmt.Errorf("unexpected content-type: %s", contentType)
+	//}
 
 	var blockNumber uint64
 	var blockTime int64
