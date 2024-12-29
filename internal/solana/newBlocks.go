@@ -109,7 +109,6 @@ func (s *SolanaBlockListener) grpcSubscribe(conn *grpc.ClientConn) error {
 
 	var subscription pb.SubscribeRequest
 
-	// Read json input or JSON file prefixed with @
 	if *jsonInput != "" {
 		var jsonData []byte
 
@@ -168,12 +167,10 @@ func (s *SolanaBlockListener) grpcSubscribe(conn *grpc.ClientConn) error {
 		}
 	}
 
-	// Set up the transactions subscription
 	if subscription.Transactions == nil {
 		subscription.Transactions = make(map[string]*pb.SubscribeRequestFilterTransactions)
 	}
 
-	// Subscribe to a specific signature
 	if *signature != "" {
 		tr := true
 		subscription.Transactions["signature_sub"] = &pb.SubscribeRequestFilterTransactions{
@@ -186,7 +183,6 @@ func (s *SolanaBlockListener) grpcSubscribe(conn *grpc.ClientConn) error {
 		}
 	}
 
-	// Subscribe to generic transaction stream
 	if *transactions {
 
 		subscription.Transactions["transactions_sub"] = &pb.SubscribeRequestFilterTransactions{
@@ -220,8 +216,8 @@ func (s *SolanaBlockListener) grpcSubscribe(conn *grpc.ClientConn) error {
 		return fmt.Errorf("send: %v", err)
 	}
 
-	// Check for unexpected content-type
 	header, err := stream.Header()
+	header.Set("content-type", "application/grpc")
 	if err != nil {
 		return fmt.Errorf("failed to get header: %v", err)
 	}
