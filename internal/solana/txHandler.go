@@ -23,7 +23,23 @@ func (t *TxHandler) ProcessTransaction(ctx context.Context, tx *types.SolanaTx, 
 	swaps := t.sh.HandleSwaps(ctx, transfers, tx, timestamp, block)
 	pumpFunTokens := dex.HandlePumpFunNewToken(logs, PUMPFUN)
 
-	//log.Printf("Processing %s ~ got %d swaps", tx.Transaction.Signatures[0], len(swaps))
+	if len(pumpFunTokens) > 0 {
+		go func() {
+			for _, token := range pumpFunTokens {
+				_ = t.repo.StoreToken(ctx, types.Token{
+					Name:             token.Name,
+					Symbol:           token.Symbol,
+					Address:          token.Mint.String(),
+					Decimals:         6,
+					Supply:           "1000000000",
+					Network:          "solana",
+					CreatedBlock:     int64(block),
+					CreatedTimestamp: uint64(timestamp),
+				})
+
+			}
+		}()
+	}
 
 	if t.Websocket != nil && !ignoreWS {
 		go func() {
