@@ -61,10 +61,13 @@ func (ws *WebSocketServer) handleConnections(w http.ResponseWriter, r *http.Requ
 	go func() {
 		for {
 			time.Sleep(30 * time.Second)
+			ws.mu.Lock()
 			if err := conn.WriteMessage(websocket.PingMessage, nil); err != nil {
 				log.Printf("Failed to send ping to client %v: %v", conn.RemoteAddr(), err)
+				ws.mu.Unlock()
 				break
 			}
+			ws.mu.Unlock()
 		}
 	}()
 
