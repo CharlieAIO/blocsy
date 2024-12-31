@@ -77,6 +77,12 @@ func (sh *SwapHandler) HandleSwaps(ctx context.Context, transfers []types.SolTra
 		token := ""
 		action := ""
 
+		if _, foundIn := QuoteTokens[swap.TokenIn]; foundIn {
+			if _, foundOut := QuoteTokens[swap.TokenOut]; foundOut {
+				continue
+			}
+		}
+
 		if _, found := QuoteTokens[swap.TokenOut]; found {
 			token = swap.TokenIn
 			action = "BUY"
