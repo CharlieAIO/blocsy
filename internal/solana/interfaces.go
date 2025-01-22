@@ -29,6 +29,7 @@ type TockenCache interface {
 type TokensRepo interface {
 	LookupByToken(ctx context.Context, address string, network string) (types.Token, []types.Pair, error)
 	StoreToken(ctx context.Context, token types.Token) error
+	UpdateTokenSupply(ctx context.Context, address string, supply string) error
 }
 
 type TxCacher interface {
@@ -46,6 +47,7 @@ type SwapsRepo interface {
 type SolanaTokenFinder interface {
 	FindToken(ctx context.Context, address string, miss bool) (*types.Token, *[]types.Pair, error)
 	AddToQueue(address string)
+	AddToMintBurnQueue(token string, amount string, type_ string)
 }
 
 type SolanaPairFinder interface {

@@ -155,3 +155,17 @@ func (repo *MongoRepository) LookupByPair(ctx context.Context, address string, n
 		Decimals:   quoteToken.Decimals,
 	}, nil
 }
+
+func (repo *MongoRepository) UpdateTokenSupply(ctx context.Context, address string, supply string) error {
+	filter := bson.M{"address": address}
+	update := bson.M{"$set": bson.M{"supply": supply}}
+
+	opts := options.Update().SetUpsert(true)
+
+	_, err := repo.tokensCollection.UpdateOne(ctx, filter, update, opts)
+	if err != nil {
+		return fmt.Errorf("cannot update token supply: %w", err)
+	}
+
+	return nil
+}

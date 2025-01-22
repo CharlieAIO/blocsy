@@ -48,16 +48,19 @@ var kacp = keepalive.ClientParameters{
 }
 
 type SolanaBlockListener struct {
+	//solanaSocketURL    string
 	grpcAddress        string
 	lastProcessedBlock int
+	solSvc             *SolanaService
 	pRepo              SwapsRepo
 	queueHandler       *SolanaQueueHandler
 	errorMutex         sync.Mutex
 }
 
-func NewBlockListener(grpc string, pRepo SwapsRepo, qHandler *SolanaQueueHandler) *SolanaBlockListener {
+func NewBlockListener(grpc string, solSvc *SolanaService, pRepo SwapsRepo, qHandler *SolanaQueueHandler) *SolanaBlockListener {
 	return &SolanaBlockListener{
 		grpcAddress:  grpc,
+		solSvc:       solSvc,
 		pRepo:        pRepo,
 		queueHandler: qHandler,
 	}
@@ -109,6 +112,7 @@ func (s *SolanaBlockListener) grpcSubscribe(conn *grpc.ClientConn) error {
 
 	var subscription pb.SubscribeRequest
 
+	// Read json input or JSON file prefixed with @
 	if *jsonInput != "" {
 		var jsonData []byte
 
@@ -167,10 +171,12 @@ func (s *SolanaBlockListener) grpcSubscribe(conn *grpc.ClientConn) error {
 		}
 	}
 
+	// Set up the transactions subscription
 	if subscription.Transactions == nil {
 		subscription.Transactions = make(map[string]*pb.SubscribeRequestFilterTransactions)
 	}
 
+	// Subscribe to a specific signature
 	if *signature != "" {
 		tr := true
 		subscription.Transactions["signature_sub"] = &pb.SubscribeRequestFilterTransactions{
@@ -183,6 +189,7 @@ func (s *SolanaBlockListener) grpcSubscribe(conn *grpc.ClientConn) error {
 		}
 	}
 
+	// Subscribe to generic transaction stream
 	if *transactions {
 
 		subscription.Transactions["transactions_sub"] = &pb.SubscribeRequestFilterTransactions{
@@ -216,19 +223,14 @@ func (s *SolanaBlockListener) grpcSubscribe(conn *grpc.ClientConn) error {
 		return fmt.Errorf("send: %v", err)
 	}
 
+	// Check for unexpected content-type
 	header, err := stream.Header()
 	if err != nil {
 		return fmt.Errorf("failed to get header: %v", err)
 	}
-
-	// Log all headers for debugging
-	log.Printf("Header: %v", header)
-
-	// Check the content-type header
-	//contentType := header.Get("content-type")[0]
-	//if contentType != "" && contentType != "application/grpc" {
-	//	return fmt.Errorf("unexpected content-type: %s", contentType)
-	//}
+	if contentType := header.Get("content-type"); len(contentType) > 0 && contentType[0] != "application/grpc" {
+		return fmt.Errorf("unexpected content-type: %s", contentType)
+	}
 
 	var blockNumber uint64
 	var blockTime int64

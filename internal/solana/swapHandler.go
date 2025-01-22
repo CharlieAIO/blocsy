@@ -24,9 +24,6 @@ func (sh *SwapHandler) HandleSwaps(ctx context.Context, transfers []types.SolTra
 
 	for i := 0; i < len(transfers); i++ {
 		transfer := transfers[i]
-		if found, _ := IgnoreToUsers[transfer.ToUserAccount]; found {
-			continue
-		}
 		if found, _ := IgnorePrograms[transfer.ParentProgramId]; found {
 			continue
 		}
@@ -38,6 +35,9 @@ func (sh *SwapHandler) HandleSwaps(ctx context.Context, transfers []types.SolTra
 		if swap.Wallet != "" && swap.Pair != "" && validateSupportedDex(transfer.ParentProgramId) {
 			swaps = append(swaps, swap)
 		} else if transfer.Type != "native" && (validateSupportedDex(transfer.ParentProgramId) || transfer.ParentProgramId == "") {
+			if _, found := QuoteTokens[transfer.Mint]; found {
+				continue
+			}
 			transferSwap := types.SolSwap{
 				TokenIn:   transfer.Mint,
 				Wallet:    transfer.ToUserAccount,
@@ -50,14 +50,16 @@ func (sh *SwapHandler) HandleSwaps(ctx context.Context, transfers []types.SolTra
 				AmountIn:  "0",
 				AmountOut: transfer.Amount,
 			}
+
 			swaps = append(swaps, transferSwap, transferSwap2)
 		}
 		i += inc
 	}
 
 	builtSwaps := make([]types.SwapLog, 0)
+	balanceSheet := map[string]map[string]float64{}
 	for _, swap := range swaps {
-		if swap.Wallet == "" || swap.TokenIn == "" {
+		if swap.Wallet == "" || (swap.TokenIn == "" && swap.TokenOut == "") {
 			continue
 		}
 
@@ -76,12 +78,6 @@ func (sh *SwapHandler) HandleSwaps(ctx context.Context, transfers []types.SolTra
 
 		token := ""
 		action := ""
-
-		if _, foundIn := QuoteTokens[swap.TokenIn]; foundIn {
-			if _, foundOut := QuoteTokens[swap.TokenOut]; foundOut {
-				continue
-			}
-		}
 
 		if _, found := QuoteTokens[swap.TokenOut]; found {
 			token = swap.TokenIn
@@ -129,13 +125,28 @@ func (sh *SwapHandler) HandleSwaps(ctx context.Context, transfers []types.SolTra
 			Processed:   false,
 		}
 		builtSwaps = append(builtSwaps, s)
+
+		if _, found := balanceSheet[swap.Wallet]; !found {
+			balanceSheet[swap.Wallet] = map[string]float64{
+				token: amountInF - amountOutF,
+			}
+		} else {
+			balanceSheet[swap.Wallet][token] += amountInF - amountOutF
+		}
 	}
 
-	//if len(builtSwaps) == 0 {
-	//	log.Printf("No swaps found for tx: %s", tx.Transaction.Signatures[0])
-	//}
+	finalSwaps := make([]types.SwapLog, 0)
+	for _, swap := range builtSwaps {
+		if balanceSheet[swap.Wallet][swap.Token] == 0 {
+			continue
+		}
+		if _, found := IgnoreToUsers[swap.Wallet]; found {
+			continue
+		}
+		finalSwaps = append(finalSwaps, swap)
+	}
 
-	return builtSwaps
+	return finalSwaps
 }
 
 func processInstruction(index int, transfers []types.SolTransfer, accountKeys []string) (types.SolSwap, int) {
@@ -165,7 +176,7 @@ func processInstruction(index int, transfers []types.SolTransfer, accountKeys []
 		}
 	} else if programId == RAYDIUM_LIQ_POOL_V4 && accountsLen != 18 && accountsLen != 17 {
 		return types.SolSwap{}, 0
-	} else if programId == METEORA_DLMM_PROGRAM && accountsLen != 18 && accountsLen != 17 {
+	} else if programId == METEORA_DLMM_PROGRAM && accountsLen != 18 && accountsLen != 17 && accountsLen != 16 {
 		return types.SolSwap{}, 0
 	}
 
