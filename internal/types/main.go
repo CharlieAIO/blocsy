@@ -6,10 +6,6 @@ func (e AppError) Error() string {
 	return string(e)
 }
 
-const (
-	TokenNotFound AppError = "token not found"
-)
-
 type ProcessInstructionData struct {
 	AccountKeys         []string
 	InstructionAccounts *[]int
@@ -37,14 +33,16 @@ type TokenAccountDetails struct {
 
 //easyjson:json
 type Token struct {
-	Name             string `json:"name"`
-	Symbol           string `json:"symbol"`
-	Decimals         uint8  `json:"decimals"`
-	Address          string `json:"address"`
-	Supply           string `json:"supply"`
-	CreatedBlock     int64  `json:"createdBlock"`
-	Network          string `json:"network"`
-	CreatedTimestamp uint64 `json:"createdTimestamp"`
+	Name             string  `json:"name"`
+	Symbol           string  `json:"symbol"`
+	Decimals         uint8   `json:"decimals"`
+	Address          string  `json:"address"`
+	Supply           string  `json:"supply"`
+	CreatedBlock     int64   `json:"createdBlock"`
+	Network          string  `json:"network"`
+	CreatedTimestamp uint64  `json:"createdTimestamp"`
+	Deployer         *string `json:"deployer,omitempty"`
+	Metadata         *string `json:"metadata,omitempty"`
 }
 
 //easyjson:json
@@ -80,4 +78,10 @@ type TrackerResponse struct {
 		Base     string `json:"base"`
 		Currency string `json:"currency"`
 	} `json:"data"`
+}
+
+type BalanceSheet struct {
+	Wallet string
+	Token  string
+	Amount float64
 }

@@ -42,8 +42,9 @@ func solanaListener(ctx context.Context, pRepo *db.TimescaleRepository) {
 		log.Fatalf("SOL_GRPC is required")
 	}
 
+	solSvc := solana.NewSolanaService(ctx)
 	queueHandler := solana.NewSolanaQueueHandler(nil, nil)
-	sbl := solana.NewBlockListener(grpc_address, pRepo, queueHandler)
+	sbl := solana.NewBlockListener(grpc_address, solSvc, pRepo, queueHandler)
 
 	go func() {
 		log.Println("Listening for new blocks (solana)...")

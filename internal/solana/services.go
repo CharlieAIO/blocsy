@@ -20,12 +20,26 @@ type TokenFinder struct {
 	solSvc *SolanaService
 	repo   TokensRepo
 
-	processor *TokenProcessor
+	processor         *TokenProcessor
+	mintBurnProcessor *MintBurnProcessor
 }
 type TokenProcessor struct {
 	queue chan string
 	seen  sync.Map
 	wg    sync.WaitGroup
+}
+
+type MintBurnProcessor struct {
+	queue       chan MintBurnProcessorQueue
+	seen        sync.Map
+	activeLocks sync.Map
+	wg          sync.WaitGroup
+}
+
+type MintBurnProcessorQueue struct {
+	address string
+	amount  string
+	Type    string
 }
 
 type PairsService struct {
@@ -47,9 +61,10 @@ type PairProcessorQueue struct {
 }
 
 type TxHandler struct {
-	sh    *SwapHandler
-	repo  TokensAndPairsRepo
-	pRepo SwapsRepo
+	sh     *SwapHandler
+	solSvc *SolanaService
+	repo   TokensAndPairsRepo
+	pRepo  SwapsRepo
 
 	Wg        sync.WaitGroup
 	TxChan    chan types.SolanaBlockTx

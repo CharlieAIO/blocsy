@@ -12,9 +12,6 @@ import (
 	"os/signal"
 )
 
-//https://github.com/rpcpool/yellowstone-grpc/blob/master/examples/golang/cmd/grpc-client/main.go
-//TODO: implement a grpc client
-
 func main() {
 
 	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt, os.Kill)
@@ -61,12 +58,13 @@ func solanaTxHandler(ctx context.Context, c *cache.Cache, mRepo *db.MongoReposit
 
 	tf := solana.NewTokenFinder(c, solSvc, mRepo)
 	tf.NewTokenProcessor()
+	tf.NewMintBurnProcessor()
 	pf := solana.NewPairsService(c, tf, solSvc, mRepo)
 	pf.NewPairProcessor()
 
 	sh := solana.NewSwapHandler(tf, pf)
 
-	txHandler := solana.NewTxHandler(sh, mRepo, pRepo, websocketServer)
+	txHandler := solana.NewTxHandler(sh, solSvc, mRepo, pRepo, websocketServer)
 
 	queueHandler := solana.NewSolanaQueueHandler(txHandler, pRepo)
 

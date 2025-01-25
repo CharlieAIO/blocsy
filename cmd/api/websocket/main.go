@@ -61,13 +61,10 @@ func (ws *WebSocketServer) handleConnections(w http.ResponseWriter, r *http.Requ
 	go func() {
 		for {
 			time.Sleep(30 * time.Second)
-			ws.mu.Lock()
 			if err := conn.WriteMessage(websocket.PingMessage, nil); err != nil {
 				log.Printf("Failed to send ping to client %v: %v", conn.RemoteAddr(), err)
-				ws.mu.Unlock()
 				break
 			}
-			ws.mu.Unlock()
 		}
 	}()
 
@@ -89,7 +86,7 @@ func (ws *WebSocketServer) handleConnections(w http.ResponseWriter, r *http.Requ
 			break
 		}
 
-		log.Printf("Client %v connected with type %v and %d wallets", conn.RemoteAddr(), clientData.ClientType, len(clientData.Wallets))
+		log.Printf("Client %v connected with type %v", conn.RemoteAddr(), clientData.ClientType)
 
 		ws.mu.Lock()
 		ws.clients[conn] = clientData

@@ -286,6 +286,24 @@ func CreateSwapsTable(ctx context.Context, db *sqlx.DB) {
 	}
 
 	ConvertHyperTable(ctx, db, swapLogTable)
+
+	// Create indexes on the table so that queries are faster
+	indexes := []string{
+		`("timestamp" DESC)`,
+		`("pair","timestamp" DESC)`,
+		`("token","timestamp" DESC)`,
+		`("wallet")`,
+		`("token")`,
+		`("wallet","pair")`,
+		`("wallet","token")`,
+	}
+
+	for _, index := range indexes {
+		_, err := db.ExecContext(ctx, fmt.Sprintf(`CREATE INDEX ON "%s" %s;`, swapLogTable, index))
+		if err != nil {
+			log.Printf("Error creating index '%s': %v", index, err)
+		}
+	}
 }
 
 func ConvertHyperTable(ctx context.Context, db *sqlx.DB, tableName string) {
