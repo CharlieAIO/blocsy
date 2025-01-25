@@ -75,7 +75,7 @@ func GetNativeBalanceDiffs(tx *types.SolanaTx) map[int]types.SolBalanceDiff {
 	return balanceDiffMap
 }
 
-func ParseTransaction(tx *types.SolanaTx) ([]types.SolTransfer, []types.SolTransfer, []types.SolTransfer) {
+func ParseTransaction(tx *types.SolanaTx) ([]types.SolTransfer, []types.SolTransfer, []types.SolTransfer, []types.Token) {
 	accountKeys := getAllAccountKeys(tx)
 	AccountKeysMap := make(map[string]int, len(accountKeys))
 	for i := range accountKeys {
@@ -88,7 +88,7 @@ func ParseTransaction(tx *types.SolanaTx) ([]types.SolTransfer, []types.SolTrans
 	transfers := make([]types.SolTransfer, 0)
 	burns := make([]types.SolTransfer, 0)
 	tokenMints := make([]types.SolTransfer, 0)
-	//tokensCreated := make([]types.SolTransfer, 0)
+	tokensCreated := make([]types.Token, 0)
 
 	for instructionIndex := range tx.Transaction.Message.Instructions {
 		instruction := tx.Transaction.Message.Instructions[instructionIndex]
@@ -106,6 +106,24 @@ func ParseTransaction(tx *types.SolanaTx) ([]types.SolTransfer, []types.SolTrans
 				}
 				transfers = append(transfers, transfer)
 
+			}
+		} else {
+			if transfer.Type == "initMint" {
+				token := types.Token{
+					Address:  transfer.Mint,
+					Decimals: uint8(transfer.Decimals),
+					Network:  "solana",
+					Supply:   "0",
+				}
+
+				name, symbol, uri, foundMetadata := findMetaplexInstruction(tx, transfer.Mint)
+				if foundMetadata {
+					token.Metadata = &uri
+					token.Name = name
+					token.Symbol = symbol
+				}
+
+				tokensCreated = append(tokensCreated, token)
 			}
 		}
 
@@ -132,12 +150,29 @@ func ParseTransaction(tx *types.SolanaTx) ([]types.SolTransfer, []types.SolTrans
 						}
 						transfers = append(transfers, innerTransfer)
 					}
+				} else {
+					if innerTransfer.Type == "initMint" {
+						token := types.Token{
+							Address:  innerTransfer.Mint,
+							Decimals: uint8(innerTransfer.Decimals),
+							Network:  "solana",
+							Supply:   "0",
+						}
+						name, symbol, uri, foundMetadata := findMetaplexInstruction(tx, innerTransfer.Mint)
+						if foundMetadata {
+							token.Metadata = &uri
+							token.Name = name
+							token.Symbol = symbol
+						}
+
+						tokensCreated = append(tokensCreated, token)
+					}
 				}
 			}
 		}
 	}
 
-	return transfers, burns, tokenMints
+	return transfers, burns, tokenMints, tokensCreated
 }
 
 func validateProgram(program string, accounts []int, accountKeys []string) bool {
@@ -282,6 +317,16 @@ func buildTransfer(
 
 		var instructionData = DecodeTokenProgramData(ix.Data)
 		tType := "token"
+
+		if instructionData.Type == "InitializeMint" || instructionData.Type == "InitializeMint2" {
+			mint = accountKeys[ix.Accounts[0]]
+			decimals = instructionData.Decimals
+			return types.SolTransfer{
+				Type:     "initMint",
+				Mint:     mint,
+				Decimals: decimals,
+			}, false
+		}
 
 		if instructionData.Type == "TransferChecked" {
 			source = accountKeys[ix.Accounts[0]]
@@ -433,7 +478,6 @@ func findAccount(ix types.Instruction, tokenAccount string, accountKeys []string
 
 	programId := accountKeys[ix.ProgramIdIndex]
 
-	// Associated Token Account Program | createAssociatedTokenAccount`
 	if programId == ASSOCIATED_TOKEN_PROGRAM {
 		if len(ix.Accounts) == 6 {
 
@@ -467,7 +511,6 @@ func findAccount(ix types.Instruction, tokenAccount string, accountKeys []string
 		}
 
 	}
-
 	if programId == SYSTEM_PROGRAM {
 		var instructionData = DecodeSystemProgramData(ix.Data)
 
@@ -506,12 +549,42 @@ func findPumpFunSwapEvent(ixIndex int, tx *types.SolanaTx, innerIxIndex int, inn
 			}
 		}
 	}
-
-	//baseIx := tx.Transaction.Message.Instructions[ixIndex]
-	//if validateProgramIsDex(accountKeys[baseIx.ProgramIdIndex]) {
-	//	return accountKeys[baseIx.ProgramIdIndex], baseIx.Accounts
-	//}
-
-	// Fallback: Default to empty if no parent program is found
 	return ""
+}
+
+func findMetaplexInstruction(tx *types.SolanaTx, mint string) (string, string, string, bool) {
+	accountKeys := getAllAccountKeys(tx)
+
+	for _, instruction := range tx.Transaction.Message.Instructions {
+		if accountKeys[instruction.ProgramIdIndex] == METAPLEX_TOKEN_METDATA {
+			if len(instruction.Accounts) > 2 {
+				if accountKeys[instruction.Accounts[1]] == mint {
+					metadataAccount, err := DecodeMetaplexData(instruction.Data)
+					if err != nil {
+						continue
+					}
+					return metadataAccount.Data.Name, metadataAccount.Data.Symbol, metadataAccount.Data.Uri, true
+				}
+			}
+		}
+	}
+
+	for _, innerInstruction := range tx.Meta.InnerInstructions {
+		for _, instruction := range innerInstruction.Instructions {
+			if accountKeys[instruction.ProgramIdIndex] == METAPLEX_TOKEN_METDATA {
+				if len(instruction.Accounts) > 2 {
+					if accountKeys[instruction.Accounts[1]] == mint {
+						metadataAccount, err := DecodeMetaplexData(instruction.Data)
+						if err != nil {
+							continue
+						}
+						return metadataAccount.Data.Name, metadataAccount.Data.Symbol, metadataAccount.Data.Uri, true
+
+					}
+				}
+			}
+		}
+	}
+
+	return "", "", "", false
 }

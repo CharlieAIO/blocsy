@@ -21,7 +21,7 @@ func NewTxHandler(sh *SwapHandler, solSvc *SolanaService, repo TokensAndPairsRep
 }
 
 func (t *TxHandler) ProcessTransaction(ctx context.Context, tx *types.SolanaTx, timestamp int64, block uint64, ignoreWS bool) ([]types.SwapLog, error) {
-	transfers, burns, mints := ParseTransaction(tx)
+	transfers, burns, mints, tokensCreated := ParseTransaction(tx)
 	logs := GetLogs(tx.Meta.LogMessages)
 	swaps := t.sh.HandleSwaps(ctx, transfers, tx, timestamp, block)
 	pumpFunTokens := dex.HandlePumpFunNewToken(logs, PUMPFUN)
@@ -34,10 +34,13 @@ func (t *TxHandler) ProcessTransaction(ctx context.Context, tx *types.SolanaTx, 
 			t.sh.tf.AddToMintBurnQueue(mint.Mint, mint.Amount, "mint")
 		}
 
+		pumpFunTokenMints := make(map[string]bool)
+
 		for _, pfToken := range pumpFunTokens {
 			deployer := pfToken.User.String()
+			pumpFunTokenMints[pfToken.Mint.String()] = true
 
-			t.repo.StoreToken(ctx, types.Token{
+			_ = t.repo.StoreToken(ctx, types.Token{
 				Name:             pfToken.Name,
 				Symbol:           pfToken.Symbol,
 				Decimals:         6,
@@ -48,6 +51,15 @@ func (t *TxHandler) ProcessTransaction(ctx context.Context, tx *types.SolanaTx, 
 				Deployer:         &deployer,
 				Metadata:         &pfToken.Uri,
 			})
+		}
+
+		for _, token := range tokensCreated {
+			if _, exists := pumpFunTokenMints[token.Address]; exists {
+				continue
+			}
+			token.CreatedTimestamp = uint64(timestamp)
+			token.CreatedBlock = int64(block)
+			_ = t.repo.StoreToken(ctx, token)
 		}
 	}()
 

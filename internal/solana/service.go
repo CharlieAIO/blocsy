@@ -21,7 +21,7 @@ func NewSolanaService(ctx context.Context) *SolanaService {
 	solCli := solClient.NewClient(endpoint)
 
 	if _, err := solCli.GetVersion(ctx); err != nil {
-		log.Fatalf("failed to version info, err: %v", err)
+		log.Printf("RPC CLIENT ERR | failed to version info, err: %v", err)
 	}
 
 	return &SolanaService{
@@ -31,7 +31,7 @@ func NewSolanaService(ctx context.Context) *SolanaService {
 
 func (s *SolanaService) GetMintData(ctx context.Context, address string) token.MintAccount {
 	accountInfo := client.AccountInfo{}
-	for i := 0; i < 5; i++ {
+	for i := 0; i < 2; i++ {
 		var err error
 		accountInfo, err = s.GetAccountInfo(ctx, address)
 		if err != nil {

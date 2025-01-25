@@ -5,6 +5,7 @@ import (
 	"github.com/blocto/solana-go-sdk/common"
 	"github.com/goccy/go-json"
 	jlexer "github.com/mailru/easyjson/jlexer"
+	"github.com/near/borsh-go"
 )
 
 type ArrayFlags []string
@@ -46,6 +47,59 @@ type TokenProgramData struct {
 
 	AuthorityType byte
 	NewAuthority  common.PublicKey
+}
+
+type MetaplexMetadataData struct {
+	Name      string
+	Symbol    string
+	URI       string
+	IsMutable bool
+}
+
+type MetaplexData struct {
+	Name                 string `json:"name"`
+	Symbol               string `json:"symbol"`
+	Uri                  string `json:"uri"`
+	SellerFeeBasisPoints uint16 `json:"seller_fee_basis_points,omitempty"`
+	Creators             *[]struct {
+		Address string `json:"address"`
+		Share   uint8  `json:"share"`
+	} `json:"creators"`
+	Collection *struct {
+		Name   string `json:"name"`
+		Family string `json:"family"`
+	} `json:"collection"`
+	Uses *struct {
+		UseMethod borsh.Enum
+		Remaining uint64
+		Total     uint64
+	}
+}
+
+type MetaplexMetadata struct {
+	Name                 string `json:"name"`
+	Symbol               string `json:"symbol"`
+	Description          string `json:"description"`
+	Image                string `json:"image"`
+	SellerFeeBasisPoints int    `json:"seller_fee_basis_points,omitempty"`
+	Properties           struct {
+		Files []struct {
+			Uri  string `json:"uri"`
+			Type string `json:"type"`
+		} `json:"files"`
+		Creators []struct {
+			Address string `json:"address"`
+			Share   uint8  `json:"share"`
+		} `json:"creators"`
+	} `json:"properties"`
+	Collection struct {
+		Name   string `json:"name"`
+		Family string `json:"family"`
+	} `json:"collection"`
+	Attributes []struct {
+		Type  string `json:"trait_type"`
+		Value string `json:"value"`
+	} `json:"attributes"`
 }
 
 //easyjson:json

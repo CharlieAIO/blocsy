@@ -26,6 +26,7 @@ const (
 	TOKEN_PROGRAM            = "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
 	ASSOCIATED_TOKEN_PROGRAM = "ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL"
 	SYSTEM_PROGRAM           = "11111111111111111111111111111111"
+	METAPLEX_TOKEN_METDATA   = "metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s"
 )
 
 var QuoteTokens = map[string]string{

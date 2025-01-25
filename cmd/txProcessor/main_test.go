@@ -19,7 +19,6 @@ type TestCase struct {
 }
 
 func TestSwapHandler(t *testing.T) {
-
 	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt, os.Kill)
 	defer cancel()
 
@@ -59,10 +58,6 @@ func TestSwapHandler(t *testing.T) {
 
 	node := solana.NewNode("test", nodeUrl)
 
-	//d := solana.DecodeTokenProgramData("5skBM863SvZcfRfXU3ZVq53rBk9zKxJ8eRdDkjoLFht7G")
-	//log.Printf("%+v", d)
-	//return
-
 	tests := []TestCase{
 		//{Target: 4, Signature: "3Ry66VFMKtLUxwG1FFbAdz2RMZbxdwmDGXjMmtkWcA2PKTuVuQhU8RVMZUw1duciR8eeZLYHYD5tGCy5LVz1wa4f"},
 		//{Target: 1, Signature: "2jRqSN5Ckx9sgwBoTkgQ7xz2fZb4TTftdz69noGFESx7eJW6Jxt1s4HP1fce6vzF8rBgzehYD3KSKQoKYWVRUotC"},
@@ -101,7 +96,7 @@ func test_tx(ctx context.Context, node *solana.Node, sh *solana.SwapHandler, t *
 	if err != nil {
 		t.Fatalf("Error getting tx: %v", err)
 	}
-	transfers, _, _ := solana.ParseTransaction(tx)
+	transfers, _, _, _ := solana.ParseTransaction(tx)
 
 	swaps := sh.HandleSwaps(ctx, transfers, tx, 0, 0)
 	//for i, transfer := range transfers {
