@@ -1,0 +1,26 @@
+name: Deploy API
+
+on:
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v3
+
+      - name: SSH and Deploy to EC2 (API Only)
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USERNAME }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+
+          script: |
+            cd blocsy
+            git pull
+
+            # Rebuild only the API container
+            sudo docker-compose build api
+            sudo docker-compose up -d --no-deps --build api

@@ -1,11 +1,9 @@
-name: Deploy
+name: Deploy Full
 
 on:
   push:
     branches: [ main ]
-  pull_request:
-    branches: [ main ]
-
+  workflow_dispatch:
 jobs:
   deploy:
     runs-on: ubuntu-latest
@@ -24,12 +22,7 @@ jobs:
           script: |
             cd blocsy
             git pull
-
-#            REBUILD ALL CONTAINERS
+            
             sudo docker-compose down
             docker system prune -a -f
             sudo docker-compose up -d --build
-
-#            ONLY REDO THE API CONTAINER
-#            sudo docker-compose build api
-#            sudo docker-compose up -d --no-deps --build api
