@@ -240,17 +240,12 @@ func buildTransfer(
 	tx *types.SolanaTx,
 	innerIndex int,
 	ixIndex int) (types.SolTransfer, bool) {
-	if ix.Data == "" {
-		return types.SolTransfer{}, false
-	}
 	accountKeys := getAllAccountKeys(tx)
 
 	if len(accountKeys)-1 < ix.ProgramIdIndex {
 		return types.SolTransfer{}, false
 	}
 	programId := accountKeys[ix.ProgramIdIndex]
-
-	//log.Printf("programId %s ~ ix %+v", programId, ix)
 
 	if programId == SYSTEM_PROGRAM {
 
@@ -302,10 +297,6 @@ func buildTransfer(
 
 	//Spl-token program
 	if programId == TOKEN_PROGRAM {
-		if len(ix.Accounts) < 2 {
-			return types.SolTransfer{}, false
-		}
-
 		for _, accountIndex := range ix.Accounts {
 			if accountIndex > len(accountKeys)-1 {
 				return types.SolTransfer{}, false

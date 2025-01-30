@@ -96,6 +96,11 @@ func HandlePumpFunSwaps(index int, transfers []types.SolTransfer, accountKeys []
 		incr++
 	}
 
+	// Ignore transfers to the PumpFun Fee account
+	if currentTransfer.ToUserAccount == "CebN5WGQ4jvEPvsVU4EoHEpgzq1VV7AbicfhtW4xC9iM" {
+		return types.SolSwap{}, incr
+	}
+
 	s := HandlePumpFunSwapData(currentTransfer.EventData)
 	s.Pair = accountKeys[(currentTransfer.IxAccounts)[3]]
 
