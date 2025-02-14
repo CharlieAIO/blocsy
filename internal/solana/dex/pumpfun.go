@@ -84,7 +84,6 @@ func HandlePumpFunSwapData(ixData string) types.SolSwap {
 
 func HandlePumpFunSwaps(index int, transfers []types.SolTransfer, accountKeys []string) (types.SolSwap, int) {
 	currentTransfer := transfers[index]
-	nextTransfer := transfers[index+1]
 
 	if len(currentTransfer.IxAccounts) < 4 || len(accountKeys) < (currentTransfer.IxAccounts)[3] {
 		return types.SolSwap{}, 0
@@ -92,8 +91,10 @@ func HandlePumpFunSwaps(index int, transfers []types.SolTransfer, accountKeys []
 
 	incr := 0
 
-	if currentTransfer.ParentProgramId == nextTransfer.ParentProgramId {
-		incr++
+	if (index + 1) < len(transfers) {
+		if currentTransfer.ParentProgramId == transfers[index+1].ParentProgramId {
+			incr++
+		}
 	}
 
 	// Ignore transfers to the PumpFun Fee account

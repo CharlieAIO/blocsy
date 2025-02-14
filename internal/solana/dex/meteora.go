@@ -3,6 +3,10 @@ package dex
 import "blocsy/internal/types"
 
 func HandleMeteoraSwaps(index int, transfers []types.SolTransfer, accountKeys []string) (types.SolSwap, int) {
+	if index+1 >= len(transfers) {
+		return types.SolSwap{}, 0
+	}
+
 	currentTransfer := transfers[index]
 	nextTransfer := transfers[index+1]
 	if currentTransfer.ParentProgramId != nextTransfer.ParentProgramId {

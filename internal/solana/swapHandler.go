@@ -150,9 +150,6 @@ func (sh *SwapHandler) HandleSwaps(ctx context.Context, transfers []types.SolTra
 }
 
 func processInstruction(index int, transfers []types.SolTransfer, accountKeys []string) (types.SolSwap, int) {
-	if index+1 >= len(transfers) {
-		return types.SolSwap{}, 0
-	}
 	type handlerFunc func(index int, transfers []types.SolTransfer, accountKeys []string) (types.SolSwap, int)
 	handlers := map[string]handlerFunc{
 		RAYDIUM_LIQ_POOL_V4:   dex.HandleRaydiumSwaps,
