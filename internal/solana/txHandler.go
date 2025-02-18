@@ -5,6 +5,7 @@ import (
 	"blocsy/internal/solana/dex"
 	"blocsy/internal/types"
 	"context"
+	"log"
 )
 
 func NewTxHandler(sh *SwapHandler, solSvc *SolanaService, repo TokensAndPairsRepo, pRepo SwapsRepo, websocket *websocket.WebSocketServer) *TxHandler {
@@ -38,8 +39,7 @@ func (t *TxHandler) ProcessTransaction(ctx context.Context, tx *types.SolanaTx, 
 		for _, pfToken := range pumpFunTokens {
 			deployer := pfToken.User.String()
 			pumpFunTokenMints[pfToken.Mint.String()] = true
-
-			_ = t.repo.StoreToken(ctx, types.Token{
+			pfTokenData := types.Token{
 				Name:             pfToken.Name,
 				Symbol:           pfToken.Symbol,
 				Decimals:         6,
@@ -49,7 +49,12 @@ func (t *TxHandler) ProcessTransaction(ctx context.Context, tx *types.SolanaTx, 
 				Supply:           "1000000000",
 				Deployer:         &deployer,
 				Metadata:         &pfToken.Uri,
-			})
+			}
+			log.Printf("Storing pump fun token: %+v", pfTokenData)
+			err := t.repo.StoreToken(ctx, pfTokenData)
+			if err != nil {
+				log.Printf("failed to store pump fun token: %v", err)
+			}
 		}
 
 		for _, token := range tokensCreated {
@@ -58,7 +63,10 @@ func (t *TxHandler) ProcessTransaction(ctx context.Context, tx *types.SolanaTx, 
 			}
 			token.CreatedTimestamp = uint64(timestamp)
 			token.CreatedBlock = int64(block)
-			_ = t.repo.StoreToken(ctx, token)
+			err := t.repo.StoreToken(ctx, token)
+			if err != nil {
+				log.Printf("failed to store token: %v", err)
+			}
 		}
 	}()
 
