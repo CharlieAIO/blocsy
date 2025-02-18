@@ -40,6 +40,7 @@ func (t *TxHandler) ProcessTransaction(ctx context.Context, tx *types.SolanaTx, 
 			deployer := pfToken.User.String()
 			pumpFunTokenMints[pfToken.Mint.String()] = true
 			pfTokenData := types.Token{
+				Address:          pfToken.Mint.String(),
 				Name:             pfToken.Name,
 				Symbol:           pfToken.Symbol,
 				Decimals:         6,
@@ -50,7 +51,6 @@ func (t *TxHandler) ProcessTransaction(ctx context.Context, tx *types.SolanaTx, 
 				Deployer:         &deployer,
 				Metadata:         &pfToken.Uri,
 			}
-			log.Printf("Storing pump fun token: %+v", pfTokenData)
 			err := t.repo.StoreToken(ctx, pfTokenData)
 			if err != nil {
 				log.Printf("failed to store pump fun token: %v", err)
