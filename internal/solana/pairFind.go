@@ -105,7 +105,7 @@ func (ps *PairsService) lookupPair(ctx context.Context, address string, token_ *
 
 func (ps *PairsService) NewPairProcessor() {
 	ps.processor = &PairProcessor{
-		queue: make(chan PairProcessorQueue, 1000),
+		queue: make(chan PairProcessorQueue, 5000),
 		seen:  sync.Map{},
 		wg:    sync.WaitGroup{},
 	}

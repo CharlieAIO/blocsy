@@ -102,7 +102,7 @@ func (tf *TokenFinder) lookupToken(ctx context.Context, address string) (*types.
 
 func (tf *TokenFinder) NewTokenProcessor() {
 	tf.processor = &TokenProcessor{
-		queue: make(chan string, 1000),
+		queue: make(chan string, 5000),
 		seen:  sync.Map{},
 		wg:    sync.WaitGroup{},
 	}
@@ -160,7 +160,7 @@ func ParseTokenAmount(tokenAmount string, d int) (string, error) {
 
 func (tf *TokenFinder) NewMintBurnProcessor() {
 	tf.mintBurnProcessor = &MintBurnProcessor{
-		queue:       make(chan MintBurnProcessorQueue, 1000),
+		queue:       make(chan MintBurnProcessorQueue, 5000),
 		seen:        sync.Map{},
 		activeLocks: sync.Map{},
 		wg:          sync.WaitGroup{},
