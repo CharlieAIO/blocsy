@@ -72,16 +72,23 @@ func (s *SolanaBlockListener) Listen() error {
 
 	for {
 		conn := s.grpcConnect(s.grpcAddress, true)
-		defer conn.Close()
+		if conn == nil {
+			log.Printf("Failed to connect to %s. Retrying...", s.grpcAddress)
+			time.Sleep(5 * time.Second)
+			continue
+		}
 
 		err := s.grpcSubscribe(conn)
 		if err != nil {
 			log.Printf("Error in grpcSubscribe: %v. Reconnecting...", err)
+			conn.Close()                // explicitly close before reconnecting
 			time.Sleep(5 * time.Second) // Wait before reconnecting
 			continue
 		}
+		defer conn.Close() // Only defer close on a successful subscription
 		break
 	}
+
 	return nil
 }
 
