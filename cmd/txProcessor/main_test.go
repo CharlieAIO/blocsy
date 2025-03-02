@@ -25,17 +25,6 @@ func TestSwapHandler(t *testing.T) {
 
 	utils.LoadEnvironment()
 
-	mCli, err := utils.GetMongoConnection(ctx)
-	if err != nil {
-		log.Fatalf("Error connecting to mongo: %v", err)
-	}
-
-	defer func() {
-		if err := mCli.Disconnect(ctx); err != nil {
-			log.Printf("Error disconnecting from mongo: %v", err)
-		}
-	}()
-
 	dbx, err := utils.GetDBConnection(ctx)
 	if err != nil {
 		log.Fatalf("Error connecting to db: %v", err)
@@ -47,12 +36,13 @@ func TestSwapHandler(t *testing.T) {
 	}()
 
 	c := cache.NewCache()
-	mRepo := db.NewMongoRepository(mCli)
+
+	pRepo := db.NewTimescaleRepository(dbx)
 
 	solSvc := solana.NewSolanaService(ctx)
 
-	tf := solana.NewTokenFinder(c, solSvc, mRepo)
-	pf := solana.NewPairsService(c, tf, solSvc, mRepo)
+	tf := solana.NewTokenFinder(c, solSvc, pRepo)
+	pf := solana.NewPairsService(c, tf, solSvc, pRepo)
 	sh := solana.NewSwapHandler(tf, pf)
 
 	nodeUrl := strings.Split(os.Getenv("SOL_HTTPS_BACKFILL_NODES"), ",")[0]

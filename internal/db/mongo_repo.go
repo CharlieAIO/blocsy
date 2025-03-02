@@ -169,3 +169,37 @@ func (repo *MongoRepository) UpdateTokenSupply(ctx context.Context, address stri
 
 	return nil
 }
+
+func (repo *MongoRepository) PullTokens(ctx context.Context) (<-chan types.Token, <-chan error) {
+	tokenCh := make(chan types.Token)
+	errCh := make(chan error, 1)
+
+	go func() {
+		defer close(tokenCh)
+		cursor, err := repo.tokensCollection.Find(ctx, bson.M{})
+		if err != nil {
+			errCh <- fmt.Errorf("failed to execute find: %w", err)
+			close(errCh)
+			return
+		}
+		defer cursor.Close(ctx)
+
+		for cursor.Next(ctx) {
+			var token Token
+			if err := cursor.Decode(&token); err != nil {
+				errCh <- fmt.Errorf("failed to decode token: %w", err)
+				close(errCh)
+				return
+			}
+			tokenCh <- token
+		}
+		if err := cursor.Err(); err != nil {
+			errCh <- fmt.Errorf("cursor encountered an error: %w", err)
+			close(errCh)
+			return
+		}
+		close(errCh)
+	}()
+
+	return tokenCh, errCh
+}

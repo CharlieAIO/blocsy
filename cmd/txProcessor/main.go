@@ -19,17 +19,6 @@ func main() {
 
 	utils.LoadEnvironment()
 
-	mCli, err := utils.GetMongoConnection(ctx)
-	if err != nil {
-		log.Fatalf("Error connecting to mongo: %v", err)
-	}
-
-	defer func() {
-		if err := mCli.Disconnect(ctx); err != nil {
-			log.Printf("Error disconnecting from mongo: %v", err)
-		}
-	}()
-
 	dbx, err := utils.GetDBConnection(ctx)
 	if err != nil {
 		log.Fatalf("Error connecting to db: %v", err)
@@ -41,30 +30,29 @@ func main() {
 	}()
 
 	c := cache.NewCache()
-	mRepo := db.NewMongoRepository(mCli)
 	pRepo := db.NewTimescaleRepository(dbx)
 
 	websocketServer := websocket.NewWebSocketServer()
 	go websocketServer.Start()
 
-	go solanaTxHandler(ctx, c, mRepo, pRepo, websocketServer)
+	go solanaTxHandler(ctx, c, pRepo, websocketServer)
 
 	<-ctx.Done()
 	log.Println("Shutting down tx processor...")
 }
 
-func solanaTxHandler(ctx context.Context, c *cache.Cache, mRepo *db.MongoRepository, pRepo *db.TimescaleRepository, websocketServer *websocket.WebSocketServer) {
+func solanaTxHandler(ctx context.Context, c *cache.Cache, pRepo *db.TimescaleRepository, websocketServer *websocket.WebSocketServer) {
 	solSvc := solana.NewSolanaService(ctx)
 
-	tf := solana.NewTokenFinder(c, solSvc, mRepo)
+	tf := solana.NewTokenFinder(c, solSvc, pRepo)
 	tf.NewTokenProcessor()
 	tf.NewMintBurnProcessor()
-	pf := solana.NewPairsService(c, tf, solSvc, mRepo)
+	pf := solana.NewPairsService(c, tf, solSvc, pRepo)
 	pf.NewPairProcessor()
 
 	sh := solana.NewSwapHandler(tf, pf)
 
-	txHandler := solana.NewTxHandler(sh, solSvc, mRepo, pRepo, websocketServer)
+	txHandler := solana.NewTxHandler(sh, solSvc, pRepo, pRepo, websocketServer)
 
 	queueHandler := solana.NewSolanaQueueHandler(txHandler, pRepo)
 

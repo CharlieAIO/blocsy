@@ -14,6 +14,8 @@ import (
 const (
 	swapLogTable = "swap_log"
 	blocksTable  = "processed_block"
+	tokensTable  = "token"
+	pairsTable   = "pair"
 )
 
 type TimescaleRepository struct {
@@ -255,7 +257,110 @@ func (repo *TimescaleRepository) FindWalletTokenHoldings(ctx context.Context, to
 	return totalTokens, nil
 }
 
+// =============================================== Token Table Functions  ================================================
+func (repo *TimescaleRepository) InsertToken(ctx context.Context, token types.Token) error {
+	var query = fmt.Sprintf(`INSERT INTO "%s" ("address", "name", "symbol", "decimals", "supply", "createdBlock", "createdTimestamp", "deployer", "metadata", "network") VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)`, tokensTable)
+
+	if _, err := repo.db.ExecContext(ctx, query, token.Address, token.Name, token.Symbol, token.Decimals, token.Supply, token.CreatedBlock, token.CreatedTimestamp, token.Deployer, token.Metadata, token.Network); err != nil {
+		return fmt.Errorf("cannot insert token: %w", err)
+	}
+
+	return nil
+}
+
+func (repo *TimescaleRepository) FindToken(ctx context.Context, address string) (*types.Token, error) {
+	var query = fmt.Sprintf(`SELECT * FROM "%s" WHERE address = $1`, tokensTable)
+
+	var token types.Token
+	if err := repo.db.GetContext(ctx, &token, query, address); err != nil {
+		return nil, fmt.Errorf("cannot get token: %w", err)
+	}
+
+	return &token, nil
+}
+
+func (repo *TimescaleRepository) UpdateTokenSupply(ctx context.Context, address string, supply float64) error {
+	var query = fmt.Sprintf(`UPDATE "%s" SET supply = $1 WHERE address = $2`, tokensTable)
+
+	if _, err := repo.db.ExecContext(ctx, query, supply, address); err != nil {
+		return fmt.Errorf("cannot update token supply: %w", err)
+	}
+
+	return nil
+}
+
+//=============================================== Pair Table Functions  ================================================
+
+func (repo *TimescaleRepository) InsertPair(ctx context.Context, pair types.Pair) error {
+	var query = fmt.Sprintf(`INSERT INTO "%s" ("address", "token", "createdBlock", "createdTimestamp",""exchange", "network") VALUES ($1,$2,$3,$4,$5,$6)`, pairsTable)
+	if _, err := repo.db.ExecContext(ctx, query, pair.Address, pair.Token, pair.CreatedBlock, pair.CreatedTimestamp, pair.Exchange, pair.Network); err != nil {
+		return fmt.Errorf("cannot insert pair: %w", err)
+	}
+
+	return nil
+}
+
+func (repo *TimescaleRepository) FindPair(ctx context.Context, address string) (*types.Pair, error) {
+	var query = fmt.Sprintf(`SELECT * FROM "%s" WHERE address = $1`, pairsTable)
+
+	var pair types.Pair
+	if err := repo.db.GetContext(ctx, &pair, query, address); err != nil {
+		return nil, fmt.Errorf("cannot get pair: %w", err)
+	}
+
+	return &pair, nil
+}
+
+func (repo *TimescaleRepository) FindPairsByToken(ctx context.Context, token string) ([]*types.Pair, error) {
+	var query = fmt.Sprintf(`SELECT * FROM "%s" WHERE token = $1`, pairsTable)
+
+	var pairs []*types.Pair
+	if err := repo.db.SelectContext(ctx, &pairs, query, token); err != nil {
+		return nil, fmt.Errorf("cannot get pairs: %w", err)
+	}
+
+	return pairs, nil
+}
+
 //=============================================== Create Tables  =======================================================
+
+func CreateTokenTable(ctx context.Context, db *sqlx.DB) {
+	var query = fmt.Sprintf(`CREATE TABLE IF NOT EXISTS "%s" (
+    "address" TEXT NOT NULL,
+    "name" TEXT NOT NULL,
+    "symbol" TEXT NOT NULL,
+    "decimals" INT NOT NULL,
+    "supply" DOUBLE PRECISION NOT NULL DEFAULT 0,
+    "createdBlock" INT NOT NULL DEFAULT 0,
+    "createdTimestamp" TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "deployer" TEXT,
+    "metadata" TEXT,
+    "network" TEXT NOT NULL,
+    PRIMARY KEY ("address")
+);`, tokensTable)
+
+	if _, err := db.ExecContext(ctx, query); err != nil {
+		log.Fatalf("Error creating table: %v", err)
+	}
+
+}
+
+func CreatePairTable(ctx context.Context, db *sqlx.DB) {
+	var query = fmt.Sprintf(`CREATE TABLE IF NOT EXISTS "%s" (
+    "address" TEXT NOT NULL,
+    "token" TEXT NOT NULL,
+    "createdBlock" INT NOT NULL DEFAULT 0,
+    "createdTimestamp" TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "exchange" TEXT NOT NULL,
+    "network" TEXT NOT NULL,
+    PRIMARY KEY ("address")
+);`, tokensTable)
+
+	if _, err := db.ExecContext(ctx, query); err != nil {
+		log.Fatalf("Error creating table: %v", err)
+	}
+
+}
 
 func CreateProcessedBlocksTable(ctx context.Context, db *sqlx.DB) {
 	var query = fmt.Sprintf(`CREATE TABLE IF NOT EXISTS "%s" (

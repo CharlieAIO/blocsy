@@ -29,16 +29,6 @@ func main() {
 	//return
 
 	utils.LoadEnvironment()
-	mCli, err := utils.GetMongoConnection(ctx)
-	if err != nil {
-		log.Fatalf("Error connecting to mongo: %v", err)
-	}
-
-	defer func() {
-		if err := mCli.Disconnect(ctx); err != nil {
-			log.Printf("Error disconnecting from mongo: %v", err)
-		}
-	}()
 
 	dbx, err := utils.GetDBConnection(ctx)
 	if err != nil {
@@ -53,11 +43,10 @@ func main() {
 	go pt.Run(ctx)
 
 	c := cache.NewCache()
-	mRepo := db.NewMongoRepository(mCli)
-	swapsRepo := db.NewTimescaleRepository(dbx)
+	pRepo := db.NewTimescaleRepository(dbx)
 
-	tf := solana.NewTokenFinder(c, solSvc, mRepo)
-	pf := solana.NewPairsService(c, tf, solSvc, mRepo)
+	tf := solana.NewTokenFinder(c, solSvc, pRepo)
+	pf := solana.NewPairsService(c, tf, solSvc, pRepo)
 
 	var nodes []routes.Node
 
@@ -71,7 +60,7 @@ func main() {
 		log.Fatalf("No nodes provided")
 	}
 
-	handler := routes.NewHandler(pt, tf, pf, swapsRepo, nodes).GetHttpHandler()
+	handler := routes.NewHandler(pt, tf, pf, pRepo, nodes).GetHttpHandler()
 
 	srv := &http.Server{
 		Addr:    ":8080",

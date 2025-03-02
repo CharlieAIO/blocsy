@@ -92,5 +92,7 @@ func GetDBConnection(ctx context.Context) (*sqlx.DB, error) {
 
 	db.CreateSwapsTable(ctx, dbx)
 	db.CreateProcessedBlocksTable(ctx, dbx)
+	db.CreateTokenTable(ctx, dbx)
+	db.CreatePairTable(ctx, dbx)
 	return dbx, nil
 }

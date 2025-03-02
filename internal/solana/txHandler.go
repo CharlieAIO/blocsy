@@ -51,7 +51,7 @@ func (t *TxHandler) ProcessTransaction(ctx context.Context, tx *types.SolanaTx, 
 				Deployer:         &deployer,
 				Metadata:         &pfToken.Uri,
 			}
-			err := t.repo.StoreToken(ctx, pfTokenData)
+			err := t.repo.InsertToken(ctx, pfTokenData)
 			if err != nil {
 				log.Printf("failed to store pump fun token: %v", err)
 			}
@@ -63,7 +63,7 @@ func (t *TxHandler) ProcessTransaction(ctx context.Context, tx *types.SolanaTx, 
 			}
 			token.CreatedTimestamp = uint64(timestamp)
 			token.CreatedBlock = int64(block)
-			err := t.repo.StoreToken(ctx, token)
+			err := t.repo.InsertToken(ctx, token)
 			if err != nil {
 				log.Printf("failed to store token: %v", err)
 			}

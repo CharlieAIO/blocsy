@@ -35,42 +35,56 @@ func (ps *PairsService) FindPair(ctx context.Context, address string, token_ *st
 		}
 	}
 
-	pair, _, quoteToken, _ := ps.repo.LookupByPair(ctx, address, "solana", *ps.tokenFinder)
-
-	if pair.Address != "" && quoteToken.Address != "" && pair.Token != "" {
-		ps.cache.PutPair(pair.Address, pair)
-		return &pair, &quoteToken, nil
-	}
-
-	pair, err := ps.lookupPair(ctx, address, token_)
+	//pair, _, quoteToken, _ := ps.repo.FindPair(ctx, address)
+	pair, err := ps.repo.FindPair(ctx, address)
 	if err != nil {
-		return nil, nil, fmt.Errorf("(%s) failed to lookup pair: %w", address, err)
+		return nil, nil, fmt.Errorf("failed to find pair: %w", err)
 	}
-
-	if err := ps.repo.StorePair(ctx, pair); err != nil {
-		return nil, nil, fmt.Errorf("failed to add pair: %w", err)
+	if pair.Address == "" || pair.Token == "" || pair.QuoteToken.Address == "" {
+		return nil, nil, fmt.Errorf("invalid pair found")
 	}
-
-	if _, found := QuoteTokens[pair.QuoteToken.Address]; !found {
-		return nil, nil, fmt.Errorf("unsupported quote token: %s", pair.QuoteToken.Address)
-	}
-
-	quoteTokenLookup, _, err := ps.tokenFinder.FindToken(ctx, pair.QuoteToken.Address, false)
+	quoteToken, _, err := ps.tokenFinder.FindToken(ctx, pair.QuoteToken.Address, false)
 	if err != nil {
 		return nil, nil, fmt.Errorf("failed to find quote token: %w", err)
 	}
 
-	if quoteTokenLookup == nil {
-		return nil, nil, nil
-	}
-
-	return &pair, &types.QuoteToken{
+	return pair, &types.QuoteToken{
 		Identifier: pair.QuoteToken.Identifier,
-		Name:       quoteTokenLookup.Name,
-		Symbol:     quoteTokenLookup.Symbol,
-		Address:    pair.QuoteToken.Address,
-		Decimals:   quoteTokenLookup.Decimals,
+		Name:       quoteToken.Name,
+		Symbol:     quoteToken.Symbol,
+		Address:    quoteToken.Address,
+		Decimals:   quoteToken.Decimals,
 	}, nil
+
+	//pair, err := ps.lookupPair(ctx, address, token_)
+	//if err != nil {
+	//	return nil, nil, fmt.Errorf("(%s) failed to lookup pair: %w", address, err)
+	//}
+	//
+	//if err := ps.repo.StorePair(ctx, pair); err != nil {
+	//	return nil, nil, fmt.Errorf("failed to add pair: %w", err)
+	//}
+	//
+	//if _, found := QuoteTokens[pair.QuoteToken.Address]; !found {
+	//	return nil, nil, fmt.Errorf("unsupported quote token: %s", pair.QuoteToken.Address)
+	//}
+	//
+	//quoteTokenLookup, _, err := ps.tokenFinder.FindToken(ctx, pair.QuoteToken.Address, false)
+	//if err != nil {
+	//	return nil, nil, fmt.Errorf("failed to find quote token: %w", err)
+	//}
+	//
+	//if quoteTokenLookup == nil {
+	//	return nil, nil, nil
+	//}
+	//
+	//return &pair, &types.QuoteToken{
+	//	Identifier: pair.QuoteToken.Identifier,
+	//	Name:       quoteTokenLookup.Name,
+	//	Symbol:     quoteTokenLookup.Symbol,
+	//	Address:    pair.QuoteToken.Address,
+	//	Decimals:   quoteTokenLookup.Decimals,
+	//}, nil
 
 }
 
