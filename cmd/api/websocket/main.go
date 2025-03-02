@@ -51,8 +51,11 @@ func (ws *WebSocketServer) handleConnections(w http.ResponseWriter, r *http.Requ
 		delete(ws.clients, conn)
 		ws.mu.Unlock()
 		conn.Close()
-		log.Printf("Connection closed for client: %v", conn.RemoteAddr())
 	}()
+
+	conn.SetPongHandler(func(appData string) error {
+		return nil
+	})
 
 	ws.mu.Lock()
 	ws.clients[conn] = Client{}
@@ -62,36 +65,31 @@ func (ws *WebSocketServer) handleConnections(w http.ResponseWriter, r *http.Requ
 		for {
 			time.Sleep(30 * time.Second)
 			if err := conn.WriteMessage(websocket.PingMessage, nil); err != nil {
-				log.Printf("Failed to send ping to client %v: %v", conn.RemoteAddr(), err)
+				log.Printf("Failed to send ping to client %v: %v", conn.LocalAddr(), err)
 				break
 			}
 		}
 	}()
 
-	conn.SetPongHandler(func(appData string) error {
-		//log.Printf("Received pong from %v", conn.RemoteAddr())
-		return nil
-	})
-
 	for {
 		_, message, err := conn.ReadMessage()
 		if err != nil {
-			log.Printf("WebSocket read error from client %v: %v", conn.RemoteAddr(), err)
+			log.Printf("WebSocket read error from client %v: %v", conn.LocalAddr(), err)
 			break
 		}
 
 		var clientData Client
 		if err := json.Unmarshal(message, &clientData); err != nil {
-			log.Printf("Failed to parse client data from %v: %v", conn.RemoteAddr(), err)
+			log.Printf("Failed to parse client data from %v: %v", conn.LocalAddr(), err)
 			break
 		}
 
 		if !validateClientType(clientData.ClientType) {
-			log.Printf("Invalid client type from client %v: %v", conn.RemoteAddr(), clientData.ClientType)
+			log.Printf("Invalid client type from client %v: %v", conn.LocalAddr(), clientData.ClientType)
 			break
 		}
 
-		log.Printf("Client %v connected with type %v", conn.RemoteAddr(), clientData.ClientType)
+		log.Printf("Client %v connected with type %v | wallets len %d", conn.LocalAddr(), clientData.ClientType, len(clientData.Wallets))
 
 		ws.mu.Lock()
 		ws.clients[conn] = clientData
