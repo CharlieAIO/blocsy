@@ -261,7 +261,35 @@ func (repo *TimescaleRepository) FindWalletTokenHoldings(ctx context.Context, to
 func (repo *TimescaleRepository) InsertToken(ctx context.Context, token types.Token) error {
 	var query = fmt.Sprintf(`INSERT INTO "%s" ("address", "name", "symbol", "decimals", "supply", "createdBlock", "createdTimestamp", "deployer", "metadata", "network") VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)`, tokensTable)
 
-	if _, err := repo.db.ExecContext(ctx, query, token.Address, token.Name, token.Symbol, token.Decimals, token.Supply, token.CreatedBlock, token.CreatedTimestamp, token.Deployer, token.Metadata, token.Network); err != nil {
+	var createdBlock interface{}
+	if token.CreatedBlock == 0 {
+		createdBlock = nil
+	} else {
+		createdBlock = token.CreatedBlock
+	}
+
+	var createdTimestamp interface{}
+	if token.CreatedTimestamp == 0 {
+		createdTimestamp = nil
+	} else {
+		createdTimestamp = time.Unix(int64(token.CreatedTimestamp), 0)
+	}
+
+	var deployer interface{}
+	if token.Deployer == nil || *token.Deployer == "" {
+		deployer = nil
+	} else {
+		deployer = *token.Deployer
+	}
+
+	var metadata interface{}
+	if token.Metadata == nil || *token.Metadata == "" {
+		metadata = nil
+	} else {
+		metadata = *token.Metadata
+	}
+
+	if _, err := repo.db.ExecContext(ctx, query, token.Address, token.Name, token.Symbol, token.Decimals, token.Supply, createdBlock, createdTimestamp, deployer, metadata, token.Network); err != nil {
 		return fmt.Errorf("cannot insert token: %w", err)
 	}
 

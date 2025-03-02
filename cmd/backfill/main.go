@@ -46,6 +46,7 @@ func main() {
 
 	// Process tokens as they are received.
 	for token := range tokenCh {
+
 		if err := pRepo.InsertToken(ctx, token); err != nil {
 			log.Printf("Failed to insert token (address %s): %v", token.Address, err)
 			continue
