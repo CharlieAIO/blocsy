@@ -268,11 +268,14 @@ func (repo *TimescaleRepository) InsertToken(ctx context.Context, token types.To
 		createdBlock = token.CreatedBlock
 	}
 
-	var createdTimestamp interface{}
+	var createdTimestamp sql.NullTime
 	if token.CreatedTimestamp == 0 {
-		createdTimestamp = 0
+		createdTimestamp = sql.NullTime{Valid: false}
 	} else {
-		createdTimestamp = time.Unix(int64(token.CreatedTimestamp), 0)
+		createdTimestamp = sql.NullTime{
+			Time:  time.Unix(int64(token.CreatedTimestamp), 0),
+			Valid: true,
+		}
 	}
 
 	var deployer interface{}
