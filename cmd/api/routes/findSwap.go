@@ -11,7 +11,8 @@ import (
 func stringToInt64(s string) int64 {
 	i, err := strconv.ParseInt(s, 10, 64)
 	if err != nil {
-		log.Fatalf("Error converting string to int64: %v", err)
+		log.Printf("Error converting string to int64: %v", err)
+		return 0
 	}
 	return i
 }
@@ -19,7 +20,8 @@ func stringToInt64(s string) int64 {
 func stringToFloat64(s string) float64 {
 	f, err := strconv.ParseFloat(s, 64)
 	if err != nil {
-		log.Fatalf("Error converting string to float64: %v", err)
+		log.Printf("Error converting string to float64: %v", err)
+		return 0.0
 	}
 	return f
 }
@@ -34,25 +36,9 @@ func (h *Handler) FindSwapHandler(w http.ResponseWriter, r *http.Request) {
 	amount := stringToFloat64(amountStr)
 	timestamp := stringToInt64(timestampStr)
 
-	//_, pairs, err := h.tokenFinder.FindToken(ctx, address, true)
-	//if err != nil {
-	//	http.Error(w, err.Error(), http.StatusInternalServerError)
-	//	return
-	//}
-	//if pairs == nil {
-	//	http.Error(w, "No pairs found", http.StatusNotFound)
-	//	return
-	//}
-	//
-	//pairAddresses := make([]string, len(*pairs))
-	//for i, pair := range *pairs {
-	//	pairAddresses[i] = pair.Address
-	//}
-	//pairAddresses = append(pairAddresses, address)
-
 	swap, err := h.swapsRepo.FindSwap(ctx, timestamp, address, amount)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		http.Error(w, "", http.StatusInternalServerError)
 		return
 	}
 

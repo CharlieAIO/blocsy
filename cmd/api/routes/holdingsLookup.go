@@ -14,7 +14,7 @@ func (h *Handler) HoldingsLookupHandler(w http.ResponseWriter, r *http.Request) 
 
 	holdings, err := h.swapsRepo.FindWalletTokenHoldings(ctx, token, wallet)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		http.Error(w, "", http.StatusInternalServerError)
 		return
 	}
 

@@ -13,14 +13,12 @@ func (h *Handler) TokenLookupHandler(w http.ResponseWriter, r *http.Request) {
 
 	token, pairs, err := h.tokenFinder.FindToken(ctx, address, false)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		http.Error(w, "", http.StatusInternalServerError)
 		return
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(map[string]interface{}{
-		"results": map[string]interface{}{"token": token, "pairs": pairs},
-	})
+	json.NewEncoder(w).Encode(map[string]interface{}{"token": token, "pairs": pairs})
 	return
 
 }

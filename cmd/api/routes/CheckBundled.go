@@ -44,15 +44,14 @@ func (h *Handler) CheckBundledHandler(w http.ResponseWriter, r *http.Request) {
 
 	token, _, err := h.tokenFinder.FindToken(ctx, address, false)
 	if err != nil {
-		http.Error(w, "token not found", http.StatusInternalServerError)
+		http.Error(w, "", http.StatusInternalServerError)
 		return
 	}
 
 	log.Printf("Checking bundled for token: %s", address)
 	swaps, err := h.swapsRepo.FindFirstTokenSwaps(ctx, address)
 	if err != nil || len(swaps) == 0 {
-		log.Printf("Error finding swaps: %v", err)
-		http.Error(w, "swap history not found", http.StatusInternalServerError)
+		http.Error(w, "", http.StatusInternalServerError)
 		return
 	}
 
@@ -86,7 +85,6 @@ func (h *Handler) CheckBundledHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// remove token creation from first block swaps
 	firstBlockSwaps = append(firstBlockSwaps[:tokenCreation], firstBlockSwaps[tokenCreation+1:]...)
 
 	w.Header().Set("Content-Type", "application/json")
