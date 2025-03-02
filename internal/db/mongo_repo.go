@@ -185,7 +185,7 @@ func (repo *MongoRepository) PullTokens(ctx context.Context) (<-chan types.Token
 		defer cursor.Close(ctx)
 
 		for cursor.Next(ctx) {
-			var token Token
+			var token types.Token
 			if err := cursor.Decode(&token); err != nil {
 				errCh <- fmt.Errorf("failed to decode token: %w", err)
 				close(errCh)
