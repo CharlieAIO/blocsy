@@ -68,6 +68,11 @@ func (ws *WebSocketServer) handleConnections(w http.ResponseWriter, r *http.Requ
 		}
 	}()
 
+	conn.SetPongHandler(func(appData string) error {
+		//log.Printf("Received pong from %v", conn.RemoteAddr())
+		return nil
+	})
+
 	for {
 		_, message, err := conn.ReadMessage()
 		if err != nil {
