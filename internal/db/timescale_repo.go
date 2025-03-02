@@ -270,7 +270,7 @@ func (repo *TimescaleRepository) InsertToken(ctx context.Context, token types.To
 
 	var createdTimestamp sql.NullTime
 	if token.CreatedTimestamp == 0 {
-		createdTimestamp = sql.NullTime{Valid: false}
+		createdTimestamp = sql.NullTime{Time: time.Unix(0, 0), Valid: true}
 	} else {
 		createdTimestamp = sql.NullTime{
 			Time:  time.Unix(int64(token.CreatedTimestamp), 0),
