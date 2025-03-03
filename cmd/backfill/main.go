@@ -48,7 +48,7 @@ func main() {
 	for token := range tokenCh {
 
 		if err := pRepo.InsertToken(ctx, token); err != nil {
-			log.Printf("Failed to insert token (address %s): %v", token.Address, err)
+			//log.Printf("Failed to insert token (address %s): %v", token.Address, err)
 			continue
 		}
 		count++
@@ -59,7 +59,7 @@ func main() {
 
 	// Check if any error occurred during token retrieval.
 	if err, ok := <-errCh; ok && err != nil {
-		log.Fatalf("Error while pulling tokens: %v", err)
+		log.Printf("Error while pulling tokens: %v", err)
 	}
 
 	log.Printf("Migration complete. Total tokens inserted: %d", count)
