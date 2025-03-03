@@ -174,7 +174,7 @@ func (repo *MongoRepository) PullTokens(ctx context.Context) (<-chan types.Token
 	tokenCh := make(chan types.Token)
 	errCh := make(chan error, 1)
 
-	opts := options.Find().SetNoCursorTimeout(true).SetBatchSize(1000)
+	opts := options.Find().SetBatchSize(1000)
 
 	go func() {
 		defer close(tokenCh)
