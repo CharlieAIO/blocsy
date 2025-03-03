@@ -174,9 +174,11 @@ func (repo *MongoRepository) PullTokens(ctx context.Context) (<-chan types.Token
 	tokenCh := make(chan types.Token)
 	errCh := make(chan error, 1)
 
+	opts := options.Find().SetNoCursorTimeout(true).SetBatchSize(1000)
+
 	go func() {
 		defer close(tokenCh)
-		cursor, err := repo.tokensCollection.Find(ctx, bson.M{})
+		cursor, err := repo.tokensCollection.Find(ctx, bson.M{}, opts)
 		if err != nil {
 			errCh <- fmt.Errorf("failed to execute find: %w", err)
 			close(errCh)
