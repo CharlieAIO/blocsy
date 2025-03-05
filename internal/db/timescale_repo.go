@@ -141,7 +141,7 @@ func (repo *TimescaleRepository) DeleteSwapsUsingTx(ctx context.Context, signatu
 
 }
 
-func (repo *TimescaleRepository) GetAllWalletSwaps(ctx context.Context, wallet string, limit int64, offset int64) ([]types.SwapLog, error) {
+func (repo *TimescaleRepository) GetAllWalletSwaps(ctx context.Context, wallet string, limit int64, offset int64) ([]types.SwapLogModified, error) {
 
 	var query = fmt.Sprintf(`
 		SELECT sl.*, t.symbol AS "tokenSymbol"
@@ -151,7 +151,7 @@ func (repo *TimescaleRepository) GetAllWalletSwaps(ctx context.Context, wallet s
 		ORDER BY sl.timestamp DESC
 		LIMIT %d OFFSET %d;`, swapLogTable, limit, offset)
 
-	var swaps []types.SwapLog
+	var swaps []types.SwapLogModified
 
 	if err := repo.db.SelectContext(ctx, &swaps, query, wallet); err != nil {
 		return nil, fmt.Errorf("cannot get all wallet swaps: %w", err)
