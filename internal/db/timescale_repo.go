@@ -146,9 +146,9 @@ func (repo *TimescaleRepository) GetAllWalletSwaps(ctx context.Context, wallet s
 	var query = fmt.Sprintf(`
 		SELECT sl.*, t.symbol AS "tokenSymbol"
 		FROM "%s" sl
-		WHERE wallet = $1
 		JOIN token t ON sl.token = t.address
-		ORDER BY timestamp DESC
+		WHERE sl.wallet = $1
+		ORDER BY sl.timestamp DESC
 		LIMIT %d OFFSET %d;`, swapLogTable, limit, offset)
 
 	var swaps []types.SwapLog
