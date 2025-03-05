@@ -144,8 +144,10 @@ func (repo *TimescaleRepository) DeleteSwapsUsingTx(ctx context.Context, signatu
 func (repo *TimescaleRepository) GetAllWalletSwaps(ctx context.Context, wallet string, limit int64, offset int64) ([]types.SwapLog, error) {
 
 	var query = fmt.Sprintf(`
-		SELECT * FROM "%s" 
+		SELECT sl.*, t.symbol AS "tokenSymbol"
+		FROM "%s" sl
 		WHERE wallet = $1
+		JOIN token t ON sl.token = t.address
 		ORDER BY timestamp DESC
 		LIMIT %d OFFSET %d;`, swapLogTable, limit, offset)
 
