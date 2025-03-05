@@ -3,6 +3,7 @@ package routes
 import (
 	"encoding/json"
 	"github.com/go-chi/chi/v5"
+	"log"
 	"net/http"
 	"strconv"
 )
@@ -29,6 +30,7 @@ func (h *Handler) WalletActivityHandler(w http.ResponseWriter, r *http.Request) 
 
 	swaps, err := h.swapsRepo.GetAllWalletSwaps(ctx, address, limit, offset)
 	if err != nil {
+		log.Printf("Failed to GetAllWalletSwaps: %v", err)
 		http.Error(w, "", http.StatusInternalServerError)
 		return
 	}
