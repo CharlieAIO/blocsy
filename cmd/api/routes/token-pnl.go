@@ -52,14 +52,20 @@ func (h *Handler) TokenPnlHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Group swaps by pair as they are stored
+	// Group swaps by pair.
 	pairSwaps := make(map[string][]types.SwapLog)
 	for _, swap := range swaps {
 		pairSwaps[swap.Pair] = append(pairSwaps[swap.Pair], swap)
 	}
 
-	// We'll aggregate PnL for each token (by token address)
-	individualTokenPnL := make(map[string]types.AggregatedPnL)
+	// We'll now compute a PnL per pair.
+	type tokenPnl struct {
+		Token string              `json:"token"`
+		PnL   types.AggregatedPnL `json:"pnl"`
+	}
+
+	var results []tokenPnl
+	var resultsMu sync.Mutex
 	priceCache := make(map[string]float64)
 	var mu sync.Mutex
 	var wg sync.WaitGroup
@@ -93,7 +99,7 @@ func (h *Handler) TokenPnlHandler(w http.ResponseWriter, r *http.Request) {
 				return
 			}
 
-			// Get USD price for the token (using a cache)
+			// Retrieve USD price for the token (with caching).
 			mu.Lock()
 			usdPrice, ok := priceCache[tokenAddress]
 			if !ok {
@@ -108,7 +114,7 @@ func (h *Handler) TokenPnlHandler(w http.ResponseWriter, r *http.Request) {
 			}
 			mu.Unlock()
 
-			// Aggregate swap values for this pair
+			// Calculate totals for BUY and SELL swaps.
 			totalBuyTokens := new(big.Float)
 			totalSellTokens := new(big.Float)
 			totalBuyValue := new(big.Float)
@@ -126,7 +132,7 @@ func (h *Handler) TokenPnlHandler(w http.ResponseWriter, r *http.Request) {
 				}
 			}
 
-			// Calculate realized PnL
+			// Realized PnL: difference between SELL and BUY values.
 			realizedPNL := new(big.Float)
 			if totalSellTokens.Cmp(big.NewFloat(0)) != 0 {
 				realizedPNL.Sub(totalSellValue, totalBuyValue)
@@ -134,7 +140,7 @@ func (h *Handler) TokenPnlHandler(w http.ResponseWriter, r *http.Request) {
 				realizedPNL.SetFloat64(0)
 			}
 
-			// Calculate unrealized PnL based on remaining tokens
+			// Unrealized PnL: based on remaining tokens and most recent price.
 			unrealizedPNL := new(big.Float)
 			remainingAmount := new(big.Float).Sub(totalBuyTokens, totalSellTokens)
 			if remainingAmount.Cmp(big.NewFloat(0)) > 0 {
@@ -152,6 +158,7 @@ func (h *Handler) TokenPnlHandler(w http.ResponseWriter, r *http.Request) {
 				unrealizedPNL.Mul(remainingAmount, mostRecentPrice)
 			}
 
+			// Assemble the PnL result.
 			var pnlResults types.AggregatedPnL
 			realizedPNLFloatUSD, _ := realizedPNL.Float64()
 			pnlResults.RealizedPnLUSD = realizedPNLFloatUSD
@@ -159,7 +166,7 @@ func (h *Handler) TokenPnlHandler(w http.ResponseWriter, r *http.Request) {
 			unrealizedPNLFloatUSD, _ := unrealizedPNL.Float64()
 			pnlResults.UnrealizedPnLUSD = unrealizedPNLFloatUSD
 
-			// Compute ROI values
+			// Compute ROI values.
 			if totalSellValue.Cmp(big.NewFloat(0)) > 0 {
 				realizedROI := new(big.Float).Quo(realizedPNL, totalSellValue)
 				realizedROIFloat, _ := realizedROI.Float64()
@@ -190,33 +197,20 @@ func (h *Handler) TokenPnlHandler(w http.ResponseWriter, r *http.Request) {
 				}
 			}
 
-			// Aggregate results by token address
-			mu.Lock()
-			existing := individualTokenPnL[tokenAddress]
-			existing.RealizedPnLUSD += pnlResults.RealizedPnLUSD
-			existing.UnrealizedPnLUSD += pnlResults.UnrealizedPnLUSD
-			existing.RealizedROI += pnlResults.RealizedROI
-			existing.UnrealizedROI += pnlResults.UnrealizedROI
-			if existing.ROI == 0 {
-				existing.ROI = pnlResults.ROI
-			} else {
-				existing.ROI = (existing.ROI + pnlResults.ROI) / 2
+			// Append this pair's result as an individual entry.
+			result := tokenPnl{
+				Token: tokenAddress,
+				PnL:   pnlResults,
 			}
-			existing.PnLUSD += pnlResults.PnLUSD
-			existing.TokensTraded += pnlResults.TokensTraded
-			if pnlResults.WinRate > 0 {
-				existing.WinRate = 100
-			}
-			individualTokenPnL[tokenAddress] = existing
-			mu.Unlock()
-
+			resultsMu.Lock()
+			results = append(results, result)
+			resultsMu.Unlock()
 		}(pair, swapLogs)
 	}
 
 	wg.Wait()
 
-	// Pagination: up to 100 token pnls per page.
-	// Read page from query parameters (defaulting to page 1).
+	// Pagination: up to 100 token PnL entries per page.
 	pageStr := r.URL.Query().Get("page")
 	pageNum := 1
 	if pageStr != "" {
@@ -226,42 +220,29 @@ func (h *Handler) TokenPnlHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	pageSize := 100
 
-	// Convert the map to a slice for consistent ordering.
-	type tokenPnl struct {
-		Token string              `json:"token"`
-		PnL   types.AggregatedPnL `json:"pnl"`
-	}
-	tokens := make([]tokenPnl, 0, len(individualTokenPnL))
-	for token, pnl := range individualTokenPnL {
-		tokens = append(tokens, tokenPnl{
-			Token: token,
-			PnL:   pnl,
-		})
-	}
-
-	// Sort tokens by token address.
-	sort.Slice(tokens, func(i, j int) bool {
-		return tokens[i].Token < tokens[j].Token
+	// Sort results by token address (or adjust sorting as needed).
+	sort.Slice(results, func(i, j int) bool {
+		return results[i].Token < results[j].Token
 	})
 
-	totalTokens := len(tokens)
-	totalPages := (totalTokens + pageSize - 1) / pageSize
+	totalResults := len(results)
+	totalPages := (totalResults + pageSize - 1) / pageSize
 	startIndex := (pageNum - 1) * pageSize
 	endIndex := startIndex + pageSize
-	if startIndex > totalTokens {
-		startIndex = totalTokens
+	if startIndex > totalResults {
+		startIndex = totalResults
 	}
-	if endIndex > totalTokens {
-		endIndex = totalTokens
+	if endIndex > totalResults {
+		endIndex = totalResults
 	}
-	paginatedTokens := tokens[startIndex:endIndex]
+	paginatedResults := results[startIndex:endIndex]
 
 	response := map[string]interface{}{
-		"tokens": paginatedTokens,
+		"tokens": paginatedResults,
 		"pagination": map[string]interface{}{
 			"page":       pageNum,
 			"pageSize":   pageSize,
-			"total":      totalTokens,
+			"total":      totalResults,
 			"totalPages": totalPages,
 		},
 	}
