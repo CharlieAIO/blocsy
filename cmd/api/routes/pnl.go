@@ -35,7 +35,7 @@ func (h *Handler) AggregatedPnlHandler(w http.ResponseWriter, r *http.Request) {
 
 	swaps, err := h.swapsRepo.GetSwapsOnDate(ctx, wallet, startDate)
 	if err != nil {
-		http.Error(w, "", http.StatusInternalServerError)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 	if len(swaps) == 0 {
@@ -46,7 +46,7 @@ func (h *Handler) AggregatedPnlHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	//pnlResults := types.AggregatedPnL{}
+	pnlResults := types.AggregatedPnL{}
 	priceCache := make(map[string]float64)
 	pairSwaps := make(map[string][]types.SwapLog)
 	tokensTraded := make(map[string]bool)
@@ -63,13 +63,9 @@ func (h *Handler) AggregatedPnlHandler(w http.ResponseWriter, r *http.Request) {
 		pairSwaps[swap.Pair] = append(pairSwaps[swap.Pair], swap)
 	}
 
-	individualPairPnL := make(map[string]types.AggregatedPnL)
-
 	for pair, swapLogs := range pairSwaps {
 		wg.Add(1)
 		sem <- struct{}{}
-
-		pnlResults := types.AggregatedPnL{}
 
 		go func(pair string, swapLogs []types.SwapLog) {
 			defer wg.Done()
@@ -190,38 +186,28 @@ func (h *Handler) AggregatedPnlHandler(w http.ResponseWriter, r *http.Request) {
 
 			tokensTraded[pair] = true
 		}(pair, swapLogs)
-
-		individualPairPnL[pair] = pnlResults
 	}
 
 	wg.Wait()
 
-	combinedPnL := types.AggregatedPnL{}
-	for _, pnl := range individualPairPnL {
-		combinedPnL.RealizedPnLUSD += pnl.RealizedPnLUSD
-		combinedPnL.UnrealizedPnLUSD += pnl.UnrealizedPnLUSD
-		combinedPnL.RealizedROI += pnl.RealizedROI
-		combinedPnL.UnrealizedROI += pnl.UnrealizedROI
-	}
-
 	if totalInvestment.Cmp(big.NewFloat(0)) > 0 {
 		finalROI := new(big.Float).Quo(weightedROINumerator, totalInvestment)
 		finalROIFloat, _ := finalROI.Float64()
-		combinedPnL.ROI = finalROIFloat * 100
+		pnlResults.ROI = finalROIFloat * 100
 	}
 
-	combinedPnL.PnLUSD = combinedPnL.RealizedPnLUSD + combinedPnL.UnrealizedPnLUSD
+	pnlResults.PnLUSD = pnlResults.RealizedPnLUSD + pnlResults.UnrealizedPnLUSD
 
-	combinedPnL.TokensTraded = len(tokensTraded)
-	if combinedPnL.TokensTraded > 0 {
-		combinedPnL.WinRate = (float64(winCount) / float64(combinedPnL.TokensTraded)) * 100
+	pnlResults.TokensTraded = len(tokensTraded)
+	if pnlResults.TokensTraded > 0 {
+		pnlResults.WinRate = (float64(winCount) / float64(pnlResults.TokensTraded)) * 100
 	}
 
 	response := map[string]interface{}{
-		"overall": combinedPnL,
+		"results": pnlResults,
 	}
 	w.Header().Set("Content-Type", "application/json")
 	if err := json.NewEncoder(w).Encode(response); err != nil {
-		http.Error(w, "", http.StatusInternalServerError)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
 }
