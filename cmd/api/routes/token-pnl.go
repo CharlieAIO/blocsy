@@ -80,34 +80,34 @@ func (h *Handler) TokenPnlHandler(w http.ResponseWriter, r *http.Request) {
 			defer func() { <-sem }()
 
 			// Determine the token address for this pair.
-			var tokenAddress string
+			var quoteTokenAddress string
 			if swapLogs[0].Source == "PUMPFUN" {
-				tokenAddress = "SOL"
+				quoteTokenAddress = "SOL"
 			} else {
 				start := time.Now()
 				_, qt, err := h.pairFinder.FindPair(ctx, pair, nil)
 				if err != nil {
-					tokenAddress = "SOL"
+					quoteTokenAddress = "SOL"
 				} else {
-					tokenAddress = qt.Address // use the token address instead of symbol
+					quoteTokenAddress = qt.Address // use the token address instead of symbol
 				}
 				log.Printf("%s | findPair took %s", pair, time.Since(start))
 			}
 
-			if tokenAddress == "" {
+			if quoteTokenAddress == "" {
 				log.Printf("No token address for pair: %s", pair)
 				return
 			}
 
 			// Retrieve USD price for the token (with caching).
 			mu.Lock()
-			usdPrice, ok := priceCache[tokenAddress]
+			usdPrice, ok := priceCache[quoteTokenAddress]
 			if !ok {
-				usdPrice = h.pricer.GetUSDPrice(tokenAddress)
+				usdPrice = h.pricer.GetUSDPrice(quoteTokenAddress)
 				if usdPrice > 0 {
-					priceCache[tokenAddress] = usdPrice
+					priceCache[quoteTokenAddress] = usdPrice
 				} else {
-					log.Printf("Missing price for token: %s", tokenAddress)
+					log.Printf("Missing price for token: %s", quoteTokenAddress)
 					mu.Unlock()
 					return
 				}
@@ -199,7 +199,7 @@ func (h *Handler) TokenPnlHandler(w http.ResponseWriter, r *http.Request) {
 
 			// Append this pair's result as an individual entry.
 			result := tokenPnl{
-				Token: tokenAddress,
+				Token: swapLogs[0].Token,
 				PnL:   pnlResults,
 			}
 			resultsMu.Lock()
