@@ -34,3 +34,15 @@ type AggregatedPnL struct {
 	WinRate          float64 `json:"winRate"`
 	AverageHoldTime  string  `json:"averageHoldTime"`
 }
+
+type TokenPnL struct {
+	PnLUSD float64 `json:"pnlUSD"`
+	ROI    float64 `json:"roi"`
+
+	RealizedPnLUSD   float64 `json:"realizedPnLUSD"`
+	RealizedROI      float64 `json:"realizedROI"`
+	UnrealizedPnLUSD float64 `json:"unrealizedPnLUSD"`
+	UnrealizedROI    float64 `json:"unrealizedROI"`
+	TotalTrades      int     `json:"totalTrades"`
+	//HoldTime         string  `json:"holdTime"`
+}

@@ -60,8 +60,8 @@ func (h *Handler) TokenPnlHandler(w http.ResponseWriter, r *http.Request) {
 
 	// We'll now compute a PnL per pair.
 	type tokenPnl struct {
-		Token string              `json:"token"`
-		PnL   types.AggregatedPnL `json:"pnl"`
+		Token string         `json:"token"`
+		PnL   types.TokenPnL `json:"pnl"`
 	}
 
 	var results []tokenPnl
@@ -159,7 +159,7 @@ func (h *Handler) TokenPnlHandler(w http.ResponseWriter, r *http.Request) {
 			}
 
 			// Assemble the PnL result.
-			var pnlResults types.AggregatedPnL
+			var pnlResults types.TokenPnL
 			realizedPNLFloatUSD, _ := realizedPNL.Float64()
 			pnlResults.RealizedPnLUSD = realizedPNLFloatUSD
 
@@ -188,14 +188,7 @@ func (h *Handler) TokenPnlHandler(w http.ResponseWriter, r *http.Request) {
 			}
 
 			pnlResults.PnLUSD = pnlResults.RealizedPnLUSD + pnlResults.UnrealizedPnLUSD
-			pnlResults.TokensTraded = len(swapLogs)
-			if pnlResults.TokensTraded > 0 {
-				if realizedPNL.Cmp(big.NewFloat(0)) > 0 {
-					pnlResults.WinRate = 100
-				} else {
-					pnlResults.WinRate = 0
-				}
-			}
+			pnlResults.TotalTrades = len(swapLogs)
 
 			// Append this pair's result as an individual entry.
 			result := tokenPnl{
