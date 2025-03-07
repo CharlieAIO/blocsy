@@ -48,7 +48,7 @@ func (h *Handler) AggregatedPnlHandler(w http.ResponseWriter, r *http.Request) {
 
 	pnlResults := types.AggregatedPnL{}
 	priceCache := make(map[string]float64)
-	pairSwaps := make(map[string][]types.SwapLog)
+	tokenSwaps := make(map[string][]types.SwapLog)
 	tokensTraded := make(map[string]bool)
 	winCount := 0
 
@@ -60,16 +60,18 @@ func (h *Handler) AggregatedPnlHandler(w http.ResponseWriter, r *http.Request) {
 	sem := make(chan struct{}, 100) // Limit to 100 goroutines
 
 	for _, swap := range swaps {
-		pairSwaps[swap.Pair] = append(pairSwaps[swap.Pair], swap)
+		tokenSwaps[swap.Token] = append(tokenSwaps[swap.Token], swap)
 	}
 
-	for pair, swapLogs := range pairSwaps {
+	for token, swapLogs := range tokenSwaps {
 		wg.Add(1)
 		sem <- struct{}{}
 
-		go func(pair string, swapLogs []types.SwapLog) {
+		go func(token string, swapLogs []types.SwapLog) {
 			defer wg.Done()
 			defer func() { <-sem }()
+
+			var pair = swapLogs[0].Pair
 
 			var quoteTokenSymbol string
 			if swapLogs[0].Source == "PUMPFUN" {
@@ -185,7 +187,7 @@ func (h *Handler) AggregatedPnlHandler(w http.ResponseWriter, r *http.Request) {
 			}
 
 			tokensTraded[pair] = true
-		}(pair, swapLogs)
+		}(token, swapLogs)
 	}
 
 	wg.Wait()

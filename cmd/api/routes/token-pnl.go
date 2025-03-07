@@ -53,9 +53,9 @@ func (h *Handler) TokenPnlHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Group swaps by pair.
-	pairSwaps := make(map[string][]types.SwapLog)
+	tokenSwaps := make(map[string][]types.SwapLog)
 	for _, swap := range swaps {
-		pairSwaps[swap.Pair] = append(pairSwaps[swap.Pair], swap)
+		tokenSwaps[swap.Token] = append(tokenSwaps[swap.Token], swap)
 	}
 
 	// We'll now compute a PnL per pair.
@@ -71,13 +71,15 @@ func (h *Handler) TokenPnlHandler(w http.ResponseWriter, r *http.Request) {
 	var wg sync.WaitGroup
 	sem := make(chan struct{}, 100) // limit to 100 concurrent goroutines
 
-	for pair, swapLogs := range pairSwaps {
+	for token, swapLogs := range tokenSwaps {
 		wg.Add(1)
 		sem <- struct{}{}
 
-		go func(pair string, swapLogs []types.SwapLog) {
+		go func(token string, swapLogs []types.SwapLog) {
 			defer wg.Done()
 			defer func() { <-sem }()
+
+			var pair = swapLogs[0].Pair
 
 			// Determine the token address for this pair.
 			var quoteTokenAddress string
@@ -198,7 +200,7 @@ func (h *Handler) TokenPnlHandler(w http.ResponseWriter, r *http.Request) {
 			resultsMu.Lock()
 			results = append(results, result)
 			resultsMu.Unlock()
-		}(pair, swapLogs)
+		}(token, swapLogs)
 	}
 
 	wg.Wait()
