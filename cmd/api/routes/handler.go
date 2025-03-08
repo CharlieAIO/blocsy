@@ -2,11 +2,11 @@ package routes
 
 import (
 	"github.com/go-chi/chi/v5"
+	httpSwagger "github.com/swaggo/http-swagger"
 	"net/http"
 	"time"
 
 	"github.com/go-chi/chi/v5/middleware"
-	httpSwagger "github.com/swaggo/http-swagger"
 )
 
 type Handler struct {
@@ -44,7 +44,13 @@ func (h *Handler) GetHttpHandler() http.Handler {
 
 	r.Get("/health", HealthCheckHandler)
 
-	r.Get("/swagger/*", httpSwagger.WrapHandler)
+	fileServer := http.FileServer(http.Dir("/app/docs"))
+	r.Get("/swagger/swagger.json", func(w http.ResponseWriter, r *http.Request) {
+		http.StripPrefix("/swagger", fileServer).ServeHTTP(w, r)
+	})
+	r.Get("/swagger/*", httpSwagger.Handler(
+		httpSwagger.URL("/swagger/swagger.json"),
+	))
 
 	r.Route("/v1", func(r chi.Router) {
 		r.Use(APIKeyMiddleware)
