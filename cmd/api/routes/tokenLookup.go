@@ -9,12 +9,12 @@ import (
 
 // TokenLookupHandler godoc
 //
-//	@Summary		Lookup a token
+//	@Summary		Token Lookup
 //	@Description	Retrieve token information for a given token address
 //
 //	@Security		ApiKeyAuth
 //
-//	@Tags			Token
+//	@Tags			Lookup
 //	@Accept			json
 //	@Produce		json
 //	@Param			token	path		string	true	"Token address"

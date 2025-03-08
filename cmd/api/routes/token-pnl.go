@@ -15,8 +15,8 @@ import (
 
 // TokenPnlHandler godoc
 //
-//	@Summary		Lookup token pnl for a wallet
-//	@Description	Returns all token pnl for a wallet
+//	@Summary		Wallet Token PnL
+//	@Description	Retrieve all token pnl for a wallet
 //
 //	@Security		ApiKeyAuth
 //

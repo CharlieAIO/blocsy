@@ -14,8 +14,8 @@ import (
 
 // AggregatedPnlHandler godoc
 //
-//	@Summary		Lookup aggregated pnl for a wallet
-//	@Description	Returns aggregated pnl for a wallet
+//	@Summary		Wallet Aggregated PnL
+//	@Description	Retrieve aggregated pnl for a given wallet address
 //	@Security		ApiKeyAuth
 //
 //	@Tags			Wallet

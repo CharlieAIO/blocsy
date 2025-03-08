@@ -11,7 +11,7 @@ import (
 
 // WalletActivityHandler godoc
 //
-//	@Summary		Get wallet activity
+//	@Summary		Wallet Activity
 //	@Description	Retrieve wallet activity for a given wallet address
 //
 //	@Security		ApiKeyAuth

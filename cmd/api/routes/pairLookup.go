@@ -9,12 +9,12 @@ import (
 
 // PairLookupHandler godoc
 //
-//	@Summary		Lookup a pair
+//	@Summary		Pair Lookup
 //	@Description	Retrieve pair information for a given pair address
 //
 //	@Security		ApiKeyAuth
 //
-//	@Tags			Pair
+//	@Tags			Lookup
 //	@Accept			json
 //	@Produce		json
 //	@Param			pair	path		string	true	"Pair address"

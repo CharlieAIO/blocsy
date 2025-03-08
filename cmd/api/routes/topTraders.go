@@ -9,12 +9,12 @@ import (
 
 // TopTradersHandler godoc
 //
-//	@Summary		Get top traders by pnl
-//	@Description	Retrieve the top traders by pnl for a given token
+//	@Summary		Top Traders
+//	@Description	Retrieve the top traders based on pnl for a given token
 //
 //	@Security		ApiKeyAuth
 //
-//	@Tags			Token
+//	@Tags			Analytics
 //	@Accept			json
 //	@Produce		json
 //	@Param			token	path		string	true	"Token address"
