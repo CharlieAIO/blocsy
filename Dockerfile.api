@@ -11,8 +11,11 @@ COPY . .
 ENV APP_ENV=production
 
 RUN go install github.com/swaggo/swag/cmd/swag@latest
-CD ./cmd/api && swag fmt && swag init --parseDependency --parseInternal
+WORKDIR /app/cmd/api
 
+RUN swag fmt && swag init --parseDependency --parseInternal
+
+WORKDIR /app
 
 RUN go build -o app ./cmd/api/main.go
 
