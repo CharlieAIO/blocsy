@@ -1,6 +1,7 @@
 package routes
 
 import (
+	"blocsy/internal/types"
 	"encoding/json"
 	"github.com/go-chi/chi/v5"
 	"log"
@@ -8,6 +9,23 @@ import (
 	"strconv"
 )
 
+// WalletActivityHandler godoc
+//
+//	@Summary		Get wallet activity
+//	@Description	Retrieve wallet activity for a given wallet address
+//
+//	@Security		ApiKeyAuth
+//
+//	@Tags			Wallet
+//	@Accept			json
+//	@Produce		json
+//	@Param			wallet	path		string	true	"Wallet Address"
+//	@Param			limit	query		int		false	"Limit of records"		default(100)
+//	@Param			offset	query		int		false	"Offset for pagination"	default(0)
+//	@Success		200		{object}	types.WalletActivityResponse
+//	@Failure		400		{object}	map[string]interface{}
+//	@Failure		500		{object}	map[string]interface{}
+//	@Router			/wallet/{wallet}/activity [get]
 func (h *Handler) WalletActivityHandler(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
@@ -36,8 +54,8 @@ func (h *Handler) WalletActivityHandler(w http.ResponseWriter, r *http.Request) 
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(map[string]interface{}{
-		"results": swaps,
+	json.NewEncoder(w).Encode(types.WalletActivityResponse{
+		Results: swaps,
 	})
 	return
 

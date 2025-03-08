@@ -12,6 +12,21 @@ import (
 	"github.com/go-chi/chi/v5"
 )
 
+// AggregatedPnlHandler godoc
+//
+//	@Summary		Lookup aggregated pnl for a wallet
+//	@Description	Returns aggregated pnl for a wallet
+//	@Security		ApiKeyAuth
+//
+//	@Tags			Wallet
+//	@Accept			json
+//	@Produce		json
+//	@Param			wallet		path		string	true	"Wallet address"
+//	@Param			timeframe	query		string	false	"Timeframe (1d, 7d, 14d, 30d)"
+//	@Success		200			{object}	types.AggregatedPnLResponse
+//	@Failure		400			{object}	map[string]interface{}
+//	@Failure		500			{object}	map[string]interface{}
+//	@Router			/pnl/{wallet} [get]
 func (h *Handler) AggregatedPnlHandler(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
@@ -205,8 +220,8 @@ func (h *Handler) AggregatedPnlHandler(w http.ResponseWriter, r *http.Request) {
 		pnlResults.WinRate = (float64(winCount) / float64(pnlResults.TokensTraded)) * 100
 	}
 
-	response := map[string]interface{}{
-		"results": pnlResults,
+	response := types.AggregatedPnLResponse{
+		Results: pnlResults,
 	}
 	w.Header().Set("Content-Type", "application/json")
 	if err := json.NewEncoder(w).Encode(response); err != nil {

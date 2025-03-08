@@ -10,6 +10,10 @@ COPY . .
 
 ENV APP_ENV=production
 
+RUN go install github.com/swaggo/swag/cmd/swag@latest
+CD ./cmd/api && swag fmt && swag init --parseDependency --parseInternal
+
+
 RUN go build -o app ./cmd/api/main.go
 
 FROM alpine:3.19

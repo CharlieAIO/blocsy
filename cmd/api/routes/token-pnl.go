@@ -13,6 +13,23 @@ import (
 	"time"
 )
 
+// TokenPnlHandler godoc
+//
+//	@Summary		Lookup token pnl for a wallet
+//	@Description	Returns all token pnl for a wallet
+//
+//	@Security		ApiKeyAuth
+//
+//	@Tags			Wallet
+//	@Accept			json
+//	@Produce		json
+//	@Param			wallet		path		string	true	"Wallet address"
+//	@Param			timeframe	query		string	false	"Timeframe (1d, 7d, 14d, 30d)"
+//	@Param			page		query		int		false	"Page number"
+//	@Success		200			{object}	types.TokenPNLResponse
+//	@Failure		400			{object}	map[string]interface{}
+//	@Failure		500			{object}	map[string]interface{}
+//	@Router			/token-pnl/{wallet} [get]
 func (h *Handler) TokenPnlHandler(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
@@ -58,13 +75,7 @@ func (h *Handler) TokenPnlHandler(w http.ResponseWriter, r *http.Request) {
 		tokenSwaps[swap.Token] = append(tokenSwaps[swap.Token], swap)
 	}
 
-	// We'll now compute a PnL per pair.
-	type tokenPnl struct {
-		Token string         `json:"token"`
-		PnL   types.TokenPnL `json:"pnl"`
-	}
-
-	var results []tokenPnl
+	var results []types.TokenAndPnl
 	var resultsMu sync.Mutex
 	priceCache := make(map[string]float64)
 	var mu sync.Mutex
@@ -81,7 +92,6 @@ func (h *Handler) TokenPnlHandler(w http.ResponseWriter, r *http.Request) {
 
 			var pair = swapLogs[0].Pair
 
-			// Determine the token address for this pair.
 			var quoteTokenAddress string
 			if swapLogs[0].Source == "PUMPFUN" {
 				quoteTokenAddress = "SOL"
@@ -101,7 +111,6 @@ func (h *Handler) TokenPnlHandler(w http.ResponseWriter, r *http.Request) {
 				return
 			}
 
-			// Retrieve USD price for the token (with caching).
 			mu.Lock()
 			usdPrice, ok := priceCache[quoteTokenAddress]
 			if !ok {
@@ -116,7 +125,6 @@ func (h *Handler) TokenPnlHandler(w http.ResponseWriter, r *http.Request) {
 			}
 			mu.Unlock()
 
-			// Calculate totals for BUY and SELL swaps.
 			totalBuyTokens := new(big.Float)
 			totalSellTokens := new(big.Float)
 			totalBuyValue := new(big.Float)
@@ -134,7 +142,6 @@ func (h *Handler) TokenPnlHandler(w http.ResponseWriter, r *http.Request) {
 				}
 			}
 
-			// Realized PnL: difference between SELL and BUY values.
 			realizedPNL := new(big.Float)
 			if totalSellTokens.Cmp(big.NewFloat(0)) != 0 {
 				realizedPNL.Sub(totalSellValue, totalBuyValue)
@@ -142,7 +149,6 @@ func (h *Handler) TokenPnlHandler(w http.ResponseWriter, r *http.Request) {
 				realizedPNL.SetFloat64(0)
 			}
 
-			// Unrealized PnL: based on remaining tokens and most recent price.
 			unrealizedPNL := new(big.Float)
 			remainingAmount := new(big.Float).Sub(totalBuyTokens, totalSellTokens)
 			if remainingAmount.Cmp(big.NewFloat(0)) > 0 {
@@ -160,7 +166,6 @@ func (h *Handler) TokenPnlHandler(w http.ResponseWriter, r *http.Request) {
 				unrealizedPNL.Mul(remainingAmount, mostRecentPrice)
 			}
 
-			// Assemble the PnL result.
 			var pnlResults types.TokenPnL
 			realizedPNLFloatUSD, _ := realizedPNL.Float64()
 			pnlResults.RealizedPnLUSD = realizedPNLFloatUSD
@@ -168,7 +173,6 @@ func (h *Handler) TokenPnlHandler(w http.ResponseWriter, r *http.Request) {
 			unrealizedPNLFloatUSD, _ := unrealizedPNL.Float64()
 			pnlResults.UnrealizedPnLUSD = unrealizedPNLFloatUSD
 
-			// Compute ROI values.
 			if totalSellValue.Cmp(big.NewFloat(0)) > 0 {
 				realizedROI := new(big.Float).Quo(realizedPNL, totalSellValue)
 				realizedROIFloat, _ := realizedROI.Float64()
@@ -192,8 +196,7 @@ func (h *Handler) TokenPnlHandler(w http.ResponseWriter, r *http.Request) {
 			pnlResults.PnLUSD = pnlResults.RealizedPnLUSD + pnlResults.UnrealizedPnLUSD
 			pnlResults.TotalTrades = len(swapLogs)
 
-			// Append this pair's result as an individual entry.
-			result := tokenPnl{
+			result := types.TokenAndPnl{
 				Token: swapLogs[0].Token,
 				PnL:   pnlResults,
 			}
@@ -205,7 +208,6 @@ func (h *Handler) TokenPnlHandler(w http.ResponseWriter, r *http.Request) {
 
 	wg.Wait()
 
-	// Pagination: up to 100 token PnL entries per page.
 	pageStr := r.URL.Query().Get("page")
 	pageNum := 1
 	if pageStr != "" {
@@ -215,7 +217,6 @@ func (h *Handler) TokenPnlHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	pageSize := 100
 
-	// Sort results by token address (or adjust sorting as needed).
 	sort.Slice(results, func(i, j int) bool {
 		return results[i].Token < results[j].Token
 	})
@@ -232,13 +233,13 @@ func (h *Handler) TokenPnlHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	paginatedResults := results[startIndex:endIndex]
 
-	response := map[string]interface{}{
-		"tokens": paginatedResults,
-		"pagination": map[string]interface{}{
-			"page":       pageNum,
-			"pageSize":   pageSize,
-			"total":      totalResults,
-			"totalPages": totalPages,
+	response := types.TokenPNLResponse{
+		Tokens: paginatedResults,
+		Pagination: types.Pagination{
+			Page:       pageNum,
+			PageSize:   pageSize,
+			Total:      totalResults,
+			TotalPages: totalPages,
 		},
 	}
 	w.Header().Set("Content-Type", "application/json")

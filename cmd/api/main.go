@@ -17,6 +17,20 @@ import (
 	"time"
 )
 
+//	@title		Blocsy API
+//	@version	1.0
+
+//	@contact.name	API Support
+//	@contact.url	http://www.blocsy.ai/support
+//	@contact.email	support@blocsy.ai
+
+//	@host		api.blocsy.ai
+//	@BasePath	/api/v1
+
+//	@securityDefinitions.apikey	ApiKeyAuth
+//	@in							header
+//	@name						x-api-key
+
 func main() {
 	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt, os.Kill)
 	defer cancel()

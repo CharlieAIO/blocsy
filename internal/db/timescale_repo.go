@@ -259,6 +259,21 @@ func (repo *TimescaleRepository) FindWalletTokenHoldings(ctx context.Context, to
 	return totalTokens, nil
 }
 
+func (repo *TimescaleRepository) FindTopTraders(ctx context.Context, token string) ([]string, error) {
+	var query = fmt.Sprintf(`SELECT * FROM "%s" 
+WHERE token = $1
+ORDER BY timestamp ASC 
+LIMIT 100;`, swapLogTable)
+
+	var swaps []types.SwapLog
+	if err := repo.db.SelectContext(ctx, &swaps, query, token); err != nil {
+		return nil, fmt.Errorf("cannot get swaps: %w", err)
+	}
+
+	return []string{}, nil
+
+}
+
 // =============================================== Token Table Functions  ================================================
 func (repo *TimescaleRepository) InsertToken(ctx context.Context, token types.Token) error {
 	var query = fmt.Sprintf(`INSERT INTO "%s" ("address", "name", "symbol", "decimals", "supply", "createdBlock", "createdTimestamp", "deployer", "metadata", "network") VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)`, tokensTable)
