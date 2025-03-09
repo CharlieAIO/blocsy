@@ -337,6 +337,17 @@ func (repo *TimescaleRepository) UpdateTokenSupply(ctx context.Context, address 
 	return nil
 }
 
+func (repo *TimescaleRepository) QueryAll(ctx context.Context, address string) (*types.Token, error) {
+	var query = fmt.Sprintf(`SELECT * FROM "%s" WHERE address = $1`, tokensTable)
+
+	var token types.Token
+	if err := repo.db.GetContext(ctx, &token, query, address); err != nil {
+		return nil, fmt.Errorf("cannot get token: %w", err)
+	}
+
+	return &token, nil
+}
+
 //=============================================== Pair Table Functions  ================================================
 
 func (repo *TimescaleRepository) InsertPair(ctx context.Context, pair types.Pair) error {
