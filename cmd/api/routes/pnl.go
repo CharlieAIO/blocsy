@@ -200,6 +200,7 @@ func (h *Handler) AggregatedPnlHandler(w http.ResponseWriter, r *http.Request) {
 				winCount++
 			}
 
+			log.Printf("usdPrice: %f | totalBuyValue: %f | totalSellValue: %f | totalBuyTokens: %f | totalSellTokens: %f | remainingAmount: %f | realizedPNL: %f | unrealizedPNL: %f | totalInvestment: %f | weightedROINumerator: %f | winCount: %d", usdPrice, totalBuyValue, totalSellValue, totalBuyTokens, totalSellTokens, remainingAmount, realizedPNL, unrealizedPNL, totalInvestment, weightedROINumerator, winCount)
 			tokensTraded[pair] = true
 		}(token, swapLogs)
 	}
