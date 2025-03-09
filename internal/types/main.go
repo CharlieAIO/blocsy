@@ -85,3 +85,11 @@ type BalanceSheet struct {
 	Token  string
 	Amount float64
 }
+
+type QueryAll struct {
+	Source string `json:"source"`
+	Wallet string `json:"wallet,omitempty"`
+	Token  string `json:"token,omitempty"`
+	Name   string `json:"name,omitempty"`
+	Symbol string `json:"symbol,omitempty"`
+}

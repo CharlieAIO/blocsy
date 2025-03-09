@@ -274,6 +274,39 @@ LIMIT 100;`, swapLogTable)
 
 }
 
+func (repo *TimescaleRepository) QueryAll(ctx context.Context, searchQuery string) (*[]types.QueryAll, error) {
+	var query = fmt.Sprintf(`
+(
+  SELECT 'wallet' AS source,
+         wallet,
+         NULL as token,
+         NULL AS name,
+         NULL AS symbol
+  FROM "%s"
+  WHERE wallet = $1
+  LIMIT 1
+)
+UNION ALL
+(
+  SELECT 'token' AS source,
+         NULL AS wallet,
+         address AS token,
+         name,
+         symbol
+  FROM "%s"
+  WHERE name LIKE $1
+  OR symbol LIKE $1
+  OR address = $1
+);`, swapLogTable, tokensTable)
+
+	var queryAll []types.QueryAll
+	if err := repo.db.GetContext(ctx, &queryAll, query, searchQuery); err != nil {
+		return nil, fmt.Errorf("cannot get token: %w", err)
+	}
+
+	return &queryAll, nil
+}
+
 // =============================================== Token Table Functions  ================================================
 func (repo *TimescaleRepository) InsertToken(ctx context.Context, token types.Token) error {
 	var query = fmt.Sprintf(`INSERT INTO "%s" ("address", "name", "symbol", "decimals", "supply", "createdBlock", "createdTimestamp", "deployer", "metadata", "network") VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)`, tokensTable)
@@ -335,17 +368,6 @@ func (repo *TimescaleRepository) UpdateTokenSupply(ctx context.Context, address 
 	}
 
 	return nil
-}
-
-func (repo *TimescaleRepository) QueryAll(ctx context.Context, address string) (*types.Token, error) {
-	var query = fmt.Sprintf(`SELECT * FROM "%s" WHERE address = $1`, tokensTable)
-
-	var token types.Token
-	if err := repo.db.GetContext(ctx, &token, query, address); err != nil {
-		return nil, fmt.Errorf("cannot get token: %w", err)
-	}
-
-	return &token, nil
 }
 
 //=============================================== Pair Table Functions  ================================================

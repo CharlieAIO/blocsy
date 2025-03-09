@@ -38,3 +38,7 @@ type Pagination struct {
 type AggregatedPnLResponse struct {
 	Results AggregatedPnL `json:"results"`
 }
+
+type SearchQueryResponse struct {
+	Results []QueryAll `json:"results"`
+}
