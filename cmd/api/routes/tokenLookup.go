@@ -4,7 +4,6 @@ import (
 	"blocsy/internal/types"
 	"encoding/json"
 	"github.com/go-chi/chi/v5"
-	"log"
 	"net/http"
 )
 
@@ -30,9 +29,11 @@ func (h *Handler) TokenLookupHandler(w http.ResponseWriter, r *http.Request) {
 
 	token, pairs, err := h.tokenFinder.FindToken(ctx, address, false)
 	if err != nil {
-		log.Printf("Failed to FindToken: %v", err)
 		http.Error(w, "", http.StatusInternalServerError)
 		return
+	}
+	if token == nil {
+		http.Error(w, "", http.StatusBadRequest)
 	}
 
 	w.Header().Set("Content-Type", "application/json")

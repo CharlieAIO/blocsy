@@ -300,7 +300,7 @@ UNION ALL
 );`, swapLogTable, tokensTable)
 
 	var queryAll []types.QueryAll
-	if err := repo.db.GetContext(ctx, &queryAll, query, searchQuery); err != nil {
+	if err := repo.db.SelectContext(ctx, &queryAll, query, searchQuery); err != nil {
 		return nil, fmt.Errorf("cannot get token: %w", err)
 	}
 
