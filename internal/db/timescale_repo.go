@@ -340,8 +340,25 @@ func (repo *TimescaleRepository) UpdateTokenSupply(ctx context.Context, address 
 //=============================================== Pair Table Functions  ================================================
 
 func (repo *TimescaleRepository) InsertPair(ctx context.Context, pair types.Pair) error {
+	var createdBlock interface{}
+	if pair.CreatedBlock == 0 {
+		createdBlock = 0
+	} else {
+		createdBlock = pair.CreatedBlock
+	}
+
+	var createdTimestamp sql.NullTime
+	if pair.CreatedTimestamp == 0 {
+		createdTimestamp = sql.NullTime{Time: time.Unix(0, 0), Valid: true}
+	} else {
+		createdTimestamp = sql.NullTime{
+			Time:  time.Unix(int64(pair.CreatedTimestamp), 0),
+			Valid: true,
+		}
+	}
+
 	var query = fmt.Sprintf(`INSERT INTO "%s" ("address", "token", "createdBlock", "createdTimestamp",""exchange", "network") VALUES ($1,$2,$3,$4,$5,$6)`, pairsTable)
-	if _, err := repo.db.ExecContext(ctx, query, pair.Address, pair.Token, pair.CreatedBlock, pair.CreatedTimestamp, pair.Exchange, pair.Network); err != nil {
+	if _, err := repo.db.ExecContext(ctx, query, pair.Address, pair.Token, createdBlock, createdTimestamp, pair.Exchange, pair.Network); err != nil {
 		return fmt.Errorf("cannot insert pair: %w", err)
 	}
 

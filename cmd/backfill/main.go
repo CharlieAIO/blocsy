@@ -41,28 +41,25 @@ func main() {
 	pRepo := db.NewTimescaleRepository(dbx)
 	mRepo := db.NewMongoRepository(mCli)
 
-	tokenCh, errCh := mRepo.PullTokens(ctx)
+	pairsCh, errCh := mRepo.PullPairs(ctx)
 	count := 0
 
-	// Process tokens as they are received.
-	for token := range tokenCh {
+	for pair := range pairsCh {
 
-		if err := pRepo.InsertToken(ctx, token); err != nil {
-			//log.Printf("Failed to insert token (address %s): %v", token.Address, err)
+		if err := pRepo.InsertPair(ctx, pair); err != nil {
 			continue
 		}
 		count++
 		if count%1000 == 0 {
-			log.Printf("Inserted %d tokens so far...", count)
+			log.Printf("Inserted %d pairs so far...", count)
 		}
 	}
 
-	// Check if any error occurred during token retrieval.
 	if err, ok := <-errCh; ok && err != nil {
-		log.Printf("Error while pulling tokens: %v", err)
+		log.Printf("Error while pulling pairs: %v", err)
 	}
 
-	log.Printf("Migration complete. Total tokens inserted: %d", count)
+	log.Printf("Migration complete. Total pairs inserted: %d", count)
 
 	//queueHandler := solana.NewSolanaQueueHandler(nil, nil)
 	//backfillService := solana.NewBackfillService(solCli, pRepo, queueHandler)

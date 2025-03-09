@@ -170,15 +170,15 @@ func (repo *MongoRepository) UpdateTokenSupply(ctx context.Context, address stri
 	return nil
 }
 
-func (repo *MongoRepository) PullTokens(ctx context.Context) (<-chan types.Token, <-chan error) {
-	tokenCh := make(chan types.Token)
+func (repo *MongoRepository) PullPairs(ctx context.Context) (<-chan types.Pair, <-chan error) {
+	pairCh := make(chan types.Pair)
 	errCh := make(chan error, 1)
 
 	opts := options.Find().SetBatchSize(1000)
 
 	go func() {
-		defer close(tokenCh)
-		cursor, err := repo.tokensCollection.Find(ctx, bson.M{}, opts)
+		defer close(pairCh)
+		cursor, err := repo.pairsCollection.Find(ctx, bson.M{}, opts)
 		if err != nil {
 			errCh <- fmt.Errorf("failed to execute find: %w", err)
 			close(errCh)
@@ -187,13 +187,13 @@ func (repo *MongoRepository) PullTokens(ctx context.Context) (<-chan types.Token
 		defer cursor.Close(ctx)
 
 		for cursor.Next(ctx) {
-			var token types.Token
-			if err := cursor.Decode(&token); err != nil {
+			var pair types.Pair
+			if err := cursor.Decode(&pair); err != nil {
 				errCh <- fmt.Errorf("failed to decode token: %w", err)
 				close(errCh)
 				return
 			}
-			tokenCh <- token
+			pairCh <- pair
 		}
 		if err := cursor.Err(); err != nil {
 			errCh <- fmt.Errorf("cursor encountered an error: %w", err)
@@ -203,5 +203,5 @@ func (repo *MongoRepository) PullTokens(ctx context.Context) (<-chan types.Token
 		close(errCh)
 	}()
 
-	return tokenCh, errCh
+	return pairCh, errCh
 }
