@@ -171,6 +171,10 @@ func (h *Handler) AggregatedPnlHandler(w http.ResponseWriter, r *http.Request) {
 			unrealizedPNLFloatUSD, _ := unrealizedPNL.Float64()
 			pnlResults.UnrealizedPnLUSD += unrealizedPNLFloatUSD
 
+			if unrealizedPNL.IsInf() {
+				pnlResults.UnrealizedPnLUSD = 0
+			}
+
 			// Realized ROI
 			if totalSellValue.Cmp(big.NewFloat(0)) > 0 {
 				realizedROI := new(big.Float).Quo(realizedPNL, totalSellValue)
