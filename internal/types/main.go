@@ -32,43 +32,44 @@ type TokenAccountDetails struct {
 }
 
 //easyjson:json
+//easyjson:json
 type Token struct {
-	Name             string  `json:"name"`
-	Symbol           string  `json:"symbol"`
-	Decimals         uint8   `json:"decimals"`
-	Address          string  `json:"address"`
-	Supply           string  `json:"supply"`
-	CreatedBlock     int64   `json:"createdBlock"`
-	Network          string  `json:"network"`
-	CreatedTimestamp uint64  `json:"createdTimestamp"`
-	Deployer         *string `json:"deployer,omitempty"`
-	Metadata         *string `json:"metadata,omitempty"`
+	Name             string  `json:"name" db:"name"`
+	Symbol           string  `json:"symbol" db:"symbol"`
+	Decimals         uint8   `json:"decimals" db:"decimals"`
+	Address          string  `json:"address" db:"address"`
+	Supply           string  `json:"supply" db:"supply"`
+	CreatedBlock     int64   `json:"createdBlock" db:"createdBlock"`
+	Network          string  `json:"network" db:"network"`
+	CreatedTimestamp uint64  `json:"createdTimestamp" db:"createdTimestamp"`
+	Deployer         *string `json:"deployer,omitempty" db:"deployer"`
+	Metadata         *string `json:"metadata,omitempty" db:"metadata"`
 }
 
 //easyjson:json
 type QuoteToken struct {
-	Identifier string `json:"identifier"`
-	Name       string `json:"name"`
-	Symbol     string `json:"symbol"`
-	Address    string `json:"address"`
-	Decimals   uint8  `json:"decimals"`
+	Identifier string `json:"identifier" db:"identifier"`
+	Name       string `json:"name" db:"name"`
+	Symbol     string `json:"symbol" db:"symbol"`
+	Address    string `json:"address" db:"address"`
+	Decimals   uint8  `json:"decimals" db:"decimals"`
 }
 
 //easyjson:json
 type QuoteTokenSimple struct {
-	Identifier string `json:"identifier"`
-	Address    string `json:"address"`
+	Identifier string `json:"identifier" db:"identifier"`
+	Address    string `json:"address" db:"address"`
 }
 
 //easyjson:json
 type Pair struct {
-	Address          string           `json:"pair"`
-	Network          string           `json:"network"`
-	Exchange         string           `json:"exchange"`
-	Token            string           `json:"token"`
-	QuoteToken       QuoteTokenSimple `json:"quoteToken"`
-	CreatedBlock     int64            `json:"createdBlock"`
-	CreatedTimestamp uint64           `json:"createdTimestamp"`
+	Address          string           `json:"pair" db:"pair"`
+	Network          string           `json:"network" db:"network"`
+	Exchange         string           `json:"exchange" db:"exchange"`
+	Token            string           `json:"token" db:"token"`
+	QuoteToken       QuoteTokenSimple `json:"quoteToken" db:"quoteToken"`
+	CreatedBlock     int64            `json:"createdBlock" db:"createdBlock"`
+	CreatedTimestamp uint64           `json:"createdTimestamp" db:"createdTimestamp"`
 }
 
 //easyjson:json
@@ -87,9 +88,9 @@ type BalanceSheet struct {
 }
 
 type QueryAll struct {
-	Source string `json:"source"`
-	Wallet string `json:"wallet,omitempty"`
-	Token  string `json:"token,omitempty"`
-	Name   string `json:"name,omitempty"`
-	Symbol string `json:"symbol,omitempty"`
+	Source string  `json:"source" db:"source"`
+	Wallet *string `json:"wallet,omitempty" db:"wallet"`
+	Token  *string `json:"token,omitempty" db:"token"`
+	Name   *string `json:"name,omitempty" db:"name"`
+	Symbol *string `json:"symbol,omitempty" db:"symbol"`
 }

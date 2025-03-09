@@ -3,6 +3,7 @@ package routes
 import (
 	"blocsy/internal/types"
 	"encoding/json"
+	"log"
 	"net/http"
 )
 
@@ -28,6 +29,7 @@ func (h *Handler) SearchQueryHandler(w http.ResponseWriter, r *http.Request) {
 
 	results, err := h.swapsRepo.QueryAll(ctx, searchQuery)
 	if err != nil {
+		log.Printf("Failed to QueryAll: %v", err)
 		http.Error(w, "", http.StatusInternalServerError)
 		return
 	}
