@@ -32,8 +32,9 @@ func (h *Handler) TokenLookupHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "", http.StatusInternalServerError)
 		return
 	}
-	if token == nil {
+	if token == nil || pairs == nil {
 		http.Error(w, "", http.StatusBadRequest)
+		return
 	}
 
 	w.Header().Set("Content-Type", "application/json")

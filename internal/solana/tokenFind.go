@@ -26,7 +26,7 @@ func NewTokenFinder(cache TockenCache, solSvc *SolanaService, repo TokensRepo) *
 func (tf *TokenFinder) FindToken(ctx context.Context, address string, miss bool) (*types.Token, *[]types.Pair, error) {
 	cachedToken, ok := tf.cache.GetToken(address)
 	if ok && !miss {
-		return cachedToken, nil, nil
+		return cachedToken, &[]types.Pair{}, nil
 	}
 
 	token, err := tf.repo.FindToken(ctx, address)
