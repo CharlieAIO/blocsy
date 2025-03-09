@@ -219,6 +219,8 @@ func (h *Handler) AggregatedPnlHandler(w http.ResponseWriter, r *http.Request) {
 		pnlResults.WinRate = (float64(winCount) / float64(pnlResults.TokensTraded)) * 100
 	}
 
+	log.Printf("pnl results: %+v", pnlResults)
+
 	response := types.AggregatedPnLResponse{
 		Results: pnlResults,
 	}
