@@ -111,7 +111,7 @@ func (ps *PairsService) lookupPair(ctx context.Context, address string, token_ *
 		},
 		Token:            token,
 		CreatedBlock:     0,
-		CreatedTimestamp: 0,
+		CreatedTimestamp: time.Unix(0, 0),
 	}
 
 	return pair, nil

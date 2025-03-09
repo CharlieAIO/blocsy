@@ -1,5 +1,7 @@
 package types
 
+import "time"
+
 type AppError string
 
 func (e AppError) Error() string {
@@ -32,18 +34,17 @@ type TokenAccountDetails struct {
 }
 
 //easyjson:json
-//easyjson:json
 type Token struct {
-	Name             string  `json:"name" db:"name"`
-	Symbol           string  `json:"symbol" db:"symbol"`
-	Decimals         uint8   `json:"decimals" db:"decimals"`
-	Address          string  `json:"address" db:"address"`
-	Supply           string  `json:"supply" db:"supply"`
-	CreatedBlock     int64   `json:"createdBlock" db:"createdBlock"`
-	Network          string  `json:"network" db:"network"`
-	CreatedTimestamp uint64  `json:"createdTimestamp" db:"createdTimestamp"`
-	Deployer         *string `json:"deployer,omitempty" db:"deployer"`
-	Metadata         *string `json:"metadata,omitempty" db:"metadata"`
+	Name             string    `json:"name" db:"name"`
+	Symbol           string    `json:"symbol" db:"symbol"`
+	Decimals         uint8     `json:"decimals" db:"decimals"`
+	Address          string    `json:"address" db:"address"`
+	Supply           string    `json:"supply" db:"supply"`
+	CreatedBlock     int64     `json:"createdBlock" db:"createdBlock"`
+	Network          string    `json:"network" db:"network"`
+	CreatedTimestamp time.Time `json:"createdTimestamp" db:"createdTimestamp"`
+	Deployer         *string   `json:"deployer,omitempty" db:"deployer"`
+	Metadata         *string   `json:"metadata,omitempty" db:"metadata"`
 }
 
 //easyjson:json
@@ -69,7 +70,7 @@ type Pair struct {
 	Token            string           `json:"token" db:"token"`
 	QuoteToken       QuoteTokenSimple `json:"quoteToken" db:"quoteToken"`
 	CreatedBlock     int64            `json:"createdBlock" db:"createdBlock"`
-	CreatedTimestamp uint64           `json:"createdTimestamp" db:"createdTimestamp"`
+	CreatedTimestamp time.Time        `json:"createdTimestamp" db:"createdTimestamp"`
 }
 
 //easyjson:json

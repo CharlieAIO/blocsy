@@ -6,6 +6,7 @@ import (
 	"blocsy/internal/types"
 	"context"
 	"log"
+	"time"
 )
 
 func NewTxHandler(sh *SwapHandler, solSvc *SolanaService, repo TokensAndPairsRepo, pRepo SwapsRepo, websocket *websocket.WebSocketServer) *TxHandler {
@@ -46,7 +47,7 @@ func (t *TxHandler) ProcessTransaction(ctx context.Context, tx *types.SolanaTx, 
 				Decimals:         6,
 				Network:          "solana",
 				CreatedBlock:     int64(block),
-				CreatedTimestamp: uint64(timestamp),
+				CreatedTimestamp: time.Unix(timestamp, 0),
 				Supply:           "1000000000",
 				Deployer:         &deployer,
 				Metadata:         &pfToken.Uri,
@@ -61,7 +62,7 @@ func (t *TxHandler) ProcessTransaction(ctx context.Context, tx *types.SolanaTx, 
 			if _, exists := pumpFunTokenMints[token.Address]; exists {
 				continue
 			}
-			token.CreatedTimestamp = uint64(timestamp)
+			token.CreatedTimestamp = time.Unix(timestamp, 0)
 			token.CreatedBlock = int64(block)
 			err := t.repo.InsertToken(ctx, token)
 			if err != nil {

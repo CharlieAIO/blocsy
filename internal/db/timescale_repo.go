@@ -318,15 +318,15 @@ func (repo *TimescaleRepository) InsertToken(ctx context.Context, token types.To
 		createdBlock = token.CreatedBlock
 	}
 
-	var createdTimestamp sql.NullTime
-	if token.CreatedTimestamp == 0 {
-		createdTimestamp = sql.NullTime{Time: time.Unix(0, 0), Valid: true}
-	} else {
-		createdTimestamp = sql.NullTime{
-			Time:  time.Unix(int64(token.CreatedTimestamp), 0),
-			Valid: true,
-		}
-	}
+	//var createdTimestamp sql.NullTime
+	//if token.CreatedTimestamp == 0 {
+	//	createdTimestamp = sql.NullTime{Time: time.Unix(0, 0), Valid: true}
+	//} else {
+	//	createdTimestamp = sql.NullTime{
+	//		Time:  time.Unix(int64(token.CreatedTimestamp), 0),
+	//		Valid: true,
+	//	}
+	//}
 
 	var deployer interface{}
 	if token.Deployer == nil || *token.Deployer == "" {
@@ -342,7 +342,7 @@ func (repo *TimescaleRepository) InsertToken(ctx context.Context, token types.To
 		metadata = *token.Metadata
 	}
 
-	if _, err := repo.db.ExecContext(ctx, query, token.Address, token.Name, token.Symbol, token.Decimals, token.Supply, createdBlock, createdTimestamp, deployer, metadata, token.Network); err != nil {
+	if _, err := repo.db.ExecContext(ctx, query, token.Address, token.Name, token.Symbol, token.Decimals, token.Supply, createdBlock, token.CreatedTimestamp, deployer, metadata, token.Network); err != nil {
 		return fmt.Errorf("cannot insert token: %w", err)
 	}
 
@@ -380,18 +380,18 @@ func (repo *TimescaleRepository) InsertPair(ctx context.Context, pair types.Pair
 		createdBlock = pair.CreatedBlock
 	}
 
-	var createdTimestamp sql.NullTime
-	if pair.CreatedTimestamp == 0 {
-		createdTimestamp = sql.NullTime{Time: time.Unix(0, 0), Valid: true}
-	} else {
-		createdTimestamp = sql.NullTime{
-			Time:  time.Unix(int64(pair.CreatedTimestamp), 0),
-			Valid: true,
-		}
-	}
+	//var createdTimestamp sql.NullTime
+	//if pair.CreatedTimestamp == 0 {
+	//	createdTimestamp = sql.NullTime{Time: time.Unix(0, 0), Valid: true}
+	//} else {
+	//	createdTimestamp = sql.NullTime{
+	//		Time:  time.Unix(int64(pair.CreatedTimestamp), 0),
+	//		Valid: true,
+	//	}
+	//}
 
 	var query = fmt.Sprintf(`INSERT INTO "%s" ("address", "token", "createdBlock", "createdTimestamp",""exchange", "network") VALUES ($1,$2,$3,$4,$5,$6)`, pairsTable)
-	if _, err := repo.db.ExecContext(ctx, query, pair.Address, pair.Token, createdBlock, createdTimestamp, pair.Exchange, pair.Network); err != nil {
+	if _, err := repo.db.ExecContext(ctx, query, pair.Address, pair.Token, createdBlock, pair.CreatedTimestamp, pair.Exchange, pair.Network); err != nil {
 		return fmt.Errorf("cannot insert pair: %w", err)
 	}
 
