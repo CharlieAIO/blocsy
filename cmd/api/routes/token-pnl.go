@@ -96,14 +96,12 @@ func (h *Handler) TokenPnlHandler(w http.ResponseWriter, r *http.Request) {
 			if swapLogs[0].Source == "PUMPFUN" {
 				quoteTokenAddress = "SOL"
 			} else {
-				start := time.Now()
 				_, qt, err := h.pairFinder.FindPair(ctx, pair, nil)
 				if err != nil {
 					quoteTokenAddress = "SOL"
 				} else {
 					quoteTokenAddress = qt.Address // use the token address instead of symbol
 				}
-				log.Printf("%s | findPair took %s", pair, time.Since(start))
 			}
 
 			if quoteTokenAddress == "" {

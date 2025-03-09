@@ -93,14 +93,12 @@ func (h *Handler) AggregatedPnlHandler(w http.ResponseWriter, r *http.Request) {
 			if swapLogs[0].Source == "PUMPFUN" {
 				quoteTokenSymbol = "SOL"
 			} else {
-				start := time.Now()
 				_, qt, err := h.pairFinder.FindPair(ctx, pair, nil)
 				if err != nil {
 					quoteTokenSymbol = "SOL"
 				} else {
 					quoteTokenSymbol = qt.Symbol
 				}
-				log.Printf("%s | findPair took %s", pair, time.Since(start))
 			}
 
 			if quoteTokenSymbol == "" {
@@ -226,6 +224,7 @@ func (h *Handler) AggregatedPnlHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	w.Header().Set("Content-Type", "application/json")
 	if err := json.NewEncoder(w).Encode(response); err != nil {
+		log.Printf("Failed to encode response: %v", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
 }
