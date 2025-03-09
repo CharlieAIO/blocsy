@@ -50,7 +50,7 @@ func (h *Handler) AggregatedPnlHandler(w http.ResponseWriter, r *http.Request) {
 
 	swaps, err := h.swapsRepo.GetSwapsOnDate(ctx, wallet, startDate)
 	if err != nil {
-		log.Printf("Failed to get swaps for wallet: %s", wallet)
+		log.Printf("Failed to get swaps for wallet: %v", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
