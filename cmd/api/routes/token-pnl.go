@@ -198,9 +198,12 @@ func (h *Handler) TokenPnlHandler(w http.ResponseWriter, r *http.Request) {
 				Token: swapLogs[0].Token,
 				PnL:   pnlResults,
 			}
-			resultsMu.Lock()
-			results = append(results, result)
-			resultsMu.Unlock()
+			if swapLogs[0].Token != "" {
+				resultsMu.Lock()
+				results = append(results, result)
+				resultsMu.Unlock()
+			}
+
 		}(token, swapLogs)
 	}
 
