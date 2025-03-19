@@ -17,8 +17,8 @@ var (
 	txWorkers = 10
 )
 
-func NewSolanaQueueHandler(txHandler *TxHandler, pRepo SwapsRepo) *SolanaQueueHandler {
-	qh := &SolanaQueueHandler{
+func NewSolanaQueueHandler(txHandler *TxHandler, pRepo SwapsRepo) *QueueHandler {
+	qh := &QueueHandler{
 		txHandler: txHandler,
 		pRepo:     pRepo,
 		workers:   200,
@@ -28,7 +28,7 @@ func NewSolanaQueueHandler(txHandler *TxHandler, pRepo SwapsRepo) *SolanaQueueHa
 	return qh
 }
 
-func (qh *SolanaQueueHandler) connectToRabbitMQ() {
+func (qh *QueueHandler) connectToRabbitMQ() {
 	rabbitMQURL := fmt.Sprintf("amqp://%s:%s@%s:%s/%s",
 		os.Getenv("RABBIT_MQ_USER"),
 		os.Getenv("RABBIT_MQ_PASS"),
@@ -49,7 +49,7 @@ func (qh *SolanaQueueHandler) connectToRabbitMQ() {
 	}
 }
 
-func (qh *SolanaQueueHandler) Close() {
+func (qh *QueueHandler) Close() {
 	if qh.ch != nil {
 		if err := qh.ch.Close(); err != nil {
 			log.Printf("Failed to close channel: %v", err)
@@ -62,7 +62,7 @@ func (qh *SolanaQueueHandler) Close() {
 	}
 }
 
-func (qh *SolanaQueueHandler) reconnect() bool {
+func (qh *QueueHandler) reconnect() bool {
 	qh.Close()
 	backoff := time.Second
 	for i := 0; i < 5; i++ {
@@ -79,7 +79,7 @@ func (qh *SolanaQueueHandler) reconnect() bool {
 	return false
 }
 
-func (qh *SolanaQueueHandler) setPrefetch(value int) {
+func (qh *QueueHandler) setPrefetch(value int) {
 	err := qh.ch.Qos(
 		value,
 		0,
@@ -90,7 +90,7 @@ func (qh *SolanaQueueHandler) setPrefetch(value int) {
 	}
 }
 
-func (qh *SolanaQueueHandler) ListenToSolanaQueue(ctx context.Context) {
+func (qh *QueueHandler) ListenToSolanaQueue(ctx context.Context) {
 	blocked := qh.conn.NotifyBlocked(make(chan amqp.Blocking))
 	go func() {
 		for b := range blocked {
@@ -153,7 +153,7 @@ func (qh *SolanaQueueHandler) ListenToSolanaQueue(ctx context.Context) {
 	runtime.GC()
 }
 
-func (qh *SolanaQueueHandler) startWorker(workerID int, parentCtx context.Context) {
+func (qh *QueueHandler) startWorker(workerID int, parentCtx context.Context) {
 	ctx, cancel := context.WithCancel(parentCtx)
 	qh.mu.Lock()
 	qh.workerPool[workerID] = cancel
@@ -167,7 +167,7 @@ func (qh *SolanaQueueHandler) startWorker(workerID int, parentCtx context.Contex
 	log.Printf("Worker %d started", workerID)
 }
 
-func (qh *SolanaQueueHandler) stopWorker(workerID int) {
+func (qh *QueueHandler) stopWorker(workerID int) {
 	qh.mu.Lock()
 	defer qh.mu.Unlock()
 
@@ -178,7 +178,7 @@ func (qh *SolanaQueueHandler) stopWorker(workerID int) {
 	}
 }
 
-func (qh *SolanaQueueHandler) AddToSolanaQueue(blockData types.BlockData) {
+func (qh *QueueHandler) AddToSolanaQueue(blockData types.BlockData) {
 	qh.mu.Lock()
 	defer qh.mu.Unlock()
 
@@ -224,7 +224,7 @@ func (qh *SolanaQueueHandler) AddToSolanaQueue(blockData types.BlockData) {
 	}
 }
 
-func (qh *SolanaQueueHandler) solanaWorker(ctx context.Context) {
+func (qh *QueueHandler) solanaWorker(ctx context.Context) {
 	defer qh.workerWg.Done()
 	for {
 		select {
@@ -311,7 +311,7 @@ func (qh *SolanaQueueHandler) solanaWorker(ctx context.Context) {
 	}
 }
 
-func (qh *SolanaQueueHandler) insertBatch(ctx context.Context, swaps []types.SwapLog) error {
+func (qh *QueueHandler) insertBatch(ctx context.Context, swaps []types.SwapLog) error {
 	const maxRetries = 3
 
 	for retry := 0; retry < maxRetries; retry++ {

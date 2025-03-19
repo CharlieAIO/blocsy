@@ -74,11 +74,11 @@ type TxHandler struct {
 type BackfillService struct {
 	solSvc       *SolanaService
 	pRepo        SwapsRepo
-	queueHandler *SolanaQueueHandler
+	queueHandler *QueueHandler
 	nodeUrls     []*Node
 }
 
-type SolanaQueueHandler struct {
+type QueueHandler struct {
 	txHandler *TxHandler
 	conn      *amqp.Connection
 	ch        *amqp.Channel
@@ -104,4 +104,9 @@ type Node struct {
 	cli     *http.Client
 	counter atomic.Int64
 	timings atomic.Int64
+}
+
+type BlockListener struct {
+	grpcAddress  string
+	queueHandler *QueueHandler
 }

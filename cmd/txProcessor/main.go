@@ -56,8 +56,8 @@ func solanaTxHandler(ctx context.Context, c *cache.Cache, pRepo *db.TimescaleRep
 
 	queueHandler := solana.NewSolanaQueueHandler(txHandler, pRepo)
 
-	log.Println("Listening for new solana txs...")
-	defer log.Println("Stopped listening for new solana txs...")
+	log.Println("Listening for solana txs in rabbitMQ...")
+	defer log.Println("Stopped listening for solana txs in rabbitMQ...")
 	queueHandler.ListenToSolanaQueue(ctx)
 
 }

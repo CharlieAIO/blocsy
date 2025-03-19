@@ -17,7 +17,6 @@ import (
 	"io"
 	"log"
 	"os"
-	"sync"
 	"time"
 )
 
@@ -44,29 +43,17 @@ var (
 var kacp = keepalive.ClientParameters{
 	Time:                10 * time.Second, // send pings every 10 seconds if there is no activity
 	Timeout:             20 * time.Second,
-	PermitWithoutStream: true, // send pings even without active streams
+	PermitWithoutStream: true,
 }
 
-type SolanaBlockListener struct {
-	//solanaSocketURL    string
-	grpcAddress        string
-	lastProcessedBlock int
-	solSvc             *SolanaService
-	pRepo              SwapsRepo
-	queueHandler       *SolanaQueueHandler
-	errorMutex         sync.Mutex
-}
-
-func NewBlockListener(grpc string, solSvc *SolanaService, pRepo SwapsRepo, qHandler *SolanaQueueHandler) *SolanaBlockListener {
-	return &SolanaBlockListener{
+func NewBlockListener(grpc string, qHandler *QueueHandler) *BlockListener {
+	return &BlockListener{
 		grpcAddress:  grpc,
-		solSvc:       solSvc,
-		pRepo:        pRepo,
 		queueHandler: qHandler,
 	}
 }
 
-func (s *SolanaBlockListener) Listen() error {
+func (s *BlockListener) Listen() error {
 	log.SetFlags(0)
 	flag.Parse()
 
@@ -81,18 +68,18 @@ func (s *SolanaBlockListener) Listen() error {
 		err := s.grpcSubscribe(conn)
 		if err != nil {
 			log.Printf("Error in grpcSubscribe: %v. Reconnecting...", err)
-			conn.Close()                // explicitly close before reconnecting
-			time.Sleep(5 * time.Second) // Wait before reconnecting
+			conn.Close()
+			time.Sleep(5 * time.Second)
 			continue
 		}
-		defer conn.Close() // Only defer close on a successful subscription
+		defer conn.Close()
 		break
 	}
 
 	return nil
 }
 
-func (s *SolanaBlockListener) grpcConnect(address string, plaintext bool) *grpc.ClientConn {
+func (s *BlockListener) grpcConnect(address string, plaintext bool) *grpc.ClientConn {
 	var opts []grpc.DialOption
 	if plaintext {
 		opts = append(opts, grpc.WithTransportCredentials(insecure.NewCredentials()))
@@ -113,7 +100,7 @@ func (s *SolanaBlockListener) grpcConnect(address string, plaintext bool) *grpc.
 	return conn
 }
 
-func (s *SolanaBlockListener) grpcSubscribe(conn *grpc.ClientConn) error {
+func (s *BlockListener) grpcSubscribe(conn *grpc.ClientConn) error {
 	var err error
 	client := pb.NewGeyserClient(conn)
 
@@ -322,7 +309,7 @@ func (s *SolanaBlockListener) grpcSubscribe(conn *grpc.ClientConn) error {
 
 }
 
-func (s *SolanaBlockListener) HandleTransaction(transaction types.SolanaTx, blockTime int64, block uint64) {
+func (s *BlockListener) HandleTransaction(transaction types.SolanaTx, blockTime int64, block uint64) {
 
 	if s.queueHandler != nil {
 		s.queueHandler.AddToSolanaQueue(types.BlockData{

@@ -1,7 +1,6 @@
 package main
 
 import (
-	"blocsy/internal/db"
 	"blocsy/internal/solana"
 	"blocsy/internal/utils"
 	"context"
@@ -17,34 +16,21 @@ func main() {
 
 	utils.LoadEnvironment()
 
-	dbx, err := utils.GetDBConnection(ctx)
-	if err != nil {
-		log.Fatalf("Error connecting to db: %v", err)
-	}
-
-	defer dbx.Close()
-
-	pRepo := db.NewTimescaleRepository(dbx)
-	go solanaListener(ctx, pRepo)
+	go solanaListener(ctx)
 
 	<-ctx.Done()
 
 }
 
-func solanaListener(ctx context.Context, pRepo *db.TimescaleRepository) {
-	url_https := os.Getenv("SOL_HTTPS")
-	if url_https == "" {
-		log.Fatalf("SOL_HTTPS is required")
-	}
+func solanaListener(ctx context.Context) {
 
-	grpc_address := os.Getenv("SOL_GRPC")
-	if grpc_address == "" {
+	grpcAddress := os.Getenv("SOL_GRPC")
+	if grpcAddress == "" {
 		log.Fatalf("SOL_GRPC is required")
 	}
 
-	solSvc := solana.NewSolanaService(ctx)
 	queueHandler := solana.NewSolanaQueueHandler(nil, nil)
-	sbl := solana.NewBlockListener(grpc_address, solSvc, pRepo, queueHandler)
+	sbl := solana.NewBlockListener(grpcAddress, queueHandler)
 
 	go func() {
 		log.Println("Listening for new blocks (solana)...")

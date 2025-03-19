@@ -67,7 +67,6 @@ func main() {
 	if os.Getenv("SOL_HTTPS_BACKFILL_NODES") != "" {
 		nodeUrls := strings.Split(os.Getenv("SOL_HTTPS_BACKFILL_NODES"), ",")
 		for i, url := range nodeUrls {
-			//nodes = solana.NewNode(fmt.Sprintf("node %d", i), url)
 			nodes = append(nodes, solana.NewNode(fmt.Sprintf("node %d", i), url))
 		}
 	} else {

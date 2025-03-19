@@ -9,7 +9,7 @@ import (
 	"strings"
 )
 
-func NewBackfillService(solSvc *SolanaService, pRepo SwapsRepo, qHandler *SolanaQueueHandler) *BackfillService {
+func NewBackfillService(solSvc *SolanaService, pRepo SwapsRepo, qHandler *QueueHandler) *BackfillService {
 
 	var nodes []*Node
 
