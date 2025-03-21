@@ -92,7 +92,7 @@ func ParseTransaction(tx *types.SolanaTx) ([]types.SolTransfer, []types.SolTrans
 
 	for instructionIndex := range tx.Transaction.Message.Instructions {
 		instruction := tx.Transaction.Message.Instructions[instructionIndex]
-		transfer, found := buildTransfer(instruction, AccountKeysMap, balanceDiffMap, nativeBalanceDiffMap, tx, -1, instructionIndex)
+		transfer, found := processInstruction(instruction, AccountKeysMap, balanceDiffMap, nativeBalanceDiffMap, tx, -1, instructionIndex)
 		if found {
 			parentProgramId, parentAccounts := findParentProgram(instructionIndex, tx, -1, -1, accountKeys)
 			transfer.IxAccounts = parentAccounts
@@ -134,7 +134,7 @@ func ParseTransaction(tx *types.SolanaTx) ([]types.SolTransfer, []types.SolTrans
 			}
 			for ixIndex := range tx.Meta.InnerInstructions[innerIxIndex].Instructions {
 				innerInstruction := tx.Meta.InnerInstructions[innerIxIndex].Instructions[ixIndex]
-				innerTransfer, foundInner := buildTransfer(innerInstruction, AccountKeysMap, balanceDiffMap, nativeBalanceDiffMap, tx, instructionIndex, ixIndex)
+				innerTransfer, foundInner := processInstruction(innerInstruction, AccountKeysMap, balanceDiffMap, nativeBalanceDiffMap, tx, instructionIndex, ixIndex)
 
 				if foundInner {
 					parentProgramId, parentAccounts := findParentProgram(instructionIndex, tx, innerIxIndex, ixIndex, accountKeys)
@@ -232,7 +232,7 @@ func findParentProgram(ixIndex int, tx *types.SolanaTx, innerIxIndex int, innerI
 	return "", nil
 }
 
-func buildTransfer(
+func processInstruction(
 	ix types.Instruction,
 	AccountKeysMap map[string]int,
 	balanceDiffMap map[int]types.SolBalanceDiff,

@@ -27,7 +27,7 @@ func (sh *SwapHandler) HandleSwaps(ctx context.Context, transfers []types.SolTra
 		if found, _ := IgnorePrograms[transfer.ParentProgramId]; found {
 			continue
 		}
-		swap, inc := processInstruction(i, transfers, accountKeys)
+		swap, inc := processTransfer(i, transfers, accountKeys)
 		if found, _ := IgnoreTokens[swap.TokenOut]; found || IgnoreTokens[swap.TokenIn] {
 			continue
 		}
@@ -149,7 +149,7 @@ func (sh *SwapHandler) HandleSwaps(ctx context.Context, transfers []types.SolTra
 	return finalSwaps
 }
 
-func processInstruction(index int, transfers []types.SolTransfer, accountKeys []string) (types.SolSwap, int) {
+func processTransfer(index int, transfers []types.SolTransfer, accountKeys []string) (types.SolSwap, int) {
 	type handlerFunc func(index int, transfers []types.SolTransfer, accountKeys []string) (types.SolSwap, int)
 	handlers := map[string]handlerFunc{
 		RAYDIUM_LIQ_POOL_V4:   dex.HandleRaydiumSwaps,
