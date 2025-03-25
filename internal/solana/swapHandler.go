@@ -32,6 +32,12 @@ func (sh *SwapHandler) HandleSwaps(ctx context.Context, transfers []types.SolTra
 			continue
 		}
 
+		if source := Programs[transfer.ParentProgramId]; source != "" {
+			swap.Source = source
+		} else {
+			swap.Source = "UNKNOWN"
+		}
+
 		if swap.Wallet != "" && swap.Pair != "" && validateSupportedDex(transfer.ParentProgramId) {
 			swaps = append(swaps, swap)
 		} else if transfer.Type != "native" && (validateSupportedDex(transfer.ParentProgramId) || transfer.ParentProgramId == "") {
@@ -156,7 +162,8 @@ func processTransfer(index int, transfers []types.SolTransfer, accountKeys []str
 		ORCA_WHIRL_PROGRAM_ID: dex.HandleOrcaSwaps,
 		METEORA_DLMM_PROGRAM:  dex.HandleMeteoraSwaps,
 		//METEORA_POOLS_PROGRAM: dex.HandleMeteoraSwaps,
-		PUMPFUN: dex.HandlePumpFunSwaps,
+		PUMPFUN:     dex.HandlePumpFunSwaps,
+		PUMPFUN_AMM: dex.HandlePumpFunAmmSwaps,
 	}
 
 	accountsLen := len(transfers[index].IxAccounts)
@@ -174,6 +181,8 @@ func processTransfer(index int, transfers []types.SolTransfer, accountKeys []str
 	} else if programId == RAYDIUM_LIQ_POOL_V4 && accountsLen != 18 && accountsLen != 17 {
 		return types.SolSwap{}, 0
 	} else if programId == METEORA_DLMM_PROGRAM && accountsLen != 18 && accountsLen != 17 && accountsLen != 16 {
+		return types.SolSwap{}, 0
+	} else if programId == PUMPFUN_AMM && accountsLen != 17 {
 		return types.SolSwap{}, 0
 	}
 
