@@ -73,7 +73,8 @@ func TestSwapHandler(t *testing.T) {
 		//{Target: 1, Signature: "3vr5TJo3d5TUxqECYkKfejg9rNcvh3xeaVcTX2XRcC1sqLXVMtMNeWqAkC8zSnE8j8tiU4TcD21UNwtkXhAUPmp"},
 		//{Target: 1, Signature: "3WugKiaFfhawNVSQwycW7oYrruFEoyzQoHYupvRWhTSyVcScNAJFzcpcQZL2ahL4y9SKypimjC6d3WqWnm4X9Z9w"},
 		//{Target: 1, Signature: "2ev694arceQ3HtSCdFKj7UJRZmy8sL2cMGbeme8hvptTCnSJv2p2SoeQRGt3vjbYEHbsu29N6WiMA2ryrW1ADSiF"},
-		{Target: 1, Signature: "63Xjzbwc2mczzSUsDRnEYtVFr1Das5GwtUrErTAy492J8ZPS3XjhDxFNVyYYJ4DtRquErTCQZg6iBAY68a4nP6se"},
+		//{Target: 1, Signature: "63Xjzbwc2mczzSUsDRnEYtVFr1Das5GwtUrErTAy492J8ZPS3XjhDxFNVyYYJ4DtRquErTCQZg6iBAY68a4nP6se"},
+		{Target: 1, Signature: "3FoXqwcUdSGAbMtZpD9NtcB2dyYkGRoLa2PHJcnxWhY5afbgC5bcZS5hyWbXfQAqbLn3SN78srcTxNK7mKjJEKWS"},
 	}
 
 	for _, tc := range tests {

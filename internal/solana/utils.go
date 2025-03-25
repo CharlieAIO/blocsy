@@ -57,6 +57,7 @@ func validateSupportedDex(programId string) bool {
 	case PUMPFUN,
 		METEORA_DLMM_PROGRAM,
 		RAYDIUM_LIQ_POOL_V4,
+		PUMPFUN_AMM,
 		ORCA_WHIRL_PROGRAM_ID:
 		return true
 	}
@@ -69,6 +70,7 @@ func validateProgramIsDex(programId string) bool {
 		METEORA_DLMM_PROGRAM, METEORA_POOLS_PROGRAM,
 		RAYDIUM_LIQ_POOL_V4, RAYDIUM_CONCENTRATED_LIQ,
 		LIFINITY_SWAP_V2, PHOENIX,
+		PUMPFUN_AMM,
 		ORCA_WHIRL_PROGRAM_ID, ORCA_SWAP_V2, ORCA_SWAP:
 		return true
 	}

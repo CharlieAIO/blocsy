@@ -196,6 +196,11 @@ func validateProgram(program string, accounts []int, accountKeys []string) bool 
 			return true
 		}
 	}
+	if program == PUMPFUN_AMM {
+		if len(accounts) == 17 && accountKeys[accounts[16]] == PUMPFUN_AMM {
+			return true
+		}
+	}
 	return false
 }
 

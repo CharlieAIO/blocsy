@@ -5,6 +5,7 @@ import (
 )
 
 func HandlePumpFunAmmSwaps(index int, transfers []types.SolTransfer, accountKeys []string) (types.SolSwap, int) {
+
 	if index+1 >= len(transfers) {
 		return types.SolSwap{}, 0
 	}
