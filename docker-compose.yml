@@ -127,7 +127,7 @@ services:
     environment:
       RABBITMQ_DEFAULT_USER: ${RABBIT_MQ_USER}
       RABBITMQ_DEFAULT_PASS: ${RABBIT_MQ_PASS}
-      RABBITMQ_ERLANG_COOKIE: ${RABBITMQ_ERLANG_COOKIE}
+      RABBITMQ_ERLANG_COOKIE: ${RABBIT_MQ_ERLANG_COOKIE}
     networks:
       - my_network
     restart: always
