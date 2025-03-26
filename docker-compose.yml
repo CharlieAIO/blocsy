@@ -122,10 +122,12 @@ services:
       - "15672:15672"
     volumes:
       - rabbitmq_data:/var/lib/rabbitmq
+    env_file:
+      - .env
     environment:
-      RABBITMQ_DEFAULT_USER: guest
-      RABBITMQ_DEFAULT_PASS: LmBiB.@GYg6d4DuK6ABq
-      RABBITMQ_ERLANG_COOKIE: 'e9b1c3d4e5f6a7b8c9d0e1f2a3b4c5d6'
+      RABBITMQ_DEFAULT_USER: ${RABBIT_MQ_USER}
+      RABBITMQ_DEFAULT_PASS: ${RABBIT_MQ_PASS}
+      RABBITMQ_ERLANG_COOKIE: ${RABBITMQ_ERLANG_COOKIE}
     networks:
       - my_network
     restart: always
