@@ -104,103 +104,10 @@ func (s *BlockListener) grpcSubscribe(conn *grpc.ClientConn) error {
 	var err error
 	client := pb.NewGeyserClient(conn)
 
-	var subscription pb.SubscribeRequest
-
-	// Read json input or JSON file prefixed with @
-	if *jsonInput != "" {
-		var jsonData []byte
-
-		if (*jsonInput)[0] == '@' {
-			jsonData, err = os.ReadFile((*jsonInput)[1:])
-			if err != nil {
-				return fmt.Errorf("error reading provided json file: %v", err)
-			}
-		} else {
-			jsonData = []byte(*jsonInput)
-		}
-		err := json.Unmarshal(jsonData, &subscription)
-		if err != nil {
-			return err
-		}
-	} else {
-		subscription = pb.SubscribeRequest{}
-	}
-
-	if *slots {
-		if subscription.Slots == nil {
-			subscription.Slots = make(map[string]*pb.SubscribeRequestFilterSlots)
-		}
-
-		subscription.Slots["slots"] = &pb.SubscribeRequestFilterSlots{}
-
-	}
-
-	if *blocks {
-		if subscription.Blocks == nil {
-			subscription.Blocks = make(map[string]*pb.SubscribeRequestFilterBlocks)
-		}
-		subscription.Blocks["blocks"] = &pb.SubscribeRequestFilterBlocks{}
-	}
-
-	if *block_meta {
-		if subscription.BlocksMeta == nil {
-			subscription.BlocksMeta = make(map[string]*pb.SubscribeRequestFilterBlocksMeta)
-		}
-		subscription.BlocksMeta["block_meta"] = &pb.SubscribeRequestFilterBlocksMeta{}
-	}
-
-	if (len(accountsFilter)+len(accountOwnersFilter)) > 0 || (*accounts) {
-		if subscription.Accounts == nil {
-			subscription.Accounts = make(map[string]*pb.SubscribeRequestFilterAccounts)
-		}
-
-		subscription.Accounts["account_sub"] = &pb.SubscribeRequestFilterAccounts{}
-
-		if len(accountsFilter) > 0 {
-			subscription.Accounts["account_sub"].Account = accountsFilter
-		}
-
-		if len(accountOwnersFilter) > 0 {
-			subscription.Accounts["account_sub"].Owner = accountOwnersFilter
-		}
-	}
-
-	// Set up the transactions subscription
-	if subscription.Transactions == nil {
-		subscription.Transactions = make(map[string]*pb.SubscribeRequestFilterTransactions)
-	}
-
-	// Subscribe to a specific signature
-	if *signature != "" {
-		tr := true
-		subscription.Transactions["signature_sub"] = &pb.SubscribeRequestFilterTransactions{
-			Failed: &tr,
-			Vote:   &tr,
-		}
-
-		if *signature != "" {
-			subscription.Transactions["signature_sub"].Signature = signature
-		}
-	}
-
-	// Subscribe to generic transaction stream
-	if *transactions {
-
-		subscription.Transactions["transactions_sub"] = &pb.SubscribeRequestFilterTransactions{
-			Failed: failedTransactions,
-			Vote:   voteTransactions,
-		}
-
-		subscription.Transactions["transactions_sub"].AccountInclude = transactionsAccountsInclude
-		subscription.Transactions["transactions_sub"].AccountExclude = transactionsAccountsExclude
-	}
-	confirmed := pb.CommitmentLevel_CONFIRMED
-	subscription.Commitment = &confirmed
-	subscriptionJson, err := json.Marshal(&subscription)
+	subscription, err := s.prepareSubscription()
 	if err != nil {
-		log.Printf("Failed to marshal subscription request: %v", err)
+		return fmt.Errorf("failed to prepare subscription: %v", err)
 	}
-	log.Printf("Subscription request: %s", string(subscriptionJson))
 
 	ctx := context.Background()
 	if *authToken != "" {
@@ -212,10 +119,12 @@ func (s *BlockListener) grpcSubscribe(conn *grpc.ClientConn) error {
 	if err != nil {
 		return fmt.Errorf("subscribe: %v", err)
 	}
-	err = stream.Send(&subscription)
+	err = stream.Send(subscription)
 	if err != nil {
 		return fmt.Errorf("send: %v", err)
 	}
+
+	log.Printf("Subscribed to %s", s.grpcAddress)
 
 	// Check for unexpected content-type
 	header, err := stream.Header()
@@ -225,6 +134,8 @@ func (s *BlockListener) grpcSubscribe(conn *grpc.ClientConn) error {
 	if contentType := header.Get("content-type"); len(contentType) > 0 && contentType[0] != "application/grpc" {
 		return fmt.Errorf("unexpected content-type: %s", contentType)
 	}
+
+	log.Printf("Checked content-type: %v", header.Get("content-type"))
 
 	var blockNumber uint64
 	var blockTime int64
@@ -306,6 +217,111 @@ func (s *BlockListener) grpcSubscribe(conn *grpc.ClientConn) error {
 			s.HandleTransaction(solanaTx, blockTime, blockNumber)
 		}
 	}
+
+}
+
+func (s *BlockListener) prepareSubscription() (*pb.SubscribeRequest, error) {
+	var subscription pb.SubscribeRequest
+	var err error
+
+	// Read json input or JSON file prefixed with @
+	if *jsonInput != "" {
+		var jsonData []byte
+
+		if (*jsonInput)[0] == '@' {
+			jsonData, err = os.ReadFile((*jsonInput)[1:])
+			if err != nil {
+				return nil, fmt.Errorf("error reading provided json file: %v", err)
+			}
+		} else {
+			jsonData = []byte(*jsonInput)
+		}
+		err = json.Unmarshal(jsonData, &subscription)
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		subscription = pb.SubscribeRequest{}
+	}
+
+	if *slots {
+		if subscription.Slots == nil {
+			subscription.Slots = make(map[string]*pb.SubscribeRequestFilterSlots)
+		}
+
+		subscription.Slots["slots"] = &pb.SubscribeRequestFilterSlots{}
+
+	}
+
+	if *blocks {
+		if subscription.Blocks == nil {
+			subscription.Blocks = make(map[string]*pb.SubscribeRequestFilterBlocks)
+		}
+		subscription.Blocks["blocks"] = &pb.SubscribeRequestFilterBlocks{}
+	}
+
+	if *block_meta {
+		if subscription.BlocksMeta == nil {
+			subscription.BlocksMeta = make(map[string]*pb.SubscribeRequestFilterBlocksMeta)
+		}
+		subscription.BlocksMeta["block_meta"] = &pb.SubscribeRequestFilterBlocksMeta{}
+	}
+
+	if (len(accountsFilter)+len(accountOwnersFilter)) > 0 || (*accounts) {
+		if subscription.Accounts == nil {
+			subscription.Accounts = make(map[string]*pb.SubscribeRequestFilterAccounts)
+		}
+
+		subscription.Accounts["account_sub"] = &pb.SubscribeRequestFilterAccounts{}
+
+		if len(accountsFilter) > 0 {
+			subscription.Accounts["account_sub"].Account = accountsFilter
+		}
+
+		if len(accountOwnersFilter) > 0 {
+			subscription.Accounts["account_sub"].Owner = accountOwnersFilter
+		}
+	}
+
+	// Set up the transactions subscription
+	if subscription.Transactions == nil {
+		subscription.Transactions = make(map[string]*pb.SubscribeRequestFilterTransactions)
+	}
+
+	// Subscribe to a specific signature
+	if *signature != "" {
+		tr := true
+		subscription.Transactions["signature_sub"] = &pb.SubscribeRequestFilterTransactions{
+			Failed: &tr,
+			Vote:   &tr,
+		}
+
+		if *signature != "" {
+			subscription.Transactions["signature_sub"].Signature = signature
+		}
+	}
+
+	// Subscribe to generic transaction stream
+	if *transactions {
+
+		subscription.Transactions["transactions_sub"] = &pb.SubscribeRequestFilterTransactions{
+			Failed: failedTransactions,
+			Vote:   voteTransactions,
+		}
+
+		subscription.Transactions["transactions_sub"].AccountInclude = transactionsAccountsInclude
+		subscription.Transactions["transactions_sub"].AccountExclude = transactionsAccountsExclude
+	}
+	confirmed := pb.CommitmentLevel_CONFIRMED
+	subscription.Commitment = &confirmed
+	subscriptionJson, err := json.Marshal(&subscription)
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal subscription request: %v", err)
+	}
+
+	log.Printf("Subscription request: %v", string(subscriptionJson))
+
+	return &subscription, nil
 
 }
 
