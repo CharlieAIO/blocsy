@@ -311,6 +311,7 @@ func (s *BlockListener) grpcSubscribe(conn *grpc.ClientConn) error {
 
 func (s *BlockListener) HandleTransaction(transaction types.SolanaTx, blockTime int64, block uint64) {
 
+	log.Printf("Received transaction: %v", transaction)
 	if s.queueHandler != nil {
 		s.queueHandler.AddToSolanaQueue(types.BlockData{
 			Transactions: []types.SolanaTx{transaction},
