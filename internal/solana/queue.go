@@ -47,6 +47,8 @@ func (qh *QueueHandler) connectToRabbitMQ() {
 	if err != nil {
 		log.Fatalf("Failed to open a channel: %v", err)
 	}
+
+	log.Printf("Connected to RabbitMQ (is closed: %v)", qh.conn.IsClosed())
 }
 
 func (qh *QueueHandler) Close() {
