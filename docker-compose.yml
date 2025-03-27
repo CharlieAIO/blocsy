@@ -24,8 +24,6 @@ services:
   listener:
     restart: unless-stopped
     image: listener:latest
-    ports:
-      - "6060:6060"
     build:
       context: .
       dockerfile: Dockerfile.listener
