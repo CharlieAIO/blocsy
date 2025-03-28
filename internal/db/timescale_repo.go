@@ -380,6 +380,8 @@ func (repo *TimescaleRepository) InsertPair(ctx context.Context, pair types.Pair
 		createdBlock = pair.CreatedBlock
 	}
 
+	log.Printf("INSERT PAIR: %+v", pair)
+
 	//var createdTimestamp sql.NullTime
 	//if pair.CreatedTimestamp == 0 {
 	//	createdTimestamp = sql.NullTime{Time: time.Unix(0, 0), Valid: true}
