@@ -32,7 +32,7 @@ func main() {
 	}
 
 	defer func() {
-		if err := mCli.Disconnect(ctx); err != nil {
+		if err = mCli.Disconnect(ctx); err != nil {
 			log.Printf("Error disconnecting from mongo: %v", err)
 		}
 	}()
@@ -44,19 +44,30 @@ func main() {
 	pairsCh, errCh := mRepo.PullPairs(ctx)
 	count := 0
 
-	for pair := range pairsCh {
-
-		if err := pRepo.InsertPair(ctx, pair); err != nil {
-			continue
+	for {
+		select {
+		case pair, ok := <-pairsCh:
+			if !ok {
+				pairsCh = nil
+			} else {
+				if err = pRepo.InsertPair(ctx, pair); err != nil {
+					continue
+				}
+				count++
+				if count%1000 == 0 {
+					log.Printf("Inserted %d pairs so far...", count)
+				}
+			}
+		case err, ok := <-errCh:
+			if ok && err != nil {
+				log.Printf("Error while pulling pairs: %v", err)
+			}
+			errCh = nil
 		}
-		count++
-		if count%1000 == 0 {
-			log.Printf("Inserted %d pairs so far...", count)
-		}
-	}
 
-	if err, ok := <-errCh; ok && err != nil {
-		log.Printf("Error while pulling pairs: %v", err)
+		if pairsCh == nil && errCh == nil {
+			break
+		}
 	}
 
 	log.Printf("Migration complete. Total pairs inserted: %d", count)

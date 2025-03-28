@@ -188,14 +188,14 @@ func (repo *MongoRepository) PullPairs(ctx context.Context) (<-chan types.Pair, 
 
 		for cursor.Next(ctx) {
 			var pair types.Pair
-			if err := cursor.Decode(&pair); err != nil {
+			if err = cursor.Decode(&pair); err != nil {
 				errCh <- fmt.Errorf("failed to decode token: %w", err)
 				close(errCh)
 				return
 			}
 			pairCh <- pair
 		}
-		if err := cursor.Err(); err != nil {
+		if err = cursor.Err(); err != nil {
 			errCh <- fmt.Errorf("cursor encountered an error: %w", err)
 			close(errCh)
 			return
