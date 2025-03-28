@@ -19,10 +19,16 @@ func HandleRaydiumConcentratedSwaps(index int, transfers []types.SolTransfer, ac
 		return types.SolSwap{}, 0
 	}
 
+	pair := accountKeys[(currentTransfer.IxAccounts)[2]]
 	wallet := accountKeys[(currentTransfer.IxAccounts)[0]]
 
+	if currentTransfer.Authority != wallet {
+		currentTransfer = transfers[index+1]
+		nextTransfer = transfers[index]
+	}
+
 	s := types.SolSwap{
-		Pair:      accountKeys[(currentTransfer.IxAccounts)[2]],
+		Pair:      pair,
 		Exchange:  "RAYDIUM_CONCENTRATED_LIQ",
 		Wallet:    wallet,
 		TokenOut:  currentTransfer.Mint,

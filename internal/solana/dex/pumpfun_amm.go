@@ -20,10 +20,17 @@ func HandlePumpFunAmmSwaps(index int, transfers []types.SolTransfer, accountKeys
 		return types.SolSwap{}, 0
 	}
 
+	pair := accountKeys[(currentTransfer.IxAccounts)[0]]
+
 	wallet := accountKeys[(currentTransfer.IxAccounts)[1]]
 
+	if currentTransfer.Authority != wallet {
+		currentTransfer = transfers[index+1]
+		nextTransfer = transfers[index]
+	}
+
 	s := types.SolSwap{
-		Pair:      accountKeys[(currentTransfer.IxAccounts)[0]],
+		Pair:      pair,
 		Exchange:  "PUMPFUN_AMM",
 		Wallet:    wallet,
 		TokenOut:  currentTransfer.Mint,

@@ -19,13 +19,20 @@ func HandleRaydiumSwaps(index int, transfers []types.SolTransfer, accountKeys []
 		return types.SolSwap{}, 0
 	}
 
+	pair := accountKeys[(currentTransfer.IxAccounts)[1]]
+
 	wallet := accountKeys[(currentTransfer.IxAccounts)[16]]
 	if len(currentTransfer.IxAccounts) == 18 {
 		wallet = accountKeys[(currentTransfer.IxAccounts)[17]]
 	}
 
+	if currentTransfer.Authority != wallet {
+		currentTransfer = transfers[index+1]
+		nextTransfer = transfers[index]
+	}
+
 	s := types.SolSwap{
-		Pair:      accountKeys[(currentTransfer.IxAccounts)[1]],
+		Pair:      pair,
 		Exchange:  "RAYDIUM",
 		Wallet:    wallet,
 		TokenOut:  currentTransfer.Mint,
