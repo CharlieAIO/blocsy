@@ -1135,7 +1135,7 @@ func easyjson89aae3efDecodeBlocsyInternalTypes7(in *jlexer.Lexer, out *Pair) {
 			continue
 		}
 		switch key {
-		case "pair":
+		case "address":
 			out.Address = string(in.String())
 		case "network":
 			out.Network = string(in.String())
@@ -1145,9 +1145,9 @@ func easyjson89aae3efDecodeBlocsyInternalTypes7(in *jlexer.Lexer, out *Pair) {
 			out.Token = string(in.String())
 		case "quoteToken":
 			(out.QuoteToken).UnmarshalEasyJSON(in)
-		case "createdBlock":
+		case "createdblock":
 			out.CreatedBlock = int64(in.Int64())
-		case "createdTimestamp":
+		case "createdtimestamp":
 			if data := in.Raw(); in.Ok() {
 				in.AddError((out.CreatedTimestamp).UnmarshalJSON(data))
 			}
@@ -1166,7 +1166,7 @@ func easyjson89aae3efEncodeBlocsyInternalTypes7(out *jwriter.Writer, in Pair) {
 	first := true
 	_ = first
 	{
-		const prefix string = ",\"pair\":"
+		const prefix string = ",\"address\":"
 		out.RawString(prefix[1:])
 		out.String(string(in.Address))
 	}
@@ -1191,12 +1191,12 @@ func easyjson89aae3efEncodeBlocsyInternalTypes7(out *jwriter.Writer, in Pair) {
 		(in.QuoteToken).MarshalEasyJSON(out)
 	}
 	{
-		const prefix string = ",\"createdBlock\":"
+		const prefix string = ",\"createdblock\":"
 		out.RawString(prefix)
 		out.Int64(int64(in.CreatedBlock))
 	}
 	{
-		const prefix string = ",\"createdTimestamp\":"
+		const prefix string = ",\"createdtimestamp\":"
 		out.RawString(prefix)
 		out.Raw((in.CreatedTimestamp).MarshalJSON())
 	}

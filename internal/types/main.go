@@ -64,13 +64,13 @@ type QuoteTokenSimple struct {
 
 //easyjson:json
 type Pair struct {
-	Address          string           `json:"pair" db:"pair"`
+	Address          string           `json:"address" db:"address"`
 	Network          string           `json:"network" db:"network"`
 	Exchange         string           `json:"exchange" db:"exchange"`
 	Token            string           `json:"token" db:"token"`
 	QuoteToken       QuoteTokenSimple `json:"quoteToken" db:"quoteToken"`
-	CreatedBlock     int64            `json:"createdBlock" db:"createdBlock"`
-	CreatedTimestamp time.Time        `json:"createdTimestamp" db:"createdTimestamp"`
+	CreatedBlock     int64            `json:"createdblock" db:"createdblock"`
+	CreatedTimestamp time.Time        `json:"createdtimestamp" db:"createdtimestamp"`
 }
 
 //easyjson:json
