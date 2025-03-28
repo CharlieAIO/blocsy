@@ -16,25 +16,6 @@ func getAllAccountKeys(tx *types.SolanaTx) []string {
 	keys = append(keys, tx.Meta.LoadedAddresses.Readonly...)
 	return keys
 }
-
-func identifySource(programId string) string {
-	switch programId {
-	case RAYDIUM_LIQ_POOL_V4:
-		return "RAYDIUM"
-	case ORCA_WHIRL_PROGRAM_ID:
-		return "ORCA"
-	case METEORA_DLMM_PROGRAM:
-		return "METEORA"
-	case METEORA_POOLS_PROGRAM:
-		return "METEORA"
-	case PUMPFUN:
-		return "PUMPFUN"
-	case JUPITER_V6_AGGREGATOR:
-		return "JUPITER"
-	default:
-		return "UNKNOWN"
-	}
-}
 func validateTX(tx *types.SolanaTx) bool {
 	accountKeys := getAllAccountKeys(tx)
 	//	validate tx to make sure it contains at least 1 address that we are interested in
@@ -58,6 +39,7 @@ func validateSupportedDex(programId string) bool {
 		METEORA_DLMM_PROGRAM,
 		RAYDIUM_LIQ_POOL_V4,
 		PUMPFUN_AMM,
+		RAYDIUM_CONCENTRATED_LIQ,
 		ORCA_WHIRL_PROGRAM_ID:
 		return true
 	}

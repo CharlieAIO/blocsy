@@ -34,8 +34,6 @@ func (sh *SwapHandler) HandleSwaps(ctx context.Context, transfers []types.SolTra
 
 		if source := Programs[transfer.ParentProgramId]; source != "" {
 			swap.Source = source
-		} else {
-			swap.Source = "UNKNOWN"
 		}
 
 		if swap.Wallet != "" && swap.Pair != "" && validateSupportedDex(transfer.ParentProgramId) {
@@ -88,7 +86,7 @@ func (sh *SwapHandler) HandleSwaps(ctx context.Context, transfers []types.SolTra
 		if _, found := QuoteTokens[swap.TokenOut]; found {
 			token = swap.TokenIn
 			action = "BUY"
-		} else if _, found := QuoteTokens[swap.TokenIn]; found {
+		} else if _, found = QuoteTokens[swap.TokenIn]; found {
 			token = swap.TokenOut
 			action = "SELL"
 		} else {
@@ -158,9 +156,10 @@ func (sh *SwapHandler) HandleSwaps(ctx context.Context, transfers []types.SolTra
 func processTransfer(index int, transfers []types.SolTransfer, accountKeys []string) (types.SolSwap, int) {
 	type handlerFunc func(index int, transfers []types.SolTransfer, accountKeys []string) (types.SolSwap, int)
 	handlers := map[string]handlerFunc{
-		RAYDIUM_LIQ_POOL_V4:   dex.HandleRaydiumSwaps,
-		ORCA_WHIRL_PROGRAM_ID: dex.HandleOrcaSwaps,
-		METEORA_DLMM_PROGRAM:  dex.HandleMeteoraSwaps,
+		RAYDIUM_LIQ_POOL_V4:      dex.HandleRaydiumSwaps,
+		RAYDIUM_CONCENTRATED_LIQ: dex.HandleRaydiumConcentratedSwaps,
+		ORCA_WHIRL_PROGRAM_ID:    dex.HandleOrcaSwaps,
+		METEORA_DLMM_PROGRAM:     dex.HandleMeteoraSwaps,
 		//METEORA_POOLS_PROGRAM: dex.HandleMeteoraSwaps,
 		PUMPFUN:     dex.HandlePumpFunSwaps,
 		PUMPFUN_AMM: dex.HandlePumpFunAmmSwaps,
@@ -183,6 +182,8 @@ func processTransfer(index int, transfers []types.SolTransfer, accountKeys []str
 	} else if programId == METEORA_DLMM_PROGRAM && accountsLen != 18 && accountsLen != 17 && accountsLen != 16 {
 		return types.SolSwap{}, 0
 	} else if programId == PUMPFUN_AMM && accountsLen != 17 {
+		return types.SolSwap{}, 0
+	} else if programId == RAYDIUM_CONCENTRATED_LIQ && accountsLen != 15 {
 		return types.SolSwap{}, 0
 	}
 

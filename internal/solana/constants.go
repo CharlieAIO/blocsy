@@ -71,11 +71,10 @@ var Programs = map[string]string{
 }
 
 var IgnorePrograms = map[string]bool{
-	PHOENIX:                  true,
-	LIFINITY_SWAP_V2:         true,
-	ORCA_SWAP:                true,
-	ORCA_SWAP_V2:             true,
-	RAYDIUM_CONCENTRATED_LIQ: true,
-	RAYDIUM_CPMM:             true,
-	METEORA_POOLS_PROGRAM:    true,
+	PHOENIX:               true,
+	LIFINITY_SWAP_V2:      true,
+	ORCA_SWAP:             true,
+	ORCA_SWAP_V2:          true,
+	RAYDIUM_CPMM:          true,
+	METEORA_POOLS_PROGRAM: true,
 }

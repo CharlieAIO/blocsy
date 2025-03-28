@@ -201,6 +201,11 @@ func validateProgram(program string, accounts []int, accountKeys []string) bool 
 			return true
 		}
 	}
+	if program == RAYDIUM_CONCENTRATED_LIQ {
+		if len(accounts) == 15 {
+			return true
+		}
+	}
 	return false
 }
 
