@@ -452,7 +452,7 @@ func CreatePairTable(ctx context.Context, db *sqlx.DB) {
     "exchange" TEXT NOT NULL,
     "network" TEXT NOT NULL,
     PRIMARY KEY ("address")
-);`, tokensTable)
+);`, pairsTable)
 
 	if _, err := db.ExecContext(ctx, query); err != nil {
 		log.Fatalf("Error creating table: %v", err)
