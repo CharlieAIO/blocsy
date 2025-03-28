@@ -380,8 +380,8 @@ func (repo *TimescaleRepository) InsertPair(ctx context.Context, pair types.Pair
 		createdBlock = pair.CreatedBlock
 	}
 
-	var query = fmt.Sprintf(`INSERT INTO "%s" ("address", "token", "createdBlock", "createdTimestamp","exchange", "network") VALUES ($1,$2,$3,$4,$5,$6)`, pairsTable)
-	if _, err := repo.db.ExecContext(ctx, query, pair.Address, pair.Token, createdBlock, pair.CreatedTimestamp, pair.Exchange, pair.Network); err != nil {
+	var query = fmt.Sprintf(`INSERT INTO "%s" ("address", "token", "quoteToken", "createdBlock", "createdTimestamp","exchange", "network") VALUES ($1,$2,$3,$4,$5,$6,$7)`, pairsTable)
+	if _, err := repo.db.ExecContext(ctx, query, pair.Address, pair.Token, pair.QuoteToken.Address, createdBlock, pair.CreatedTimestamp, pair.Exchange, pair.Network); err != nil {
 		return fmt.Errorf("cannot insert pair: %w", err)
 	}
 
@@ -437,6 +437,7 @@ func CreatePairTable(ctx context.Context, db *sqlx.DB) {
 	var query = fmt.Sprintf(`CREATE TABLE IF NOT EXISTS "%s" (
     "address" TEXT NOT NULL,
     "token" TEXT NOT NULL,
+    "quoteToken" TEXT NOT NULL,
     "createdBlock" INT NOT NULL DEFAULT 0,
     "createdTimestamp" TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "exchange" TEXT NOT NULL,
