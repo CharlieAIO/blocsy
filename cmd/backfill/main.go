@@ -51,6 +51,7 @@ func main() {
 				pairsCh = nil
 			} else {
 				if err = pRepo.InsertPair(ctx, pair); err != nil {
+					log.Printf("Error inserting pair: %v", err)
 					continue
 				}
 				count++
