@@ -113,7 +113,7 @@ func (n *Node) GetTx(ctx context.Context, hash string) (*types.SolanaTx, error) 
 	}
 
 	txMessage := types.HTTPTxMessage{}
-	if err := easyjson.UnmarshalFromReader(resp.Body, &txMessage); err != nil {
+	if err = easyjson.UnmarshalFromReader(resp.Body, &txMessage); err != nil {
 		return nil, fmt.Errorf("error decoding message: %w, body size: %d KB", err, resp.ContentLength)
 	}
 

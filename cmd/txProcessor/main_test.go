@@ -76,6 +76,7 @@ func TestSwapHandler(t *testing.T) {
 		{Target: 2, Signature: "63Xjzbwc2mczzSUsDRnEYtVFr1Das5GwtUrErTAy492J8ZPS3XjhDxFNVyYYJ4DtRquErTCQZg6iBAY68a4nP6se"},
 		{Target: 1, Signature: "3FoXqwcUdSGAbMtZpD9NtcB2dyYkGRoLa2PHJcnxWhY5afbgC5bcZS5hyWbXfQAqbLn3SN78srcTxNK7mKjJEKWS"},
 		{Target: 1, Signature: "28rHU4GAqtjrnnZNPCguU21Ak7MdJ1UJhEGMZFGZixgsL5cDGwAQmQenaqK1VkVoW4na3qNvGVQh9vQmDZg3m88V"},
+		{Target: 1, Signature: "3yQesNmjkBgYu9tbVvcTYnZzKankoLGagv3Xrw5qJCNWurZRhtebZLesioVH6WXurnc6cpprVYuhwN2UxfEJEZnW"},
 	}
 
 	for _, tc := range tests {
@@ -97,9 +98,9 @@ func test_tx(ctx context.Context, node *solana.Node, sh *solana.SwapHandler, t *
 	log.Printf("PumpFun Tokens: %+v", pumpFunTokens)
 
 	swaps := sh.HandleSwaps(ctx, transfers, tx, 0, 0)
-	//for i, transfer := range transfers {
-	//	t.Logf("Transfer %d: %+v", i, transfer)
-	//}
+	for i, transfer := range transfers {
+		t.Logf("Transfer %d: %+v", i, transfer)
+	}
 
 	if len(swaps) != target {
 		for i, transfer := range transfers {

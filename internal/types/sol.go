@@ -136,6 +136,7 @@ type TransactionMeta struct {
 	LoadedAddresses   LoadedAddresses    `json:"loadedAddresses,omitempty"`
 }
 
+//easyjson:json
 type LoadedAddresses struct {
 	Readonly []string `json:"readonly"`
 	Writable []string `json:"writable"`
@@ -186,7 +187,6 @@ type Message struct {
 	AddressTableLookups []AddressTableLookup `json:"addressTableLookups"`
 	Instructions        []Instruction        `json:"instructions"`
 	RecentBlockhash     string               `json:"recentBlockhash"`
-	Header              interface{}          `json:"header,omitempty"`
 }
 
 //easyjson:json
@@ -209,9 +209,6 @@ type Instruction struct {
 	Accounts       []int  `json:"accounts"`
 	Data           string `json:"data"`
 	ProgramIdIndex int    `json:"programIdIndex"`
-	//ProgramId      string      `json:"programId"`
-	//Parsed  *ParsedData `json:"parsed"`
-	//Program string `json:"program"`
 }
 
 //easyjson:skip

@@ -317,7 +317,6 @@ func (qh *QueueHandler) insertBatch(ctx context.Context, swaps []types.SwapLog) 
 	const maxRetries = 3
 
 	for retry := 0; retry < maxRetries; retry++ {
-		log.Printf("Inserting swaps batch (attempt %d) %+v", retry+1, swaps[0])
 		if err := qh.pRepo.InsertSwaps(ctx, swaps); err != nil {
 			log.Printf("Failed to insert swaps batch (attempt %d): %v", retry+1, err)
 			time.Sleep(2 * time.Second)
