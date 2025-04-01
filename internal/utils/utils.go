@@ -78,7 +78,7 @@ func GetDBConnection(ctx context.Context) (*sqlx.DB, error) {
 	}
 
 	dbx := sqlx.NewDb(dbConn, "postgres")
-	dbx.SetMaxOpenConns(200)
+	dbx.SetMaxOpenConns(400)
 	dbx.SetMaxIdleConns(100)
 	dbx.SetConnMaxLifetime(5 * time.Minute)
 
