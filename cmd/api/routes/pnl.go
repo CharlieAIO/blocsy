@@ -128,12 +128,16 @@ func (h *Handler) AggregatedPnlHandler(w http.ResponseWriter, r *http.Request) {
 			for _, swap := range swapLogs {
 				amountOutFloat := new(big.Float).SetFloat64(swap.AmountOut)
 				amountInFloat := new(big.Float).SetFloat64(swap.AmountIn)
-				if swap.Action == "BUY" {
+				if swap.Action == "BUY" || swap.Action == "RECEIVE" {
 					totalBuyTokens.Add(totalBuyTokens, amountInFloat)
-					totalBuyValue.Add(totalBuyValue, new(big.Float).Mul(amountOutFloat, big.NewFloat(usdPrice)))
-				} else if swap.Action == "SELL" {
+					if swap.Action == "BUY" {
+						totalBuyValue.Add(totalBuyValue, new(big.Float).Mul(amountOutFloat, big.NewFloat(usdPrice)))
+					}
+				} else if swap.Action == "SELL" || swap.Action == "TRANSFER" {
 					totalSellTokens.Add(totalSellTokens, amountOutFloat)
-					totalSellValue.Add(totalSellValue, new(big.Float).Mul(amountInFloat, big.NewFloat(usdPrice)))
+					if swap.Action == "SELL" {
+						totalSellValue.Add(totalSellValue, new(big.Float).Mul(amountInFloat, big.NewFloat(usdPrice)))
+					}
 				}
 			}
 
