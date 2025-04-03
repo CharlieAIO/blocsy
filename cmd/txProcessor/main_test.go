@@ -99,9 +99,6 @@ func test_tx(ctx context.Context, node *solana.Node, sh *solana.SwapHandler, t *
 	log.Printf("PumpFun Tokens: %+v", pumpFunTokens)
 
 	swaps := sh.HandleSwaps(ctx, transfers, tx, 0, 0)
-	for i, transfer := range transfers {
-		t.Logf("Transfer %d: %+v", i, transfer)
-	}
 
 	if len(swaps) != target {
 		for i, transfer := range transfers {
