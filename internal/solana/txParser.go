@@ -175,40 +175,6 @@ func ParseTransaction(tx *types.SolanaTx) ([]types.SolTransfer, []types.SolTrans
 	return transfers, burns, tokenMints, tokensCreated
 }
 
-func validateProgram(program string, accounts []int, accountKeys []string) bool {
-	if program == ORCA_WHIRL_PROGRAM_ID {
-		if len(accounts) == 15 || (len(accounts) == 11 && accountKeys[accounts[0]] == TOKEN_PROGRAM) {
-			return true
-		}
-	}
-	if program == RAYDIUM_LIQ_POOL_V4 {
-		if len(accounts) == 18 || len(accounts) == 17 {
-			return true
-		}
-	}
-	if program == METEORA_DLMM_PROGRAM {
-		if len(accounts) >= 15 && accountKeys[accounts[14]] == METEORA_DLMM_PROGRAM {
-			return true
-		}
-	}
-	if program == PUMPFUN {
-		if len(accounts) == 12 && accountKeys[accounts[11]] == PUMPFUN {
-			return true
-		}
-	}
-	if program == PUMPFUN_AMM {
-		if len(accounts) == 17 && accountKeys[accounts[16]] == PUMPFUN_AMM {
-			return true
-		}
-	}
-	if program == RAYDIUM_CONCENTRATED_LIQ {
-		if len(accounts) == 15 {
-			return true
-		}
-	}
-	return false
-}
-
 func findParentProgram(ixIndex int, tx *types.SolanaTx, innerIxIndex int, innerInstructionIxIndex int, accountKeys []string) (string, []int) {
 	if innerIxIndex >= 0 {
 		// If inner instruction, traverse backwards within inner instructions
@@ -221,7 +187,7 @@ func findParentProgram(ixIndex int, tx *types.SolanaTx, innerIxIndex int, innerI
 
 			if validateProgramIsDex(accountKeys[ix.ProgramIdIndex]) {
 				var accs []int
-				if validateProgram(accountKeys[ix.ProgramIdIndex], ix.Accounts, accountKeys) {
+				if validateDEXProgram(accountKeys[ix.ProgramIdIndex], ix.Accounts, accountKeys) {
 					accs = ix.Accounts
 				}
 				return accountKeys[ix.ProgramIdIndex], accs
@@ -232,7 +198,7 @@ func findParentProgram(ixIndex int, tx *types.SolanaTx, innerIxIndex int, innerI
 	baseIx := tx.Transaction.Message.Instructions[ixIndex]
 	if validateProgramIsDex(accountKeys[baseIx.ProgramIdIndex]) {
 		var accs []int
-		if validateProgram(accountKeys[baseIx.ProgramIdIndex], baseIx.Accounts, accountKeys) {
+		if validateDEXProgram(accountKeys[baseIx.ProgramIdIndex], baseIx.Accounts, accountKeys) {
 			accs = baseIx.Accounts
 		}
 		return accountKeys[baseIx.ProgramIdIndex], accs

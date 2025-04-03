@@ -46,6 +46,45 @@ func validateSupportedDex(programId string) bool {
 	return false
 }
 
+func validateDEXProgram(program string, accounts []int, accountKeys []string) bool {
+	if program == ORCA_WHIRL_PROGRAM_ID {
+		if len(accounts) == 15 || (len(accounts) == 11 && accountKeys[accounts[0]] == TOKEN_PROGRAM) {
+			return true
+		}
+	}
+	if program == RAYDIUM_LIQ_POOL_V4 {
+		if len(accounts) == 18 || len(accounts) == 17 {
+			return true
+		}
+	}
+	if program == METEORA_DLMM_PROGRAM {
+		if len(accounts) >= 15 && accountKeys[accounts[14]] == METEORA_DLMM_PROGRAM {
+			return true
+		}
+	}
+	if program == PUMPFUN {
+		if len(accounts) == 12 && accountKeys[accounts[11]] == PUMPFUN {
+			return true
+		}
+	}
+	if program == PUMPFUN_AMM {
+		if len(accounts) == 17 && accountKeys[accounts[16]] == PUMPFUN_AMM {
+			return true
+		}
+	}
+	if program == RAYDIUM_CONCENTRATED_LIQ {
+		if len(accounts) == 15 {
+			return true
+		}
+	}
+	if program == RAYDIUM_CPMM {
+		if len(accounts) == 13 {
+			return true
+		}
+	}
+	return false
+}
+
 func validateProgramIsDex(programId string) bool {
 	switch programId {
 	case PUMPFUN,

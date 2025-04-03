@@ -158,6 +158,7 @@ func processTransfer(index int, transfers []types.SolTransfer, accountKeys []str
 	handlers := map[string]handlerFunc{
 		RAYDIUM_LIQ_POOL_V4:      dex.HandleRaydiumSwaps,
 		RAYDIUM_CONCENTRATED_LIQ: dex.HandleRaydiumConcentratedSwaps,
+		RAYDIUM_CPMM:             dex.HandleRaydiumCPMMSwaps,
 		ORCA_WHIRL_PROGRAM_ID:    dex.HandleOrcaSwaps,
 		METEORA_DLMM_PROGRAM:     dex.HandleMeteoraSwaps,
 		//METEORA_POOLS_PROGRAM: dex.HandleMeteoraSwaps,
@@ -165,7 +166,6 @@ func processTransfer(index int, transfers []types.SolTransfer, accountKeys []str
 		PUMPFUN_AMM: dex.HandlePumpFunAmmSwaps,
 	}
 
-	accountsLen := len(transfers[index].IxAccounts)
 	programId := transfers[index].ParentProgramId
 
 	handler, exists := handlers[programId]
@@ -173,17 +173,7 @@ func processTransfer(index int, transfers []types.SolTransfer, accountKeys []str
 		return types.SolSwap{}, 0
 	}
 
-	if programId == ORCA_WHIRL_PROGRAM_ID {
-		if (accountsLen != 15 && accountsLen != 11) || accountKeys[transfers[index].IxAccounts[0]] != TOKEN_PROGRAM {
-			return types.SolSwap{}, 0
-		}
-	} else if programId == RAYDIUM_LIQ_POOL_V4 && accountsLen != 18 && accountsLen != 17 {
-		return types.SolSwap{}, 0
-	} else if programId == METEORA_DLMM_PROGRAM && accountsLen != 18 && accountsLen != 17 && accountsLen != 16 {
-		return types.SolSwap{}, 0
-	} else if programId == PUMPFUN_AMM && accountsLen != 17 {
-		return types.SolSwap{}, 0
-	} else if programId == RAYDIUM_CONCENTRATED_LIQ && accountsLen != 15 {
+	if !validateDEXProgram(programId, transfers[index].IxAccounts, accountKeys) {
 		return types.SolSwap{}, 0
 	}
 
