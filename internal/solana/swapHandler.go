@@ -176,7 +176,7 @@ func processTransfer(index int, transfers []types.SolTransfer, accountKeys []str
 		return types.SolSwap{}, 0
 	}
 
-	if !validateDEXProgram(programId, transfers[index].IxAccounts, accountKeys) {
+	if !validateDexInstruction(programId, transfers[index].IxAccounts, accountKeys) {
 		return types.SolSwap{}, 0
 	}
 

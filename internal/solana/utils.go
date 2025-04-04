@@ -35,18 +35,20 @@ func validateTX(tx *types.SolanaTx) bool {
 
 func validateSupportedDex(programId string) bool {
 	switch programId {
-	case PUMPFUN,
+	case
+		PUMPFUN,
 		METEORA_DLMM_PROGRAM,
 		RAYDIUM_LIQ_POOL_V4,
 		PUMPFUN_AMM,
 		RAYDIUM_CONCENTRATED_LIQ,
+		RAYDIUM_CPMM,
 		ORCA_WHIRL_PROGRAM_ID:
 		return true
 	}
 	return false
 }
 
-func validateDEXProgram(program string, accounts []int, accountKeys []string) bool {
+func validateDexInstruction(program string, accounts []int, accountKeys []string) bool {
 	if program == ORCA_WHIRL_PROGRAM_ID {
 		if len(accounts) == 15 || (len(accounts) == 11 && accountKeys[accounts[0]] == TOKEN_PROGRAM) {
 			return true
@@ -85,11 +87,12 @@ func validateDEXProgram(program string, accounts []int, accountKeys []string) bo
 	return false
 }
 
-func validateProgramIsDex(programId string) bool {
+func validateParentProgram(programId string) bool {
 	switch programId {
 	case PUMPFUN,
 		METEORA_DLMM_PROGRAM, METEORA_POOLS_PROGRAM,
-		RAYDIUM_LIQ_POOL_V4, RAYDIUM_CONCENTRATED_LIQ,
+		RAYDIUM_LIQ_POOL_V4, RAYDIUM_CONCENTRATED_LIQ, RAYDIUM_CPMM,
+		JUPITER_V6_AGGREGATOR,
 		LIFINITY_SWAP_V2, PHOENIX,
 		PUMPFUN_AMM,
 		ORCA_WHIRL_PROGRAM_ID, ORCA_SWAP_V2, ORCA_SWAP:

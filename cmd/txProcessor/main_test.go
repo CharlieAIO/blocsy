@@ -4,7 +4,6 @@ import (
 	"blocsy/internal/cache"
 	"blocsy/internal/db"
 	"blocsy/internal/solana"
-	"blocsy/internal/solana/dex"
 	"blocsy/internal/utils"
 	"context"
 	"log"
@@ -54,7 +53,7 @@ func TestSwapHandler(t *testing.T) {
 		{Target: 1, Signature: "2jRqSN5Ckx9sgwBoTkgQ7xz2fZb4TTftdz69noGFESx7eJW6Jxt1s4HP1fce6vzF8rBgzehYD3KSKQoKYWVRUotC"},
 		{Target: 3, Signature: "43skCh7Z9paKpE1Hv52QQ3hqDzEwgtzDmQL77DtpeUon7zJUQFuemwHUPcZhiT5cBp84vdz3Azo2cxn8fTyLyHZV"},
 		{Target: 1, Signature: "3Y2D8SYBBDnYYAwx9ZPasbySnB5AbofpUL1WCZzxVgMZULkCDpgBBChNs4mS8MFGjPUjzMZgtk8CnvyA2xhFk6GU"},
-		{Target: 3, Signature: "2fbQoAurQTKEM2v3uYGuxJ5LQkucB5diFeMvZqGZ1ShLB5kixPzLS3Wnf7UCrZBFfSBYGRaySvSK1sgxApJWQR2g"},
+		{Target: 2, Signature: "2fbQoAurQTKEM2v3uYGuxJ5LQkucB5diFeMvZqGZ1ShLB5kixPzLS3Wnf7UCrZBFfSBYGRaySvSK1sgxApJWQR2g"},
 		{Target: 1, Signature: "5F8W4cxpYLM6JK9ASorp2YkcQzCFYcgbRDjA2PXqf6T59QN1iBcUHVycEtvcE7xtnKuYzf3HetTqVZf65eWcntQ9"},
 		{Target: 1, Signature: "K9PFgioRJRn6wgNjTwyW9j8Gtss6juwzvzkwsvXPHo9SUPACG6AexmSx2ZqfytELXgsopfsLEFfZ5AneNsvWc2F"},
 		{Target: 1, Signature: "5RaAG259hpsjEF3pETFBhCxqosvfSz4T4H7REs7KhPKXg8ZKhLAEk3M1uhqsXfKeCqHCT7JkrN6cVmiAPDaGbBU"},
@@ -70,7 +69,7 @@ func TestSwapHandler(t *testing.T) {
 		{Target: 1, Signature: "3LmwWyTdynRQktorcfDU67wVycrXcxV2FrUJ6zEwJ2va3WVbRCZmfP8BnFyjcStk7y1AGtaCVWcqJktYa2knuBcT"},
 		{Target: 1, Signature: "4WYKb2q7DLoVg6direSixARb1CpzXwmGA4To3yd4zsBhMaPmxFXpCTnvtM2UdAjjkvzXQyTuf1NUmh4jCye5xZvA"},
 		{Target: 0, Signature: "31b9bX8kaFPJizGx3VkGqWX6juyNWpBSeE2BJxQXALovVRpVAeF1k6p4ZB7jb1QgctcLyoSWpcqD1VXTK4niRmS4"},
-		{Target: 1, Signature: "3vr5TJo3d5TUxqECYkKfejg9rNcvh3xeaVcTX2XRcC1sqLXVMtMNeWqAkC8zSnE8j8tiU4TcD21UNwtkXhAUPmp"},
+		{Target: 3, Signature: "3vr5TJo3d5TUxqECYkKfejg9rNcvh3xeaVcTX2XRcC1sqLXVMtMNeWqAkC8zSnE8j8tiU4TcD21UNwtkXhAUPmp"},
 		{Target: 1, Signature: "3WugKiaFfhawNVSQwycW7oYrruFEoyzQoHYupvRWhTSyVcScNAJFzcpcQZL2ahL4y9SKypimjC6d3WqWnm4X9Z9w"},
 		{Target: 1, Signature: "2ev694arceQ3HtSCdFKj7UJRZmy8sL2cMGbeme8hvptTCnSJv2p2SoeQRGt3vjbYEHbsu29N6WiMA2ryrW1ADSiF"},
 		{Target: 2, Signature: "63Xjzbwc2mczzSUsDRnEYtVFr1Das5GwtUrErTAy492J8ZPS3XjhDxFNVyYYJ4DtRquErTCQZg6iBAY68a4nP6se"},
@@ -78,6 +77,7 @@ func TestSwapHandler(t *testing.T) {
 		{Target: 1, Signature: "28rHU4GAqtjrnnZNPCguU21Ak7MdJ1UJhEGMZFGZixgsL5cDGwAQmQenaqK1VkVoW4na3qNvGVQh9vQmDZg3m88V"},
 		{Target: 1, Signature: "3yQesNmjkBgYu9tbVvcTYnZzKankoLGagv3Xrw5qJCNWurZRhtebZLesioVH6WXurnc6cpprVYuhwN2UxfEJEZnW"},
 		{Target: 1, Signature: "PDyoiVu6dPmmT8vqA6TFvQhHxBfyfKTebMK92cKhJgcUZLAehvJwG6YbrPmngazupv7ncFpawZzAnpxzTAKgtv1"},
+		{Target: 1, Signature: "3YckRxDJAja1ntyyi33puPsfhXqoWoCJLiiHHBh2ZCQpmj8Eif1JUtKCwsY1koEBGXUWEBC8DgmHWnom7SjAVHwY"},
 	}
 
 	for _, tc := range tests {
@@ -94,9 +94,8 @@ func test_tx(ctx context.Context, node *solana.Node, sh *solana.SwapHandler, t *
 		t.Fatalf("Error getting tx: %v", err)
 	}
 	transfers, _, _, _ := solana.ParseTransaction(tx)
-	logs := solana.GetLogs(tx.Meta.LogMessages)
-	pumpFunTokens := dex.HandlePumpFunNewToken(logs, solana.PUMPFUN)
-	log.Printf("PumpFun Tokens: %+v", pumpFunTokens)
+	//logs := solana.GetLogs(tx.Meta.LogMessages)
+	//pumpFunTokens := dex.HandlePumpFunNewToken(logs, solana.PUMPFUN)
 
 	swaps := sh.HandleSwaps(ctx, transfers, tx, 0, 0)
 

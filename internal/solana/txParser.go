@@ -92,31 +92,31 @@ func ParseTransaction(tx *types.SolanaTx) ([]types.SolTransfer, []types.SolTrans
 
 	for instructionIndex := range tx.Transaction.Message.Instructions {
 		instruction := tx.Transaction.Message.Instructions[instructionIndex]
-		transfer, found := processInstruction(instruction, AccountKeysMap, balanceDiffMap, nativeBalanceDiffMap, tx, -1, instructionIndex)
+		processedOuter, found := processInstruction(instruction, AccountKeysMap, balanceDiffMap, nativeBalanceDiffMap, tx, -1, instructionIndex)
 		if found {
 			parentProgramId, parentAccounts := findParentProgram(instructionIndex, tx, -1, -1, accountKeys)
-			transfer.IxAccounts = parentAccounts
-			transfer.ParentProgramId = parentProgramId
+			processedOuter.IxAccounts = parentAccounts
+			processedOuter.ParentProgramId = parentProgramId
 
-			if transfer.Amount != "" && transfer.Amount != "0" {
-				if transfer.Type == "burn" {
-					burns = append(burns, transfer)
-				} else if transfer.Type == "mint" {
-					tokenMints = append(tokenMints, transfer)
+			if processedOuter.Amount != "" && processedOuter.Amount != "0" {
+				if processedOuter.Type == "burn" {
+					burns = append(burns, processedOuter)
+				} else if processedOuter.Type == "mint" {
+					tokenMints = append(tokenMints, processedOuter)
 				}
-				transfers = append(transfers, transfer)
+				transfers = append(transfers, processedOuter)
 
 			}
 		} else {
-			if transfer.Type == "initMint" {
+			if processedOuter.Type == "initMint" {
 				token := types.Token{
-					Address:  transfer.Mint,
-					Decimals: uint8(transfer.Decimals),
+					Address:  processedOuter.Mint,
+					Decimals: uint8(processedOuter.Decimals),
 					Network:  "solana",
 					Supply:   "0",
 				}
 
-				name, symbol, uri, foundMetadata := findMetaplexInstruction(tx, transfer.Mint)
+				name, symbol, uri, foundMetadata := findMetaplexInstruction(tx, processedOuter.Mint)
 				if foundMetadata {
 					token.Metadata = &uri
 					token.Name = name
@@ -134,31 +134,31 @@ func ParseTransaction(tx *types.SolanaTx) ([]types.SolTransfer, []types.SolTrans
 			}
 			for ixIndex := range tx.Meta.InnerInstructions[innerIxIndex].Instructions {
 				innerInstruction := tx.Meta.InnerInstructions[innerIxIndex].Instructions[ixIndex]
-				innerTransfer, foundInner := processInstruction(innerInstruction, AccountKeysMap, balanceDiffMap, nativeBalanceDiffMap, tx, instructionIndex, ixIndex)
+				processedInner, foundInner := processInstruction(innerInstruction, AccountKeysMap, balanceDiffMap, nativeBalanceDiffMap, tx, instructionIndex, ixIndex)
 
 				if foundInner {
 					parentProgramId, parentAccounts := findParentProgram(instructionIndex, tx, innerIxIndex, ixIndex, accountKeys)
-					innerTransfer.IxAccounts = parentAccounts
-					innerTransfer.ParentProgramId = parentProgramId
-					innerTransfer.EventData = findPumpFunSwapEvent(instructionIndex, tx, innerIxIndex, ixIndex, accountKeys)
+					processedInner.IxAccounts = parentAccounts
+					processedInner.ParentProgramId = parentProgramId
+					processedInner.EventData = findPumpFunSwapEvent(instructionIndex, tx, innerIxIndex, ixIndex, accountKeys)
 
-					if innerTransfer.Amount != "" && innerTransfer.Amount != "0" {
-						if transfer.Type == "burn" {
-							burns = append(burns, innerTransfer)
-						} else if transfer.Type == "mint" {
-							tokenMints = append(tokenMints, innerTransfer)
+					if processedInner.Amount != "" && processedInner.Amount != "0" {
+						if processedInner.Type == "burn" {
+							burns = append(burns, processedInner)
+						} else if processedInner.Type == "mint" {
+							tokenMints = append(tokenMints, processedInner)
 						}
-						transfers = append(transfers, innerTransfer)
+						transfers = append(transfers, processedInner)
 					}
 				} else {
-					if innerTransfer.Type == "initMint" {
+					if processedInner.Type == "initMint" {
 						token := types.Token{
-							Address:  innerTransfer.Mint,
-							Decimals: uint8(innerTransfer.Decimals),
+							Address:  processedInner.Mint,
+							Decimals: uint8(processedInner.Decimals),
 							Network:  "solana",
 							Supply:   "0",
 						}
-						name, symbol, uri, foundMetadata := findMetaplexInstruction(tx, innerTransfer.Mint)
+						name, symbol, uri, foundMetadata := findMetaplexInstruction(tx, processedInner.Mint)
 						if foundMetadata {
 							token.Metadata = &uri
 							token.Name = name
@@ -181,13 +181,13 @@ func findParentProgram(ixIndex int, tx *types.SolanaTx, innerIxIndex int, innerI
 		for innerI := innerInstructionIxIndex; innerI >= 0; innerI-- {
 			ix := tx.Meta.InnerInstructions[innerIxIndex].Instructions[innerI]
 
-			if validateProgramIsDex(accountKeys[ix.ProgramIdIndex]) && len(ix.Accounts) <= 2 {
-				continue
-			}
+			//if validateParentProgram(accountKeys[ix.ProgramIdIndex]) && len(ix.Accounts) <= 2 {
+			//	continue
+			//}
 
-			if validateProgramIsDex(accountKeys[ix.ProgramIdIndex]) {
+			if validateParentProgram(accountKeys[ix.ProgramIdIndex]) {
 				var accs []int
-				if validateDEXProgram(accountKeys[ix.ProgramIdIndex], ix.Accounts, accountKeys) {
+				if validateDexInstruction(accountKeys[ix.ProgramIdIndex], ix.Accounts, accountKeys) {
 					accs = ix.Accounts
 				}
 				return accountKeys[ix.ProgramIdIndex], accs
@@ -196,9 +196,9 @@ func findParentProgram(ixIndex int, tx *types.SolanaTx, innerIxIndex int, innerI
 	}
 
 	baseIx := tx.Transaction.Message.Instructions[ixIndex]
-	if validateProgramIsDex(accountKeys[baseIx.ProgramIdIndex]) {
+	if validateParentProgram(accountKeys[baseIx.ProgramIdIndex]) {
 		var accs []int
-		if validateDEXProgram(accountKeys[baseIx.ProgramIdIndex], baseIx.Accounts, accountKeys) {
+		if validateDexInstruction(accountKeys[baseIx.ProgramIdIndex], baseIx.Accounts, accountKeys) {
 			accs = baseIx.Accounts
 		}
 		return accountKeys[baseIx.ProgramIdIndex], accs

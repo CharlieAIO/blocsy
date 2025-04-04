@@ -76,6 +76,5 @@ var IgnorePrograms = map[string]bool{
 	LIFINITY_SWAP_V2:      true,
 	ORCA_SWAP:             true,
 	ORCA_SWAP_V2:          true,
-	RAYDIUM_CPMM:          true,
 	METEORA_POOLS_PROGRAM: true,
 }
