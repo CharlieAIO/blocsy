@@ -128,20 +128,28 @@ func (h *Handler) TokenPnlHandler(w http.ResponseWriter, r *http.Request) {
 			totalBuyValue := new(big.Float)
 			totalSellValue := new(big.Float)
 
+			hasBuyOrSell := false
+
 			for _, swap := range swapLogs {
 				amountOutFloat := new(big.Float).SetFloat64(swap.AmountOut)
 				amountInFloat := new(big.Float).SetFloat64(swap.AmountIn)
 				if swap.Action == "BUY" || swap.Action == "RECEIVE" {
 					totalBuyTokens.Add(totalBuyTokens, amountInFloat)
 					if swap.Action == "BUY" {
+						hasBuyOrSell = true
 						totalBuyValue.Add(totalBuyValue, new(big.Float).Mul(amountOutFloat, big.NewFloat(usdPrice)))
 					}
 				} else if swap.Action == "SELL" || swap.Action == "TRANSFER" {
 					totalSellTokens.Add(totalSellTokens, amountOutFloat)
 					if swap.Action == "SELL" {
+						hasBuyOrSell = true
 						totalSellValue.Add(totalSellValue, new(big.Float).Mul(amountInFloat, big.NewFloat(usdPrice)))
 					}
 				}
+			}
+
+			if !hasBuyOrSell {
+				return
 			}
 
 			realizedPNL := new(big.Float)
