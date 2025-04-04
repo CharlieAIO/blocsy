@@ -25,7 +25,16 @@ func (t *TxHandler) ProcessTransaction(ctx context.Context, tx *types.SolanaTx, 
 	transfers, burns, mints, tokensCreated := ParseTransaction(tx)
 	logs := GetLogs(tx.Meta.LogMessages)
 	swaps := t.sh.HandleSwaps(ctx, transfers, tx, timestamp, block)
+
 	pumpFunTokens := dex.HandlePumpFunNewToken(logs, PUMPFUN)
+	go func() {
+		if t.Websocket != nil && !ignoreWS {
+			t.Websocket.BroadcastSwaps(swaps)
+			if len(pumpFunTokens) > 0 {
+				t.Websocket.BroadcastPumpFunTokens(pumpFunTokens)
+			}
+		}
+	}()
 
 	go func() {
 		for _, burn := range burns {
@@ -71,13 +80,5 @@ func (t *TxHandler) ProcessTransaction(ctx context.Context, tx *types.SolanaTx, 
 		}
 	}()
 
-	if t.Websocket != nil && !ignoreWS {
-		go func() {
-			t.Websocket.BroadcastSwaps(swaps)
-			if len(pumpFunTokens) > 0 {
-				t.Websocket.BroadcastPumpFunTokens(pumpFunTokens)
-			}
-		}()
-	}
 	return swaps, nil
 }

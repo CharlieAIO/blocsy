@@ -129,7 +129,7 @@ func (ws *WebSocketServer) broadcastRelevantSwaps(swaps []types.SwapLog) {
 					continue
 				}
 
-				if err := client.WriteMessage(websocket.TextMessage, message); err != nil {
+				if err = client.WriteMessage(websocket.TextMessage, message); err != nil {
 					log.Printf("Failed to write message to client: %v", err)
 					delete(ws.clients, client)
 				}
