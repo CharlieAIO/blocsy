@@ -42,3 +42,7 @@ type AggregatedPnLResponse struct {
 type SearchQueryResponse struct {
 	Results []QueryAll `json:"results"`
 }
+
+type HoldingsLookupResponse struct {
+	Results float64 `json:"results"`
+}

@@ -68,6 +68,8 @@ func (h *Handler) GetHttpHandler() http.Handler {
 		r.Get("/pnl/{wallet}", h.AggregatedPnlHandler)
 		r.Get("/token-pnl/{wallet}", h.TokenPnlHandler)
 		r.Get("/activity/{wallet}", h.WalletActivityHandler)
+		r.Get("/holdings/{wallet}/{token}", h.HoldingsLookupHandler)
+
 	})
 
 	return r
