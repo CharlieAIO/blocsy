@@ -46,3 +46,9 @@ type SearchQueryResponse struct {
 type HoldingsLookupResponse struct {
 	Results float64 `json:"results"`
 }
+
+type PriceLookupResponse struct {
+	Price    float64 `json:"price"`
+	Symbol   string  `json:"symbol"`
+	Currency string  `json:"currency"`
+}
