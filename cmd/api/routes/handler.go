@@ -60,6 +60,7 @@ func (h *Handler) GetHttpHandler() http.Handler {
 
 		r.Get("/pair/{pair}", h.PairLookupHandler)
 		r.Get("/token/{token}", h.TokenLookupHandler)
+		r.Get("/price/{symbol}", h.PriceLookupHandler)
 
 		r.Get("/check-bundled/{token}", h.CheckBundledHandler)
 		r.Get("/find-swap/{token}/{amount}/{timestamp}", h.FindSwapHandler)

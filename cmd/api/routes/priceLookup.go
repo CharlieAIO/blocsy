@@ -21,7 +21,7 @@ import (
 //	@Success		200			{object}	types.TokenPNLResponse
 //	@Failure		400			{object}	map[string]interface{}
 //	@Failure		500			{object}	map[string]interface{}
-//	@Router			/token-pnl/{wallet} [get]
+//	@Router			/price/{symbol} [get]
 func (h *Handler) PriceLookupHandler(w http.ResponseWriter, r *http.Request) {
 	symbol := chi.URLParam(r, "symbol")
 
