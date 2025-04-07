@@ -2,6 +2,7 @@ package solana
 
 import (
 	"blocsy/internal/types"
+	"log"
 	"math"
 	"math/big"
 	"strconv"
@@ -141,7 +142,6 @@ func ParseTransaction(tx *types.SolanaTx) ([]types.SolTransfer, []types.SolTrans
 					processedInner.IxAccounts = parentAccounts
 					processedInner.ParentProgramId = parentProgramId
 					processedInner.EventData = findPumpFunSwapEvent(instructionIndex, tx, innerIxIndex, ixIndex, accountKeys)
-
 					if processedInner.Amount != "" && processedInner.Amount != "0" {
 						if processedInner.Type == "burn" {
 							burns = append(burns, processedInner)
@@ -353,6 +353,11 @@ func processInstruction(
 				}
 				decimals = tokenAccount.Decimals
 			}
+		}
+		log.Printf("amount: %d, decimals: %d", instructionData.Amount, decimals)
+
+		if decimals == -1 {
+			decimals = 9
 		}
 		amount = new(big.Float).Quo(new(big.Float).SetUint64(instructionData.Amount), new(big.Float).SetFloat64(math.Pow10(decimals))).Text('f', -1)
 		transfer := types.SolTransfer{
