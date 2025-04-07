@@ -261,18 +261,30 @@ func (repo *TimescaleRepository) FindWalletTokenHoldings(ctx context.Context, to
 }
 
 func (repo *TimescaleRepository) FindTopTraders(ctx context.Context, token string) ([]string, error) {
-	var query = fmt.Sprintf(`SELECT * FROM "%s" 
-WHERE token = $1
-ORDER BY timestamp ASC 
-LIMIT 100;`, swapLogTable)
+	var query = fmt.Sprintf(`
+		WITH trader_pnl AS (
+			SELECT 
+				wallet,
+				SUM(CASE 
+					WHEN action = 'BUY' THEN -"amountOut"
+					WHEN action = 'SELL' THEN "amountIn"
+					ELSE 0 
+				END) as pnl
+			FROM "%s"
+			WHERE token = $1
+			GROUP BY wallet
+		)
+		SELECT wallet
+		FROM trader_pnl
+		ORDER BY pnl DESC
+		LIMIT 100;`, swapLogTable)
 
-	var swaps []types.SwapLog
-	if err := repo.db.SelectContext(ctx, &swaps, query, token); err != nil {
-		return nil, fmt.Errorf("cannot get swaps: %w", err)
+	var traders []string
+	if err := repo.db.SelectContext(ctx, &traders, query, token); err != nil {
+		return nil, fmt.Errorf("cannot get top traders: %w", err)
 	}
 
-	return []string{}, nil
-
+	return traders, nil
 }
 
 func (repo *TimescaleRepository) QueryAll(ctx context.Context, searchQuery string) (*[]types.QueryAll, error) {
