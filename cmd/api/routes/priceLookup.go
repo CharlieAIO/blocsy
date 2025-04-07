@@ -18,7 +18,7 @@ import (
 //	@Accept			json
 //	@Produce		json
 //	@Param			symbol	path		string	true	"Token symbol"
-//	@Success		200		{object}	types.TokenPNLResponse
+//	@Success		200		{object}	types.PriceLookupResponse
 //	@Failure		400		{object}	map[string]interface{}
 //	@Failure		500		{object}	map[string]interface{}
 //	@Router			/price/{symbol} [get]

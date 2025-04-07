@@ -19,7 +19,7 @@ import (
 //	@Produce		json
 //	@Param			wallet	path		string	true	"Wallet address"
 //	@Param			token	path		string	true	"Token address"
-//	@Success		200		{object}	types.AggregatedPnLResponse
+//	@Success		200		{object}	types.HoldingsLookupResponse
 //	@Failure		400		{object}	map[string]interface{}
 //	@Failure		500		{object}	map[string]interface{}
 //	@Router			/holdings/{wallet}/{token} [get]
