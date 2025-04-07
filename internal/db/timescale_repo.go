@@ -5,10 +5,11 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
-	"github.com/jmoiron/sqlx"
 	"log"
 	"strings"
 	"time"
+
+	"github.com/jmoiron/sqlx"
 )
 
 const (
@@ -268,6 +269,8 @@ func (repo *TimescaleRepository) FindTopTraders(ctx context.Context, token strin
 				SUM(CASE 
 					WHEN action = 'BUY' THEN -"amountOut"
 					WHEN action = 'SELL' THEN "amountIn"
+					WHEN action = 'RECEIVE' THEN "amountIn"
+					WHEN action = 'TRANSFER' THEN -"amountOut"
 					ELSE 0 
 				END) as pnl
 			FROM "%s"

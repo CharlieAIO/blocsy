@@ -3,10 +3,11 @@ package routes
 import (
 	"blocsy/internal/types"
 	"encoding/json"
-	"github.com/go-chi/chi/v5"
 	"log"
 	"net/http"
 	"strconv"
+
+	"github.com/go-chi/chi/v5"
 )
 
 // WalletActivityHandler godoc
