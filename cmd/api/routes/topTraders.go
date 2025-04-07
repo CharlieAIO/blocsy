@@ -3,9 +3,10 @@ package routes
 import (
 	"blocsy/internal/types"
 	"encoding/json"
-	"github.com/go-chi/chi/v5"
 	"log"
 	"net/http"
+
+	"github.com/go-chi/chi/v5"
 )
 
 // TopTradersHandler godoc
@@ -38,5 +39,9 @@ func (h *Handler) TopTradersHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	if err := json.NewEncoder(w).Encode(types.TopTradersResponse{
 		Results: traders,
-	});
+	}); err != nil {
+		log.Printf("Failed to encode response: %v", err)
+		http.Error(w, "Internal server error", http.StatusInternalServerError)
+		return
+	}
 }

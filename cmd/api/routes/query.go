@@ -17,10 +17,10 @@ import (
 //	@Tags			Lookup
 //	@Accept			json
 //	@Produce		json
-//	@Param			q	query		string		true	"Search query using token address, pair address, wallet address or token name/ token symbol"
-//	@Success		200		{object}	types.SearchQueryResponse
-//	@Failure		400		{object}	map[string]interface{}
-//	@Failure		500		{object}	map[string]interface{}
+//	@Param			q	query		string	true	"Search query using token address, pair address, wallet address or token name/ token symbol"
+//	@Success		200	{object}	types.SearchQueryResponse
+//	@Failure		400	{object}	map[string]interface{}
+//	@Failure		500	{object}	map[string]interface{}
 //	@Router			/search [get]
 func (h *Handler) SearchQueryHandler(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()

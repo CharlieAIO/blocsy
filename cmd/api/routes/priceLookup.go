@@ -17,10 +17,10 @@ import (
 //	@Tags			Lookup
 //	@Accept			json
 //	@Produce		json
-//	@Param			symbol		path		string	true	"Token symbol"
-//	@Success		200			{object}	types.TokenPNLResponse
-//	@Failure		400			{object}	map[string]interface{}
-//	@Failure		500			{object}	map[string]interface{}
+//	@Param			symbol	path		string	true	"Token symbol"
+//	@Success		200		{object}	types.TokenPNLResponse
+//	@Failure		400		{object}	map[string]interface{}
+//	@Failure		500		{object}	map[string]interface{}
 //	@Router			/price/{symbol} [get]
 func (h *Handler) PriceLookupHandler(w http.ResponseWriter, r *http.Request) {
 	symbol := chi.URLParam(r, "symbol")
