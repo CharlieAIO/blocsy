@@ -22,7 +22,7 @@ import (
 //	@Success		200			{object}	types.AggregatedPnLResponse
 //	@Failure		400			{object}	map[string]interface{}
 //	@Failure		500			{object}	map[string]interface{}
-//	@Router			/holdings/{wallet} [get]
+//	@Router			/holdings/{wallet}/{token} [get]
 func (h *Handler) HoldingsLookupHandler(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
