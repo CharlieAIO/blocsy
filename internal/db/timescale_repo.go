@@ -293,23 +293,26 @@ func (repo *TimescaleRepository) FindTopTraders(ctx context.Context, token strin
 func (repo *TimescaleRepository) QueryAll(ctx context.Context, searchQuery string) ([]types.QueryAll, error) {
 	var query = fmt.Sprintf(`
 WITH pair_res AS (
-  SELECT pair
+  SELECT
+    pair
   FROM "%s"
   WHERE pair = $1
   LIMIT 1
 ),
 wallet_res AS (
-  SELECT wallet
-  FROM "%s"
+  SELECT
+    wallet
+  FROM "%s"  
   WHERE wallet = $1
     AND NOT EXISTS (SELECT 1 FROM pair_res)
   LIMIT 1
 ),
 token_res AS (
-  SELECT address    AS token
-       , name
-       , symbol
-  FROM "%s"
+  SELECT
+    address  AS token,
+    name,
+    symbol
+  FROM "%s"       
   WHERE name    = $1
      OR symbol  = $1
      OR address = $1
@@ -317,36 +320,35 @@ token_res AS (
 )
 
 SELECT
-  'pair'   AS source,
-  NULL::text     AS wallet,
-  pair     AS pair,
-  NULL::text     AS token,
-  NULL::text     AS name,
-  NULL::text     AS symbol
+  'pair'      AS source,
+  NULL::text  AS wallet,
+  NULL::text  AS token,
+  NULL::text  AS name,
+  NULL::text  AS symbol,
+  pair        AS pair
 FROM pair_res
 
 UNION ALL
 
 SELECT
-  'wallet' AS source,
-  wallet   AS wallet,
-  NULL::text     AS pair,
-  NULL::text     AS token,
-  NULL::text     AS name,
-  NULL::text     AS symbol
+  'wallet'    AS source,
+  wallet      AS wallet,
+  NULL::text  AS token,
+  NULL::text  AS name,
+  NULL::text  AS symbol,
+  NULL::text  AS pair
 FROM wallet_res
 
 UNION ALL
 
 SELECT
-  'token'  AS source,
-  NULL::text     AS wallet,
-  NULL::text     AS pair,
-  token    AS token,
-  name     AS name,
-  symbol   AS symbol
+  'token'     AS source,
+  NULL::text  AS wallet,
+  token       AS token,
+  name        AS name,
+  symbol      AS symbol,
+  NULL::text  AS pair
 FROM token_res;
-
 `, swapLogTable, swapLogTable, tokensTable)
 
 	var queryAll []types.QueryAll
