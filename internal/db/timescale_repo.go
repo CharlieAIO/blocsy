@@ -292,28 +292,50 @@ func (repo *TimescaleRepository) FindTopTraders(ctx context.Context, token strin
 
 func (repo *TimescaleRepository) QueryAll(ctx context.Context, searchQuery string) (*[]types.QueryAll, error) {
 	var query = fmt.Sprintf(`
-(
-  SELECT 'wallet' AS source,
-         wallet,
-         NULL as token,
-         NULL AS name,
-         NULL AS symbol
+WITH pair_res AS (
+  SELECT pair
   FROM "%s"
-  WHERE wallet = $1
+  WHERE pair = $1
   LIMIT 1
 )
-UNION ALL
-(
-  SELECT 'token' AS source,
-         NULL AS wallet,
-         address AS token,
-         name,
-         symbol
+, wallet_res AS (
+  SELECT wallet
   FROM "%s"
-  WHERE name LIKE $1
-  OR symbol LIKE $1
-  OR address = $1
-);`, swapLogTable, tokensTable)
+  WHERE wallet = $1
+    AND NOT EXISTS (SELECT 1 FROM pair_res)
+  LIMIT 1
+)
+SELECT
+  'pair'   AS source,
+  NULL     AS wallet,
+  pair     AS pair,
+  NULL     AS name,
+  NULL     AS symbol
+FROM pair_res
+
+UNION ALL
+
+SELECT
+  'wallet' AS source,
+  wallet   AS wallet,
+  NULL     AS pair,
+  NULL     AS name,
+  NULL     AS symbol
+FROM wallet_res
+
+UNION ALL
+
+SELECT
+  'token'  AS source,
+  NULL     AS wallet,
+  address  AS token,
+  name,
+  symbol
+FROM "%s"
+WHERE name    LIKE $1
+   OR symbol  LIKE $1
+   OR address =  $1
+;`, swapLogTable, swapLogTable, tokensTable)
 
 	var queryAll []types.QueryAll
 	if err := repo.db.SelectContext(ctx, &queryAll, query, searchQuery); err != nil {
