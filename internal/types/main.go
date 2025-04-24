@@ -94,4 +94,5 @@ type QueryAll struct {
 	Token  *string `json:"token,omitempty" db:"token"`
 	Name   *string `json:"name,omitempty" db:"name"`
 	Symbol *string `json:"symbol,omitempty" db:"symbol"`
+	Pair   *string `json:"pair,omitempty" db:"pair"`
 }
