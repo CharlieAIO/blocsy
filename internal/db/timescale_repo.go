@@ -309,7 +309,8 @@ func (repo *TimescaleRepository) QueryAll(ctx context.Context, searchQuery strin
 	  NULL     AS wallet,
 	  pair     AS pair,
 	  NULL     AS name,
-	  NULL     AS symbol
+	  NULL     AS symbol,
+	  NULL     AS token
 	FROM pair_res
 
 	UNION ALL
@@ -320,7 +321,8 @@ func (repo *TimescaleRepository) QueryAll(ctx context.Context, searchQuery strin
 	  wallet   AS wallet,
 	  NULL     AS pair,
 	  NULL     AS name,
-	  NULL     AS symbol
+	  NULL     AS symbol,
+	  NULL    AS token
 	FROM wallet_res
 	
 	UNION ALL
@@ -328,6 +330,7 @@ func (repo *TimescaleRepository) QueryAll(ctx context.Context, searchQuery strin
 	SELECT
 	  'token'  AS source,
 	  NULL     AS wallet,
+	  NULL    AS pair,
 	  address  AS token,
 	  name,
 	  symbol
@@ -337,11 +340,13 @@ func (repo *TimescaleRepository) QueryAll(ctx context.Context, searchQuery strin
 	OR address =  $1;
 `, swapLogTable, swapLogTable, tokensTable)
 
+	log.Printf("QueryAll SQL: %s", query)
+
 	var queryAll []types.QueryAll
 	if err := repo.db.SelectContext(ctx, &queryAll, query, searchQuery); err != nil {
-		return nil, fmt.Errorf("cannot get token: %w", err)
+		return nil, fmt.Errorf("cannot search: %w", err)
 	}
-
+	log.Printf("QueryAll Results: %v", queryAll)
 	return &queryAll, nil
 }
 
