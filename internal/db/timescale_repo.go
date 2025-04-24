@@ -290,7 +290,7 @@ func (repo *TimescaleRepository) FindTopTraders(ctx context.Context, token strin
 	return traders, nil
 }
 
-func (repo *TimescaleRepository) QueryAll(ctx context.Context, searchQuery string) (*[]types.QueryAll, error) {
+func (repo *TimescaleRepository) QueryAll(ctx context.Context, searchQuery string) ([]types.QueryAll, error) {
 	var query = fmt.Sprintf(`
 WITH pair_res AS (
   SELECT pair
@@ -318,11 +318,11 @@ token_res AS (
 
 SELECT
   'pair'   AS source,
-  NULL     AS wallet,
+  NULL::text     AS wallet,
   pair     AS pair,
-  NULL     AS token,
-  NULL     AS name,
-  NULL     AS symbol
+  NULL::text     AS token,
+  NULL::text     AS name,
+  NULL::text     AS symbol
 FROM pair_res
 
 UNION ALL
@@ -330,18 +330,18 @@ UNION ALL
 SELECT
   'wallet' AS source,
   wallet   AS wallet,
-  NULL     AS pair,
-  NULL     AS token,
-  NULL     AS name,
-  NULL     AS symbol
+  NULL::text     AS pair,
+  NULL::text     AS token,
+  NULL::text     AS name,
+  NULL::text     AS symbol
 FROM wallet_res
 
 UNION ALL
 
 SELECT
   'token'  AS source,
-  NULL     AS wallet,
-  NULL     AS pair,
+  NULL::text     AS wallet,
+  NULL::text     AS pair,
   token    AS token,
   name     AS name,
   symbol   AS symbol
@@ -354,7 +354,7 @@ FROM token_res;
 		return nil, fmt.Errorf("cannot search: %w", err)
 	}
 	log.Printf("QueryAll Results: %+v", queryAll)
-	return &queryAll, nil
+	return queryAll, nil
 }
 
 // =============================================== Token Table Functions  ================================================
