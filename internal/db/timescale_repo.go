@@ -340,13 +340,11 @@ func (repo *TimescaleRepository) QueryAll(ctx context.Context, searchQuery strin
 	OR address =  $1;
 `, swapLogTable, swapLogTable, tokensTable)
 
-	log.Printf("QueryAll SQL: %s", query)
-
 	var queryAll []types.QueryAll
 	if err := repo.db.SelectContext(ctx, &queryAll, query, searchQuery); err != nil {
 		return nil, fmt.Errorf("cannot search: %w", err)
 	}
-	log.Printf("QueryAll Results: %v", queryAll)
+	log.Printf("QueryAll Results: %+v", queryAll)
 	return &queryAll, nil
 }
 
