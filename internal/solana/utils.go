@@ -55,7 +55,7 @@ func validateDexInstruction(program string, accounts []int, accountKeys []string
 		}
 	}
 	if program == RAYDIUM_LIQ_POOL_V4 {
-		if accountKeys[accounts[0]] == TOKEN_PROGRAM && len(accounts) == 18 || len(accounts) == 17 {
+		if len(accounts) == 18 || len(accounts) == 17 && accountKeys[accounts[0]] == TOKEN_PROGRAM {
 			return true
 		}
 	}
