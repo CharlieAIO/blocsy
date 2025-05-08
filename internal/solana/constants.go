@@ -45,6 +45,7 @@ var IgnoreToUsers = map[string]bool{
 	"45ruCyfdRkWpRNGEqWzjCiXRHkZs8WXCLQ67Pnpye7Hp": true,
 	"EQ4iGa81Uyp8WuqZ3yXQGqVH9jWfKT9nubUUGrQmRL3a": true,
 	"62qc2CNXwrYqQScmEdiZFFAnJR262PxWEuNQtxfafNgV": true,
+	"FWsW1xNtWscwNmKv6wVsU1iTzRN6wmmk3MjxRP5tT7hz": true,
 }
 
 var IgnoreTokens = map[string]bool{

@@ -79,6 +79,8 @@ func TestSwapHandler(t *testing.T) {
 		{Target: 1, Signature: "PDyoiVu6dPmmT8vqA6TFvQhHxBfyfKTebMK92cKhJgcUZLAehvJwG6YbrPmngazupv7ncFpawZzAnpxzTAKgtv1"},
 		{Target: 1, Signature: "3YckRxDJAja1ntyyi33puPsfhXqoWoCJLiiHHBh2ZCQpmj8Eif1JUtKCwsY1koEBGXUWEBC8DgmHWnom7SjAVHwY"},
 		{Target: 1, Signature: "3HY6BFLHG42zY8JD5DuWFCskdfKC2cxu8JnBHiX6iJaZ2rZVf4W8cfkCrPRw9xUGuXjx89NHvNmMcxz2fgXFs1fv"},
+		{Target: 1, Signature: "3RCVDiKDVKU8C34HHad7EKVKV1RtujxVVdPZquEWwm5enCW5DcjBmCST7uEiHo5AhGJTe3AvXWaA4x3oXZWDUZeJ"},
+		{Target: 2, Signature: "59yvoPnM6ZGJWj2ZKsZNURbE8iMqPMQ14BxFqsc8zg8Nhh3VczJfro5DUkcisGASPvEDLvoXo75HfLaPdPigf1RX"},
 	}
 
 	for _, tc := range tests {

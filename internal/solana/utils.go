@@ -75,7 +75,7 @@ func validateDexInstruction(program string, accounts []int, accountKeys []string
 		}
 	}
 	if program == RAYDIUM_CONCENTRATED_LIQ {
-		if len(accounts) == 15 {
+		if len(accounts) == 15 || len(accounts) == 16 {
 			return true
 		}
 	}

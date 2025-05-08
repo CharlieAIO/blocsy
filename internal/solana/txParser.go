@@ -2,7 +2,6 @@ package solana
 
 import (
 	"blocsy/internal/types"
-	"log"
 	"math"
 	"math/big"
 	"strconv"
@@ -354,7 +353,6 @@ func processInstruction(
 				decimals = tokenAccount.Decimals
 			}
 		}
-		log.Printf("amount: %d, decimals: %d", instructionData.Amount, decimals)
 
 		if decimals == -1 {
 			decimals = 9
