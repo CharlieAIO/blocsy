@@ -55,7 +55,7 @@ func validateDexInstruction(program string, accounts []int, accountKeys []string
 		}
 	}
 	if program == RAYDIUM_LIQ_POOL_V4 {
-		if len(accounts) == 18 || len(accounts) == 17 {
+		if accountKeys[accounts[0]] == TOKEN_PROGRAM && len(accounts) == 18 || len(accounts) == 17 {
 			return true
 		}
 	}
@@ -65,17 +65,17 @@ func validateDexInstruction(program string, accounts []int, accountKeys []string
 		}
 	}
 	if program == PUMPFUN {
-		if len(accounts) == 12 && accountKeys[accounts[11]] == PUMPFUN {
+		if len(accounts) >= 12 && accountKeys[accounts[11]] == PUMPFUN {
 			return true
 		}
 	}
 	if program == PUMPFUN_AMM {
-		if len(accounts) == 17 && accountKeys[accounts[16]] == PUMPFUN_AMM {
+		if len(accounts) >= 17 && accountKeys[accounts[16]] == PUMPFUN_AMM {
 			return true
 		}
 	}
 	if program == RAYDIUM_CONCENTRATED_LIQ {
-		if len(accounts) == 15 || len(accounts) == 16 {
+		if len(accounts) >= 10 && accountKeys[accounts[8]] == TOKEN_PROGRAM {
 			return true
 		}
 	}
