@@ -25,7 +25,7 @@ type SwapsRepo interface {
 	FindLatestSwap(ctx context.Context, pair string) ([]types.SwapLog, error)
 	FindWalletTokenHoldings(ctx context.Context, token string, wallet string) (float64, error)
 	GetAllWalletSwaps(ctx context.Context, wallet string, limit int64, offset int64) ([]types.SwapLogModified, error)
-	FindTopTraders(ctx context.Context, token string) ([]string, error)
+	FindTopTraders(ctx context.Context, token string, limit int64) ([]string, error)
 	FindTopRecentTokens(ctx context.Context) ([]types.TopRecentToken, error)
 	QueryAll(ctx context.Context, searchQuery string) ([]types.QueryAll, error)
 }

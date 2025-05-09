@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"log"
 	"net/http"
+	"strconv"
 
 	"github.com/go-chi/chi/v5"
 )
@@ -28,8 +29,13 @@ func (h *Handler) TopTradersHandler(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
 	address := chi.URLParam(r, "token")
+	limit := r.URL.Query().Get("limit")
+	if limit == "" {
+		limit = "100"
+	}
+	limitInt, err := strconv.ParseInt(limit, 10, 32)
 
-	traders, err := h.swapsRepo.FindTopTraders(ctx, address)
+	traders, err := h.swapsRepo.FindTopTraders(ctx, address, limitInt)
 	if err != nil {
 		log.Printf("Failed to find top traders: %v", err)
 		http.Error(w, "Internal server error", http.StatusInternalServerError)

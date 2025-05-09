@@ -262,7 +262,7 @@ func (repo *TimescaleRepository) FindWalletTokenHoldings(ctx context.Context, to
 	return totalTokens, nil
 }
 
-func (repo *TimescaleRepository) FindTopTraders(ctx context.Context, token string) ([]string, error) {
+func (repo *TimescaleRepository) FindTopTraders(ctx context.Context, token string, limit int64) ([]string, error) {
 	var query = fmt.Sprintf(`
 		WITH trader_pnl AS (
 			SELECT 
@@ -281,7 +281,7 @@ func (repo *TimescaleRepository) FindTopTraders(ctx context.Context, token strin
 		SELECT wallet
 		FROM trader_pnl
 		ORDER BY pnl DESC
-		LIMIT 100;`, swapLogTable)
+		LIMIT %d;`, swapLogTable, limit)
 
 	var traders []string
 	if err := repo.db.SelectContext(ctx, &traders, query, token); err != nil {
@@ -297,7 +297,7 @@ WITH recent_swaps AS (
   SELECT *
   FROM "%s"
   ORDER BY timestamp DESC
-  LIMIT 100
+  LIMIT 2000
 ),
 ranked_swaps AS (
   SELECT 
