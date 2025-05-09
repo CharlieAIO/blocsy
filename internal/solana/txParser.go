@@ -180,10 +180,6 @@ func findParentProgram(ixIndex int, tx *types.SolanaTx, innerIxIndex int, innerI
 		for innerI := innerInstructionIxIndex; innerI >= 0; innerI-- {
 			ix := tx.Meta.InnerInstructions[innerIxIndex].Instructions[innerI]
 
-			//if validateParentProgram(accountKeys[ix.ProgramIdIndex]) && len(ix.Accounts) <= 2 {
-			//	continue
-			//}
-
 			if validateParentProgram(accountKeys[ix.ProgramIdIndex]) {
 				var accs []int
 				if validateDexInstruction(accountKeys[ix.ProgramIdIndex], ix.Accounts, accountKeys) {
@@ -203,7 +199,6 @@ func findParentProgram(ixIndex int, tx *types.SolanaTx, innerIxIndex int, innerI
 		return accountKeys[baseIx.ProgramIdIndex], accs
 	}
 
-	// Fallback: Default to empty if no parent program is found
 	return "", nil
 }
 
@@ -241,16 +236,7 @@ func processInstruction(
 		if destination == "" || source == "" {
 			return types.SolTransfer{}, false
 		}
-		//amount := ""
-		//if balanceDiff, ok := FindAccountKeyIndex(AccountKeysMap, destination); ok {
-		//	if balanceDiffMap[balanceDiff].Amount != "" {
-		//		amount = balanceDiffMap[balanceDiff].Amount
-		//	} else if nativeBalanceDiffMap[balanceDiff].Amount != "0" {
-		//		amount = nativeBalanceDiffMap[balanceDiff].Amount
-		//	}
-		//} else {
-		//	return types.SolTransfer{}, false
-		//}
+
 		amount := new(big.Float).Quo(new(big.Float).SetUint64(instructionData.Lamports), big.NewFloat(1e9)).Text('f', -1)
 
 		transfer := types.SolTransfer{
@@ -355,7 +341,7 @@ func processInstruction(
 		}
 
 		if decimals == -1 {
-			decimals = 9
+			decimals = FindMintDecimals(tx, mint)
 		}
 		amount = new(big.Float).Quo(new(big.Float).SetUint64(instructionData.Amount), new(big.Float).SetFloat64(math.Pow10(decimals))).Text('f', -1)
 		transfer := types.SolTransfer{
@@ -557,4 +543,19 @@ func findMetaplexInstruction(tx *types.SolanaTx, mint string) (string, string, s
 	}
 
 	return "", "", "", false
+}
+
+func FindMintDecimals(tx *types.SolanaTx, mint string) int {
+	for _, balance := range tx.Meta.PostTokenBalances {
+		if balance.Mint == mint {
+			return balance.UITokenAmount.Decimals
+		}
+	}
+	for _, balance := range tx.Meta.PreTokenBalances {
+		if balance.Mint == mint {
+			return balance.UITokenAmount.Decimals
+		}
+	}
+
+	return -1
 }
