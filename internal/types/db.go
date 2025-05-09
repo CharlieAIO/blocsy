@@ -33,5 +33,5 @@ type SwapLogModified struct {
 
 type TopRecentToken struct {
 	Token     string  `json:"token" db:"token"`
-	MarketCap float64 `json:"mcap" db:"mcap"`
+	MarketCap float64 `json:"market_cap" db:"market_cap"`
 }

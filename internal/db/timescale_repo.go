@@ -323,11 +323,10 @@ tokens AS (
 )
 SELECT 
   s.token, 
-  t.supply, 
-  (s.price * t.supply) as mcap
+  (s.price * t.supply) as market_cap
 FROM latest_swaps s
 JOIN tokens t ON s.token = t.address
-ORDER BY mcap DESC;
+ORDER BY market_cap DESC;
 `, swapLogTable, tokensTable)
 
 	var results []types.TopRecentToken
