@@ -426,10 +426,19 @@ func (repo *TimescaleRepository) FindToken(ctx context.Context, address string) 
 	return &token, nil
 }
 
-func (repo *TimescaleRepository) UpdateTokenSupply(ctx context.Context, address string, supply float64) error {
-	var query = fmt.Sprintf(`UPDATE "%s" SET supply = $1 WHERE address = $2`, tokensTable)
+func (repo *TimescaleRepository) UpdateTokenSupply(ctx context.Context, address string, changeAmount string, action string) error {
+	var query string
 
-	if _, err := repo.db.ExecContext(ctx, query, supply, address); err != nil {
+	switch action {
+	case "mint":
+		query = fmt.Sprintf(`UPDATE "%s" SET supply = supply + $1 WHERE address = $2`, tokensTable)
+	case "burn":
+		query = fmt.Sprintf(`UPDATE "%s" SET supply = supply - $1 WHERE address = $2`, tokensTable)
+	default:
+		return fmt.Errorf("invalid action: %s, must be either 'mint' or 'burn'", action)
+	}
+
+	if _, err := repo.db.ExecContext(ctx, query, changeAmount, address); err != nil {
 		return fmt.Errorf("cannot update token supply: %w", err)
 	}
 

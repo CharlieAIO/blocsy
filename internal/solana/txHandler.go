@@ -37,12 +37,6 @@ func (t *TxHandler) ProcessTransaction(ctx context.Context, tx *types.SolanaTx, 
 	}()
 
 	go func() {
-		for _, burn := range burns {
-			t.sh.tf.AddToMintBurnQueue(burn.Mint, burn.Amount, "burn")
-		}
-		for _, mint := range mints {
-			t.sh.tf.AddToMintBurnQueue(mint.Mint, mint.Amount, "mint")
-		}
 
 		pumpFunTokenMints := make(map[string]bool)
 
@@ -77,6 +71,13 @@ func (t *TxHandler) ProcessTransaction(ctx context.Context, tx *types.SolanaTx, 
 			if err != nil {
 				log.Printf("failed to store token: %v", err)
 			}
+		}
+
+		for _, burn := range burns {
+			t.repo.UpdateTokenSupply(ctx, burn.Mint, burn.Amount, "burn")
+		}
+		for _, mint := range mints {
+			t.repo.UpdateTokenSupply(ctx, mint.Mint, mint.Amount, "mint")
 		}
 	}()
 

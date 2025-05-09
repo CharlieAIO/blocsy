@@ -20,26 +20,12 @@ type TokenFinder struct {
 	solSvc *SolanaService
 	repo   TokensRepo
 
-	processor         *TokenProcessor
-	mintBurnProcessor *MintBurnProcessor
+	processor *TokenProcessor
 }
 type TokenProcessor struct {
 	queue chan string
 	seen  sync.Map
 	wg    sync.WaitGroup
-}
-
-type MintBurnProcessor struct {
-	queue       chan MintBurnProcessorQueue
-	seen        sync.Map
-	activeLocks sync.Map
-	wg          sync.WaitGroup
-}
-
-type MintBurnProcessorQueue struct {
-	address string
-	amount  string
-	Type    string
 }
 
 type PairsService struct {

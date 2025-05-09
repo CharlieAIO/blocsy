@@ -49,7 +49,7 @@ type SwapsRepo interface {
 type TokensRepo interface {
 	InsertToken(ctx context.Context, token types.Token) error
 	FindToken(ctx context.Context, address string) (*types.Token, error)
-	UpdateTokenSupply(ctx context.Context, address string, supply float64) error
+	UpdateTokenSupply(ctx context.Context, address string, changeAmount string, action string) error
 }
 
 type PairsRepo interface {
@@ -61,7 +61,6 @@ type PairsRepo interface {
 type SolanaTokenFinder interface {
 	FindToken(ctx context.Context, address string, miss bool) (*types.Token, *[]types.Pair, error)
 	AddToQueue(address string)
-	AddToMintBurnQueue(token string, amount string, type_ string)
 }
 
 type SolanaPairFinder interface {
