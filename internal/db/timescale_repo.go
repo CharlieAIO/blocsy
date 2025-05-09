@@ -291,6 +291,53 @@ func (repo *TimescaleRepository) FindTopTraders(ctx context.Context, token strin
 	return traders, nil
 }
 
+func (repo *TimescaleRepository) FindTopRecentTokens(ctx context.Context) ([]types.TopRecentToken, error) {
+	var query = fmt.Sprintf(`
+WITH recent_swaps AS (
+  SELECT *
+  FROM "%s"
+  ORDER BY timestamp DESC
+  LIMIT 100
+),
+ranked_swaps AS (
+  SELECT 
+    token,
+    timestamp,
+    CASE
+      WHEN action = 'BUY' THEN "amountOut" / "amountIn"
+      WHEN action = 'SELL' THEN "amountIn" / "amountOut"
+      ELSE 0
+    END AS price,
+    ROW_NUMBER() OVER (PARTITION BY token ORDER BY timestamp DESC) as rn
+  FROM recent_swaps
+),
+latest_swaps AS (
+  SELECT token, price
+  FROM ranked_swaps
+  WHERE rn = 1
+),
+tokens AS (
+  SELECT address, supply
+  FROM "%s"
+  WHERE "createdTimestamp" >= NOW() - INTERVAL '1 hour'
+)
+SELECT 
+  s.token, 
+  t.supply, 
+  (s.price * t.supply) as mcap
+FROM latest_swaps s
+JOIN tokens t ON s.token = t.address
+ORDER BY mcap DESC;
+`, swapLogTable, tokensTable)
+
+	var results []types.TopRecentToken
+	if err := repo.db.SelectContext(ctx, &results, query); err != nil {
+		return nil, fmt.Errorf("cannot get top traders: %w", err)
+	}
+
+	return results, nil
+}
+
 func (repo *TimescaleRepository) QueryAll(ctx context.Context, searchQuery string) ([]types.QueryAll, error) {
 	var query = fmt.Sprintf(`
 WITH pair_res AS (

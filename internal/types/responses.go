@@ -8,6 +8,10 @@ type TopTradersResponse struct {
 	Results []string `json:"results"`
 }
 
+type TopRecentTokensResponse struct {
+	Results []TopRecentToken `json:"results"`
+}
+
 type TokenLookupResponse struct {
 	Token Token  `json:"token"`
 	Pairs []Pair `json:"pairs"`

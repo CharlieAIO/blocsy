@@ -30,3 +30,8 @@ type SwapLogModified struct {
 	Processed   bool      `json:"processed" db:"processed"`
 	TokenSymbol string    `json:"tokenSymbol" db:"tokenSymbol"`
 }
+
+type TopRecentToken struct {
+	Token     string  `json:"token" db:"token"`
+	MarketCap float64 `json:"mcap" db:"mcap"`
+}
