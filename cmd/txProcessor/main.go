@@ -46,7 +46,6 @@ func solanaTxHandler(ctx context.Context, c *cache.Cache, pRepo *db.TimescaleRep
 
 	tf := solana.NewTokenFinder(c, solSvc, pRepo)
 	tf.NewTokenProcessor()
-	tf.NewMintBurnProcessor()
 	pf := solana.NewPairsService(c, tf, solSvc, pRepo)
 	pf.NewPairProcessor()
 
