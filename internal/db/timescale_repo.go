@@ -407,7 +407,10 @@ func (repo *TimescaleRepository) FindToken(ctx context.Context, address string) 
 	name, 
 	symbol, 
 	decimals, 
-	TO_CHAR(supply, 'FM999999999999999999.999999999999999999') as supply,
+	CASE 
+		WHEN supply = TRUNC(supply) THEN CAST(supply AS TEXT)
+		ELSE TRIM(TRAILING '0' FROM CAST(supply AS TEXT))
+	END as supply,
 	"createdBlock",
 	"createdTimestamp",
 	deployer,
