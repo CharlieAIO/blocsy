@@ -402,7 +402,18 @@ func (repo *TimescaleRepository) InsertToken(ctx context.Context, token types.To
 }
 
 func (repo *TimescaleRepository) FindToken(ctx context.Context, address string) (*types.Token, error) {
-	var query = fmt.Sprintf(`SELECT * FROM "%s" WHERE address = $1`, tokensTable)
+	var query = fmt.Sprintf(`SELECT
+    address, 
+	name, 
+	symbol, 
+	decimals, 
+	TO_CHAR(supply, 'FM999999999999999999.999999999999999999') as supply,
+	"createdBlock",
+	"createdTimestamp",
+	deployer,
+	metadata,
+	network 
+	FROM "%s" WHERE address = $1`, tokensTable)
 
 	var token types.Token
 	if err := repo.db.GetContext(ctx, &token, query, address); err != nil {
