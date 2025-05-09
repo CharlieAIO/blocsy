@@ -51,7 +51,7 @@ func (t *TxHandler) ProcessTransaction(ctx context.Context, tx *types.SolanaTx, 
 				Network:          "solana",
 				CreatedBlock:     int64(block),
 				CreatedTimestamp: time.Unix(timestamp, 0),
-				Supply:           "1000000000",
+				Supply:           "0",
 				Deployer:         &deployer,
 				Metadata:         &pfToken.Uri,
 			}
