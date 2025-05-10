@@ -113,7 +113,7 @@ func (h *Handler) AggregatedPnlHandler(w http.ResponseWriter, r *http.Request) {
 				if usdPrice > 0 {
 					priceCache[quoteTokenSymbol] = usdPrice
 				} else {
-					log.Printf("Missing price for token: %s", quoteTokenSymbol)
+					//log.Printf("Missing price for token: %s", quoteTokenSymbol)
 					mu.Unlock()
 					return
 				}
@@ -215,7 +215,7 @@ func (h *Handler) AggregatedPnlHandler(w http.ResponseWriter, r *http.Request) {
 				winCount++
 			}
 
-			log.Printf("usdPrice: %f | totalBuyValue: %f | totalSellValue: %f | totalBuyTokens: %f | totalSellTokens: %f | remainingAmount: %f | realizedPNL: %f | unrealizedPNL: %f | totalInvestment: %f | weightedROINumerator: %f | winCount: %d", usdPrice, totalBuyValue, totalSellValue, totalBuyTokens, totalSellTokens, remainingAmount, realizedPNL, unrealizedPNL, totalInvestment, weightedROINumerator, winCount)
+			//log.Printf("usdPrice: %f | totalBuyValue: %f | totalSellValue: %f | totalBuyTokens: %f | totalSellTokens: %f | remainingAmount: %f | realizedPNL: %f | unrealizedPNL: %f | totalInvestment: %f | weightedROINumerator: %f | winCount: %d", usdPrice, totalBuyValue, totalSellValue, totalBuyTokens, totalSellTokens, remainingAmount, realizedPNL, unrealizedPNL, totalInvestment, weightedROINumerator, winCount)
 			tokensTraded[pair] = true
 		}(token, swapLogs)
 	}
@@ -235,7 +235,7 @@ func (h *Handler) AggregatedPnlHandler(w http.ResponseWriter, r *http.Request) {
 		pnlResults.WinRate = (float64(winCount) / float64(pnlResults.TokensTraded)) * 100
 	}
 
-	log.Printf("pnl results: %+v", pnlResults)
+	//log.Printf("pnl results: %+v", pnlResults)
 
 	response := types.AggregatedPnLResponse{
 		Results: pnlResults,

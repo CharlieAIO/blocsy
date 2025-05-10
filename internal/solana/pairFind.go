@@ -125,7 +125,6 @@ func (ps *PairsService) AddToQueue(pair PairProcessorQueue) {
 	case ps.processor.queue <- pair:
 	default:
 		ps.processor.seen.Delete(pair)
-		log.Printf("Queue is full! Pair %s discarded.", pair)
 	}
 }
 

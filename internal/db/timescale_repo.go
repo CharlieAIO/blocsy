@@ -402,7 +402,6 @@ FROM token_res;
 	if err := repo.db.SelectContext(ctx, &queryAll, query, searchQuery); err != nil {
 		return nil, fmt.Errorf("cannot search: %w", err)
 	}
-	log.Printf("QueryAll Results: %+v", queryAll)
 	return queryAll, nil
 }
 
