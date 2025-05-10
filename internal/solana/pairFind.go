@@ -5,7 +5,6 @@ import (
 	"context"
 	"fmt"
 	"github.com/blocto/solana-go-sdk/client"
-	"log"
 	"sync"
 	"time"
 )
