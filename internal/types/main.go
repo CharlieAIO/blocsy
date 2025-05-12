@@ -1,6 +1,9 @@
 package types
 
-import "time"
+import (
+	"database/sql"
+	"time"
+)
 
 type AppError string
 
@@ -89,10 +92,10 @@ type BalanceSheet struct {
 }
 
 type QueryAll struct {
-	Source string  `json:"source" db:"source"`
-	Wallet *string `json:"wallet,omitempty" db:"wallet"`
-	Token  *string `json:"token,omitempty" db:"token"`
-	Name   *string `json:"name,omitempty" db:"name"`
-	Symbol *string `json:"symbol,omitempty" db:"symbol"`
-	Pair   string  `json:"pair" db:"pair"`
+	Source string         `json:"source" db:"source"`
+	Wallet sql.NullString `json:"wallet,omitempty" db:"wallet"`
+	Token  sql.NullString `json:"token,omitempty" db:"token"`
+	Name   sql.NullString `json:"name,omitempty" db:"name"`
+	Symbol sql.NullString `json:"symbol,omitempty" db:"symbol"`
+	Pair   sql.NullString `json:"pair" db:"pair"`
 }
