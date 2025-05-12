@@ -34,8 +34,14 @@ func (h *Handler) SearchQueryHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Convert QueryAll results to QueryAllResponse
+	responseResults := make([]types.QueryAllResponse, len(results))
+	for i, result := range results {
+		responseResults[i] = types.ConvertToResponse(result)
+	}
+
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(types.SearchQueryResponse{Results: results})
+	json.NewEncoder(w).Encode(types.SearchQueryResponse{Results: responseResults})
 	return
 
 }

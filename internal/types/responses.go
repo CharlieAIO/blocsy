@@ -43,8 +43,47 @@ type AggregatedPnLResponse struct {
 	Results AggregatedPnL `json:"results"`
 }
 
+// QueryAllResponse is a wrapper for QueryAll that handles sql.NullString fields properly
+type QueryAllResponse struct {
+	Source string `json:"source"`
+	Wallet string `json:"wallet,omitempty"`
+	Token  string `json:"token,omitempty"`
+	Name   string `json:"name,omitempty"`
+	Symbol string `json:"symbol,omitempty"`
+	Pair   string `json:"pair"`
+}
+
+// ConvertToResponse converts a QueryAll to a QueryAllResponse
+func ConvertToResponse(q QueryAll) QueryAllResponse {
+	resp := QueryAllResponse{
+		Source: q.Source,
+	}
+
+	if q.Wallet.Valid {
+		resp.Wallet = q.Wallet.String
+	}
+
+	if q.Token.Valid {
+		resp.Token = q.Token.String
+	}
+
+	if q.Name.Valid {
+		resp.Name = q.Name.String
+	}
+
+	if q.Symbol.Valid {
+		resp.Symbol = q.Symbol.String
+	}
+
+	if q.Pair.Valid {
+		resp.Pair = q.Pair.String
+	}
+
+	return resp
+}
+
 type SearchQueryResponse struct {
-	Results []QueryAll `json:"results"`
+	Results []QueryAllResponse `json:"results"`
 }
 
 type HoldingsLookupResponse struct {
