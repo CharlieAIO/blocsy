@@ -3,6 +3,7 @@
 package types
 
 import (
+	sql "database/sql"
 	json "encoding/json"
 	easyjson "github.com/mailru/easyjson"
 	jlexer "github.com/mailru/easyjson/jlexer"
@@ -563,45 +564,15 @@ func easyjson89aae3efDecodeBlocsyInternalTypes5(in *jlexer.Lexer, out *QueryAll)
 		case "source":
 			out.Source = string(in.String())
 		case "wallet":
-			if in.IsNull() {
-				in.Skip()
-				out.Wallet = nil
-			} else {
-				if out.Wallet == nil {
-					out.Wallet = new(string)
-				}
-				*out.Wallet = string(in.String())
-			}
+			easyjson89aae3efDecodeDatabaseSql(in, &out.Wallet)
 		case "token":
-			if in.IsNull() {
-				in.Skip()
-				out.Token = nil
-			} else {
-				if out.Token == nil {
-					out.Token = new(string)
-				}
-				*out.Token = string(in.String())
-			}
+			easyjson89aae3efDecodeDatabaseSql(in, &out.Token)
 		case "name":
-			if in.IsNull() {
-				in.Skip()
-				out.Name = nil
-			} else {
-				if out.Name == nil {
-					out.Name = new(string)
-				}
-				*out.Name = string(in.String())
-			}
+			easyjson89aae3efDecodeDatabaseSql(in, &out.Name)
 		case "symbol":
-			if in.IsNull() {
-				in.Skip()
-				out.Symbol = nil
-			} else {
-				if out.Symbol == nil {
-					out.Symbol = new(string)
-				}
-				*out.Symbol = string(in.String())
-			}
+			easyjson89aae3efDecodeDatabaseSql(in, &out.Symbol)
+		case "pair":
+			easyjson89aae3efDecodeDatabaseSql(in, &out.Pair)
 		default:
 			in.SkipRecursive()
 		}
@@ -621,25 +592,30 @@ func easyjson89aae3efEncodeBlocsyInternalTypes5(out *jwriter.Writer, in QueryAll
 		out.RawString(prefix[1:])
 		out.String(string(in.Source))
 	}
-	if in.Wallet != nil {
+	if true {
 		const prefix string = ",\"wallet\":"
 		out.RawString(prefix)
-		out.String(string(*in.Wallet))
+		easyjson89aae3efEncodeDatabaseSql(out, in.Wallet)
 	}
-	if in.Token != nil {
+	if true {
 		const prefix string = ",\"token\":"
 		out.RawString(prefix)
-		out.String(string(*in.Token))
+		easyjson89aae3efEncodeDatabaseSql(out, in.Token)
 	}
-	if in.Name != nil {
+	if true {
 		const prefix string = ",\"name\":"
 		out.RawString(prefix)
-		out.String(string(*in.Name))
+		easyjson89aae3efEncodeDatabaseSql(out, in.Name)
 	}
-	if in.Symbol != nil {
+	if true {
 		const prefix string = ",\"symbol\":"
 		out.RawString(prefix)
-		out.String(string(*in.Symbol))
+		easyjson89aae3efEncodeDatabaseSql(out, in.Symbol)
+	}
+	{
+		const prefix string = ",\"pair\":"
+		out.RawString(prefix)
+		easyjson89aae3efEncodeDatabaseSql(out, in.Pair)
 	}
 	out.RawByte('}')
 }
@@ -666,6 +642,55 @@ func (v *QueryAll) UnmarshalJSON(data []byte) error {
 // UnmarshalEasyJSON supports easyjson.Unmarshaler interface
 func (v *QueryAll) UnmarshalEasyJSON(l *jlexer.Lexer) {
 	easyjson89aae3efDecodeBlocsyInternalTypes5(l, v)
+}
+func easyjson89aae3efDecodeDatabaseSql(in *jlexer.Lexer, out *sql.NullString) {
+	isTopLevel := in.IsStart()
+	if in.IsNull() {
+		if isTopLevel {
+			in.Consumed()
+		}
+		in.Skip()
+		return
+	}
+	in.Delim('{')
+	for !in.IsDelim('}') {
+		key := in.UnsafeFieldName(false)
+		in.WantColon()
+		if in.IsNull() {
+			in.Skip()
+			in.WantComma()
+			continue
+		}
+		switch key {
+		case "String":
+			out.String = string(in.String())
+		case "Valid":
+			out.Valid = bool(in.Bool())
+		default:
+			in.SkipRecursive()
+		}
+		in.WantComma()
+	}
+	in.Delim('}')
+	if isTopLevel {
+		in.Consumed()
+	}
+}
+func easyjson89aae3efEncodeDatabaseSql(out *jwriter.Writer, in sql.NullString) {
+	out.RawByte('{')
+	first := true
+	_ = first
+	{
+		const prefix string = ",\"String\":"
+		out.RawString(prefix[1:])
+		out.String(string(in.String))
+	}
+	{
+		const prefix string = ",\"Valid\":"
+		out.RawString(prefix)
+		out.Bool(bool(in.Valid))
+	}
+	out.RawByte('}')
 }
 func easyjson89aae3efDecodeBlocsyInternalTypes6(in *jlexer.Lexer, out *ProcessInstructionData) {
 	isTopLevel := in.IsStart()
