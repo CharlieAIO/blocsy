@@ -116,7 +116,6 @@ func (h *Handler) AggregatedPnlHandler(w http.ResponseWriter, r *http.Request) {
 			}
 
 			hasBuyOrSell := false
-			var totalBuys, totalSells int64
 			for _, swap := range swapLogs {
 				if swap.Action == "BUY" {
 					hasBuyOrSell = true
