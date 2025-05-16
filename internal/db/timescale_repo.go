@@ -171,7 +171,7 @@ func (repo *TimescaleRepository) GetSwapsOnDate(ctx context.Context, wallet stri
 			t.symbol AS "tokenSymbol", 
 			COALESCE(qt.symbol, 'SOL') AS "quoteTokenSymbol"
 		FROM 
-			swap_log sl
+			"%s" sl
 		JOIN 
 			token t ON sl.token = t.address
 		LEFT JOIN 
@@ -181,9 +181,7 @@ func (repo *TimescaleRepository) GetSwapsOnDate(ctx context.Context, wallet stri
 		WHERE 
 			sl.wallet = $1
 			AND DATE(sl.timestamp) >= $2
-		ORDER BY 
-    	sl.timestamp ASC;
-	`, swapLogTable)
+		ORDER BY sl.timestamp ASC;`, swapLogTable)
 
 	var swaps []types.SwapLog
 	if err := repo.db.SelectContext(ctx, &swaps, query, wallet, formattedStartDate); err != nil {
