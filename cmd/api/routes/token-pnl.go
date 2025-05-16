@@ -123,7 +123,7 @@ func (h *Handler) TokenPnlHandler(w http.ResponseWriter, r *http.Request) {
 				return
 			}
 
-			pnlResults, _, _, _, _, _, _ := CalculateTokenPnL(
+			pnlResults, _, _, _, _, _, _, _ := CalculateTokenPnL(
 				ctx,
 				swapLogs,
 				usdPrice,
