@@ -1,7 +1,7 @@
 package types
 
 type WalletActivityResponse struct {
-	Results []SwapLogModified `json:"results"`
+	Results []SwapLog `json:"results"`
 }
 
 type TopTradersResponse struct {
@@ -23,8 +23,9 @@ type PairLookupResponse struct {
 }
 
 type TokenAndPnl struct {
-	Token string   `json:"token"`
-	PnL   TokenPnL `json:"pnl"`
+	Token       string   `json:"token"`
+	TokenSymbol string   `json:"tokenSymbol"`
+	PnL         TokenPnL `json:"pnl"`
 }
 
 type TokenPNLResponse struct {
@@ -40,7 +41,9 @@ type Pagination struct {
 }
 
 type AggregatedPnLResponse struct {
-	Results AggregatedPnL `json:"results"`
+	Results   AggregatedPnL `json:"results"`
+	TotalBuy  int64         `json:"totalBuy"`
+	TotalSell int64         `json:"totalSell"`
 }
 
 // QueryAllResponse is a wrapper for QueryAll that handles sql.NullString fields properly

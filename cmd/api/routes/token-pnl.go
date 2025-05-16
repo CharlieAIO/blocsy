@@ -92,31 +92,20 @@ func (h *Handler) TokenPnlHandler(w http.ResponseWriter, r *http.Request) {
 
 			var pair = swapLogs[0].Pair
 
-			var quoteTokenAddress string
-			if swapLogs[0].Source == "PUMPFUN" {
-				quoteTokenAddress = "SOL"
-			} else {
-				_, qt, err := h.pairFinder.FindPair(ctx, pair, nil)
-				if err != nil {
-					quoteTokenAddress = "SOL"
-				} else {
-					quoteTokenAddress = qt.Address // use the token address instead of symbol
-				}
-			}
-
-			if quoteTokenAddress == "" {
-				log.Printf("No token address for pair: %s", pair)
+			if swapLogs[0].QuoteTokenSymbol == nil {
+				log.Printf("No quote token symbol for pair: %s", pair)
 				return
 			}
 
+			quoteTokenSymbol := *swapLogs[0].QuoteTokenSymbol
+
 			mu.Lock()
-			usdPrice, ok := priceCache[quoteTokenAddress]
+			usdPrice, ok := priceCache[quoteTokenSymbol]
 			if !ok {
-				usdPrice = h.pricer.GetUSDPrice(quoteTokenAddress)
+				usdPrice = h.pricer.GetUSDPrice(quoteTokenSymbol)
 				if usdPrice > 0 {
-					priceCache[quoteTokenAddress] = usdPrice
+					priceCache[quoteTokenSymbol] = usdPrice
 				} else {
-					log.Printf("Missing price for token: %s", quoteTokenAddress)
 					mu.Unlock()
 					return
 				}
@@ -206,9 +195,15 @@ func (h *Handler) TokenPnlHandler(w http.ResponseWriter, r *http.Request) {
 			pnlResults.PnLUSD = pnlResults.RealizedPnLUSD + pnlResults.UnrealizedPnLUSD
 			pnlResults.TotalTrades = len(swapLogs)
 
+			tokenSymbol := ""
+			if swapLogs[0].TokenSymbol != nil {
+				tokenSymbol = *swapLogs[0].TokenSymbol
+			}
+
 			result := types.TokenAndPnl{
-				Token: swapLogs[0].Token,
-				PnL:   pnlResults,
+				Token:       swapLogs[0].Token,
+				TokenSymbol: tokenSymbol,
+				PnL:         pnlResults,
 			}
 			if swapLogs[0].Token != "" {
 				resultsMu.Lock()

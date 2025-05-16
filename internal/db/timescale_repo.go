@@ -143,7 +143,7 @@ func (repo *TimescaleRepository) DeleteSwapsUsingTx(ctx context.Context, signatu
 
 }
 
-func (repo *TimescaleRepository) GetAllWalletSwaps(ctx context.Context, wallet string, limit int64, offset int64) ([]types.SwapLogModified, error) {
+func (repo *TimescaleRepository) GetAllWalletSwaps(ctx context.Context, wallet string, limit int64, offset int64) ([]types.SwapLog, error) {
 
 	var query = fmt.Sprintf(`
 		SELECT sl.*, t.symbol AS "tokenSymbol"
@@ -153,7 +153,7 @@ func (repo *TimescaleRepository) GetAllWalletSwaps(ctx context.Context, wallet s
 		ORDER BY sl.timestamp DESC
 		LIMIT %d OFFSET %d;`, swapLogTable, limit, offset)
 
-	var swaps []types.SwapLogModified
+	var swaps []types.SwapLog
 
 	if err := repo.db.SelectContext(ctx, &swaps, query, wallet); err != nil {
 		return nil, fmt.Errorf("cannot get all wallet swaps: %w", err)
@@ -166,10 +166,23 @@ func (repo *TimescaleRepository) GetSwapsOnDate(ctx context.Context, wallet stri
 	formattedStartDate := startDate.Format("2006-01-02")
 
 	var query = fmt.Sprintf(`
-		SELECT * FROM "%s" 
-		WHERE "wallet" = $1 
-		AND DATE(timestamp) >= $2
-		ORDER BY "timestamp" ASC;
+		SELECT 
+			sl.*, 
+			t.symbol AS "tokenSymbol", 
+			COALESCE(qt.symbol, 'SOL') AS "quoteTokenSymbol"
+		FROM 
+			swap_log sl
+		JOIN 
+			token t ON sl.token = t.address
+		LEFT JOIN 
+			pair pr ON sl.pair = pr.address
+		LEFT JOIN 
+			token qt ON pr."quoteToken" = qt.address
+		WHERE 
+			sl.wallet = $1
+			AND DATE(sl.timestamp) >= $2
+		ORDER BY 
+    	sl.timestamp ASC;
 	`, swapLogTable)
 
 	var swaps []types.SwapLog

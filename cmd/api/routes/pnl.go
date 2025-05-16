@@ -79,6 +79,8 @@ func (h *Handler) AggregatedPnlHandler(w http.ResponseWriter, r *http.Request) {
 		tokenSwaps[swap.Token] = append(tokenSwaps[swap.Token], swap)
 	}
 
+	var totalBuys, totalSells = int64(0), int64(0)
+
 	for token, swapLogs := range tokenSwaps {
 		wg.Add(1)
 		sem <- struct{}{}
@@ -89,22 +91,11 @@ func (h *Handler) AggregatedPnlHandler(w http.ResponseWriter, r *http.Request) {
 
 			var pair = swapLogs[0].Pair
 
-			var quoteTokenSymbol string
-			if swapLogs[0].Source == "PUMPFUN" {
-				quoteTokenSymbol = "SOL"
-			} else {
-				_, qt, err := h.pairFinder.FindPair(ctx, pair, nil)
-				if err != nil {
-					quoteTokenSymbol = "SOL"
-				} else {
-					quoteTokenSymbol = qt.Symbol
-				}
-			}
-
-			if quoteTokenSymbol == "" {
+			if swapLogs[0].QuoteTokenSymbol == nil {
 				log.Printf("No quote token symbol for pair: %s", pair)
 				return
 			}
+			quoteTokenSymbol := *swapLogs[0].QuoteTokenSymbol
 
 			mu.Lock()
 			usdPrice, ok := priceCache[quoteTokenSymbol]
@@ -113,7 +104,6 @@ func (h *Handler) AggregatedPnlHandler(w http.ResponseWriter, r *http.Request) {
 				if usdPrice > 0 {
 					priceCache[quoteTokenSymbol] = usdPrice
 				} else {
-					//log.Printf("Missing price for token: %s", quoteTokenSymbol)
 					mu.Unlock()
 					return
 				}
@@ -133,12 +123,14 @@ func (h *Handler) AggregatedPnlHandler(w http.ResponseWriter, r *http.Request) {
 				if swap.Action == "BUY" || swap.Action == "RECEIVE" {
 					totalBuyTokens.Add(totalBuyTokens, amountInFloat)
 					if swap.Action == "BUY" {
+						totalBuys++
 						hasBuyOrSell = true
 						totalBuyValue.Add(totalBuyValue, new(big.Float).Mul(amountOutFloat, big.NewFloat(usdPrice)))
 					}
 				} else if swap.Action == "SELL" || swap.Action == "TRANSFER" {
 					totalSellTokens.Add(totalSellTokens, amountOutFloat)
 					if swap.Action == "SELL" {
+						totalSells++
 						hasBuyOrSell = true
 						totalSellValue.Add(totalSellValue, new(big.Float).Mul(amountInFloat, big.NewFloat(usdPrice)))
 					}
@@ -215,7 +207,6 @@ func (h *Handler) AggregatedPnlHandler(w http.ResponseWriter, r *http.Request) {
 				winCount++
 			}
 
-			//log.Printf("usdPrice: %f | totalBuyValue: %f | totalSellValue: %f | totalBuyTokens: %f | totalSellTokens: %f | remainingAmount: %f | realizedPNL: %f | unrealizedPNL: %f | totalInvestment: %f | weightedROINumerator: %f | winCount: %d", usdPrice, totalBuyValue, totalSellValue, totalBuyTokens, totalSellTokens, remainingAmount, realizedPNL, unrealizedPNL, totalInvestment, weightedROINumerator, winCount)
 			tokensTraded[pair] = true
 		}(token, swapLogs)
 	}
@@ -238,7 +229,9 @@ func (h *Handler) AggregatedPnlHandler(w http.ResponseWriter, r *http.Request) {
 	//log.Printf("pnl results: %+v", pnlResults)
 
 	response := types.AggregatedPnLResponse{
-		Results: pnlResults,
+		Results:   pnlResults,
+		TotalBuy:  totalBuys,
+		TotalSell: totalSells,
 	}
 	w.Header().Set("Content-Type", "application/json")
 	if err := json.NewEncoder(w).Encode(response); err != nil {
