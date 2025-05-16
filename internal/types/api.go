@@ -33,6 +33,9 @@ type AggregatedPnL struct {
 	TokensTraded     int     `json:"tokensTraded"`
 	WinRate          float64 `json:"winRate"`
 	AverageHoldTime  string  `json:"averageHoldTime"`
+
+	TotalBuy  int64 `json:"totalBuy"`
+	TotalSell int64 `json:"totalSell"`
 }
 
 type TokenPnL struct {

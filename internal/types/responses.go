@@ -41,9 +41,7 @@ type Pagination struct {
 }
 
 type AggregatedPnLResponse struct {
-	Results   AggregatedPnL `json:"results"`
-	TotalBuy  int64         `json:"totalBuy"`
-	TotalSell int64         `json:"totalSell"`
+	Results AggregatedPnL `json:"results"`
 }
 
 // QueryAllResponse is a wrapper for QueryAll that handles sql.NullString fields properly

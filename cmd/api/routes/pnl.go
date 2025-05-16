@@ -227,11 +227,11 @@ func (h *Handler) AggregatedPnlHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	//log.Printf("pnl results: %+v", pnlResults)
+	pnlResults.TotalBuy = totalBuys
+	pnlResults.TotalSell = totalSells
 
 	response := types.AggregatedPnLResponse{
-		Results:   pnlResults,
-		TotalBuy:  totalBuys,
-		TotalSell: totalSells,
+		Results: pnlResults,
 	}
 	w.Header().Set("Content-Type", "application/json")
 	if err := json.NewEncoder(w).Encode(response); err != nil {
