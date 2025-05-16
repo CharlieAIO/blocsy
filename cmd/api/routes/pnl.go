@@ -101,16 +101,17 @@ func (h *Handler) AggregatedPnlHandler(w http.ResponseWriter, r *http.Request) {
 
 			mu.Lock()
 			usdPrice, ok := priceCache[quoteTokenSymbol]
+			mu.Unlock()
 			if !ok {
 				usdPrice = h.pricer.GetUSDPrice(quoteTokenSymbol)
 				if usdPrice > 0 {
+					mu.Lock()
 					priceCache[quoteTokenSymbol] = usdPrice
-				} else {
 					mu.Unlock()
+				} else {
 					return
 				}
 			}
-			mu.Unlock()
 
 			totalBuyTokens := new(big.Float)
 			totalSellTokens := new(big.Float)
@@ -156,7 +157,7 @@ func (h *Handler) AggregatedPnlHandler(w http.ResponseWriter, r *http.Request) {
 
 							totalSoldAmount.Add(totalSoldAmount, currentLot.Amount)
 							toSell.Sub(toSell, currentLot.Amount)
-							buyQueue = buyQueue[1:] // remove lot
+							buyQueue = buyQueue[1:]
 						} else {
 							heldDuration := swap.Timestamp.Sub(currentLot.Timestamp)
 							toSellFloat, _ := toSell.Float64()
@@ -172,7 +173,15 @@ func (h *Handler) AggregatedPnlHandler(w http.ResponseWriter, r *http.Request) {
 				return
 			}
 
-			durationsHeld[token] = totalHeldTime
+			var totalHeld time.Duration
+			var totalSold float64
+			for _, swapHeld := range durationsHeld {
+				totalHeld += swapHeld
+			}
+			totalSold = float64(totalSells)
+			if totalSold > 0 {
+				pnlResults.AverageHoldTime = time.Duration(float64(totalHeld) / totalSold)
+			}
 
 			realizedPNL := new(big.Float)
 			if totalSellTokens.Cmp(big.NewFloat(0)) != 0 {
