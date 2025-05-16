@@ -79,32 +79,42 @@ func CalculateTokenPnL(
 	remainingAmount := new(big.Float).Sub(totalBuyTokens, totalSellTokens)
 
 	if remainingAmount.Cmp(big.NewFloat(0)) > 0 {
-		mostRecentPrice := new(big.Float)
-
-		// Get the most recent price from the latest swap
-		if len(swapLogs) > 0 {
-			pair := swapLogs[0].Pair
-			mostRecentSwap, err := findLatestSwapFn(ctx, pair)
-			if err == nil && len(mostRecentSwap) > 0 {
-				amountOutFloat := new(big.Float).SetFloat64(mostRecentSwap[0].AmountOut)
-				amountInFloat := new(big.Float).SetFloat64(mostRecentSwap[0].AmountIn)
-				if mostRecentSwap[0].Action == "BUY" {
-					mostRecentPrice = new(big.Float).Quo(amountOutFloat, amountInFloat)
-				} else if mostRecentSwap[0].Action == "SELL" {
-					mostRecentPrice = new(big.Float).Quo(amountInFloat, amountOutFloat)
-				}
-			}
-		}
-
-		// Calculate the current value of remaining tokens
-		currentValue := new(big.Float).Mul(remainingAmount, mostRecentPrice)
-
 		// Calculate the cost basis of remaining tokens
 		avgBuyPrice := new(big.Float)
 		if totalBuyTokens.Cmp(big.NewFloat(0)) > 0 {
 			avgBuyPrice = new(big.Float).Quo(totalBuyValue, totalBuyTokens)
 		}
 		costBasis := new(big.Float).Mul(remainingAmount, avgBuyPrice)
+
+		// Get the most recent price from the latest swap
+		currentValue := new(big.Float)
+		if len(swapLogs) > 0 {
+			pair := swapLogs[0].Pair
+			mostRecentSwap, err := findLatestSwapFn(ctx, pair)
+			if err == nil && len(mostRecentSwap) > 0 {
+				// Calculate token price in USD
+				var tokenPriceInUSD *big.Float
+
+				if mostRecentSwap[0].Action == "BUY" {
+					// For BUY: amountOut (quote token) / amountIn (base token) * usdPrice
+					amountOutFloat := new(big.Float).SetFloat64(mostRecentSwap[0].AmountOut)
+					amountInFloat := new(big.Float).SetFloat64(mostRecentSwap[0].AmountIn)
+					tokenPriceInQuote := new(big.Float).Quo(amountOutFloat, amountInFloat)
+					tokenPriceInUSD = new(big.Float).Mul(tokenPriceInQuote, big.NewFloat(usdPrice))
+				} else if mostRecentSwap[0].Action == "SELL" {
+					// For SELL: amountIn (quote token) / amountOut (base token) * usdPrice
+					amountOutFloat := new(big.Float).SetFloat64(mostRecentSwap[0].AmountOut)
+					amountInFloat := new(big.Float).SetFloat64(mostRecentSwap[0].AmountIn)
+					tokenPriceInQuote := new(big.Float).Quo(amountInFloat, amountOutFloat)
+					tokenPriceInUSD = new(big.Float).Mul(tokenPriceInQuote, big.NewFloat(usdPrice))
+				}
+
+				// Calculate current value of remaining tokens
+				if tokenPriceInUSD != nil {
+					currentValue = new(big.Float).Mul(remainingAmount, tokenPriceInUSD)
+				}
+			}
+		}
 
 		// Unrealized PnL is current value minus cost basis
 		unrealizedPNL = new(big.Float).Sub(currentValue, costBasis)
