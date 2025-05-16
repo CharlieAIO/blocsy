@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"github.com/go-chi/chi/v5"
 	"log"
-	"math/big"
 	"net/http"
 	"sort"
 	"strconv"
@@ -112,28 +111,11 @@ func (h *Handler) TokenPnlHandler(w http.ResponseWriter, r *http.Request) {
 			}
 			mu.Unlock()
 
-			totalBuyTokens := new(big.Float)
-			totalSellTokens := new(big.Float)
-			totalBuyValue := new(big.Float)
-			totalSellValue := new(big.Float)
-
 			hasBuyOrSell := false
-
 			for _, swap := range swapLogs {
-				amountOutFloat := new(big.Float).SetFloat64(swap.AmountOut)
-				amountInFloat := new(big.Float).SetFloat64(swap.AmountIn)
-				if swap.Action == "BUY" || swap.Action == "RECEIVE" {
-					totalBuyTokens.Add(totalBuyTokens, amountInFloat)
-					if swap.Action == "BUY" {
-						hasBuyOrSell = true
-						totalBuyValue.Add(totalBuyValue, new(big.Float).Mul(amountOutFloat, big.NewFloat(usdPrice)))
-					}
-				} else if swap.Action == "SELL" || swap.Action == "TRANSFER" {
-					totalSellTokens.Add(totalSellTokens, amountOutFloat)
-					if swap.Action == "SELL" {
-						hasBuyOrSell = true
-						totalSellValue.Add(totalSellValue, new(big.Float).Mul(amountInFloat, big.NewFloat(usdPrice)))
-					}
+				if swap.Action == "BUY" || swap.Action == "SELL" {
+					hasBuyOrSell = true
+					break
 				}
 			}
 
@@ -141,59 +123,12 @@ func (h *Handler) TokenPnlHandler(w http.ResponseWriter, r *http.Request) {
 				return
 			}
 
-			realizedPNL := new(big.Float)
-			if totalSellTokens.Cmp(big.NewFloat(0)) != 0 {
-				realizedPNL.Sub(totalSellValue, totalBuyValue)
-			} else {
-				realizedPNL.SetFloat64(0)
-			}
-
-			unrealizedPNL := new(big.Float)
-			remainingAmount := new(big.Float).Sub(totalBuyTokens, totalSellTokens)
-			if remainingAmount.Cmp(big.NewFloat(0)) > 0 {
-				mostRecentPrice := new(big.Float)
-				mostRecentSwap, err := h.swapsRepo.FindLatestSwap(ctx, pair)
-				if err == nil && len(mostRecentSwap) > 0 {
-					amountOutFloat := new(big.Float).SetFloat64(mostRecentSwap[0].AmountOut)
-					amountInFloat := new(big.Float).SetFloat64(mostRecentSwap[0].AmountIn)
-					if mostRecentSwap[0].Action == "BUY" {
-						mostRecentPrice = new(big.Float).Quo(amountOutFloat, amountInFloat)
-					} else if mostRecentSwap[0].Action == "SELL" {
-						mostRecentPrice = new(big.Float).Quo(amountInFloat, amountOutFloat)
-					}
-				}
-				unrealizedPNL.Mul(remainingAmount, mostRecentPrice)
-			}
-
-			var pnlResults types.TokenPnL
-			realizedPNLFloatUSD, _ := realizedPNL.Float64()
-			pnlResults.RealizedPnLUSD = realizedPNLFloatUSD
-
-			unrealizedPNLFloatUSD, _ := unrealizedPNL.Float64()
-			pnlResults.UnrealizedPnLUSD = unrealizedPNLFloatUSD
-
-			if totalSellValue.Cmp(big.NewFloat(0)) > 0 {
-				realizedROI := new(big.Float).Quo(realizedPNL, totalSellValue)
-				realizedROIFloat, _ := realizedROI.Float64()
-				pnlResults.RealizedROI = realizedROIFloat * 100
-			}
-			if remainingAmount.Cmp(big.NewFloat(0)) > 0 {
-				avgBuyPrice := new(big.Float).Quo(totalBuyValue, totalBuyTokens)
-				remainingCost := new(big.Float).Mul(avgBuyPrice, remainingAmount)
-				if remainingCost.Cmp(big.NewFloat(0)) > 0 {
-					unrealizedROI := new(big.Float).Quo(unrealizedPNL, remainingCost)
-					unrealizedROIFloat, _ := unrealizedROI.Float64()
-					pnlResults.UnrealizedROI = unrealizedROIFloat * 100
-				}
-			}
-			if totalBuyValue.Cmp(big.NewFloat(0)) > 0 {
-				totalROI := new(big.Float).Quo(new(big.Float).Add(realizedPNL, unrealizedPNL), totalBuyValue)
-				finalROI, _ := totalROI.Float64()
-				pnlResults.ROI = finalROI * 100
-			}
-
-			pnlResults.PnLUSD = pnlResults.RealizedPnLUSD + pnlResults.UnrealizedPnLUSD
-			pnlResults.TotalTrades = len(swapLogs)
+			pnlResults, _, _, _, _, _, _ := CalculateTokenPnL(
+				ctx,
+				swapLogs,
+				usdPrice,
+				h.swapsRepo.FindLatestSwap,
+			)
 
 			tokenSymbol := ""
 			if swapLogs[0].TokenSymbol != nil {
