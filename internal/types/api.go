@@ -39,9 +39,10 @@ type AggregatedPnL struct {
 	TotalBuy  int64 `json:"totalBuy"`
 	TotalSell int64 `json:"totalSell"`
 
-	TotalBuyVolumeUSD  float64 `json:"totalBuyVolumeUSD"`
-	TotalSellVolumeUSD float64 `json:"totalSellVolumeUSD"`
-	TotalVolumeUSD     float64 `json:"totalVolumeUSD"`
+	TotalBuyVolumeUSD       float64 `json:"totalBuyVolumeUSD"`
+	TotalSellVolumeUSD      float64 `json:"totalSellVolumeUSD"`
+	TotalVolumeUSD          float64 `json:"totalVolumeUSD"`
+	TotalActivePositionsUSD float64 `json:"totalActivePositionsUSD"`
 }
 
 type TokenPnL struct {

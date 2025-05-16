@@ -75,6 +75,7 @@ func (h *Handler) AggregatedPnlHandler(w http.ResponseWriter, r *http.Request) {
 	buyVolumeUSD := new(big.Float)
 	var totalHeldTimeAcrossTokens time.Duration
 	var totalSoldAmountAcrossTokens = big.NewFloat(0)
+	var totalActivePositionsUSD = new(big.Float)
 
 	var mu sync.Mutex
 	var wg sync.WaitGroup
@@ -130,7 +131,7 @@ func (h *Handler) AggregatedPnlHandler(w http.ResponseWriter, r *http.Request) {
 				return
 			}
 
-			tokenPnL, totalBuyValue, totalSellValue, _, _, totalSoldAmount, totalHeldTime := CalculateTokenPnL(
+			tokenPnL, totalBuyValue, totalSellValue, _, _, totalSoldAmount, totalHeldTime, currentValue := CalculateTokenPnL(
 				ctx,
 				swapLogs,
 				usdPrice,
@@ -145,6 +146,7 @@ func (h *Handler) AggregatedPnlHandler(w http.ResponseWriter, r *http.Request) {
 
 			totalHeldTimeAcrossTokens += totalHeldTime
 			totalSoldAmountAcrossTokens.Add(totalSoldAmountAcrossTokens, totalSoldAmount)
+			totalActivePositionsUSD.Add(totalActivePositionsUSD, currentValue)
 
 			pnlResults.RealizedPnLUSD += tokenPnL.RealizedPnLUSD
 			pnlResults.UnrealizedPnLUSD += tokenPnL.UnrealizedPnLUSD
@@ -187,6 +189,7 @@ func (h *Handler) AggregatedPnlHandler(w http.ResponseWriter, r *http.Request) {
 	pnlResults.TotalBuyVolumeUSD, _ = buyVolumeUSD.Float64()
 	pnlResults.TotalSellVolumeUSD, _ = sellVolumeUSD.Float64()
 	pnlResults.TotalVolumeUSD = pnlResults.TotalBuyVolumeUSD + pnlResults.TotalSellVolumeUSD
+	pnlResults.TotalActivePositionsUSD, _ = totalActivePositionsUSD.Float64()
 	// Calculate average hold time based on the aggregated values
 	if totalSoldAmountAcrossTokens.Cmp(big.NewFloat(0)) > 0 {
 		totalSoldAmountFloat, _ := totalSoldAmountAcrossTokens.Float64()
