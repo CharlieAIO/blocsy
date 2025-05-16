@@ -73,7 +73,8 @@ func (h *Handler) AggregatedPnlHandler(w http.ResponseWriter, r *http.Request) {
 	totalBuys, totalSells := int64(0), int64(0)
 	sellVolumeUSD := new(big.Float)
 	buyVolumeUSD := new(big.Float)
-	durationsHeld := make(map[string]time.Duration)
+	var totalHeldTimeAcrossTokens time.Duration
+	var totalSoldAmountAcrossTokens = big.NewFloat(0)
 
 	var mu sync.Mutex
 	var wg sync.WaitGroup
@@ -173,15 +174,7 @@ func (h *Handler) AggregatedPnlHandler(w http.ResponseWriter, r *http.Request) {
 				return
 			}
 
-			var totalHeld time.Duration
-			var totalSold float64
-			for _, swapHeld := range durationsHeld {
-				totalHeld += swapHeld
-			}
-			totalSold = float64(totalSells)
-			if totalSold > 0 {
-				pnlResults.AverageHoldTime = time.Duration(float64(totalHeld) / totalSold)
-			}
+			// Average hold time is calculated per token in the goroutine
 
 			realizedPNL := new(big.Float)
 			if totalSellTokens.Cmp(big.NewFloat(0)) != 0 {
@@ -211,8 +204,12 @@ func (h *Handler) AggregatedPnlHandler(w http.ResponseWriter, r *http.Request) {
 			mu.Lock()
 			defer mu.Unlock()
 
-			buyVolumeUSD.Add(buyVolumeUSD, new(big.Float).Mul(totalBuyValue, big.NewFloat(usdPrice)))
-			sellVolumeUSD.Add(sellVolumeUSD, new(big.Float).Mul(totalSellValue, big.NewFloat(usdPrice)))
+			buyVolumeUSD.Add(buyVolumeUSD, totalBuyValue)
+			sellVolumeUSD.Add(sellVolumeUSD, totalSellValue)
+
+			// Add this token's held time and sold amount to the aggregated values
+			totalHeldTimeAcrossTokens += totalHeldTime
+			totalSoldAmountAcrossTokens.Add(totalSoldAmountAcrossTokens, totalSoldAmount)
 
 			realizedPNLFloatUSD, _ := realizedPNL.Float64()
 			pnlResults.RealizedPnLUSD += realizedPNLFloatUSD
@@ -279,7 +276,13 @@ func (h *Handler) AggregatedPnlHandler(w http.ResponseWriter, r *http.Request) {
 	pnlResults.TotalBuyVolumeUSD, _ = buyVolumeUSD.Float64()
 	pnlResults.TotalSellVolumeUSD, _ = sellVolumeUSD.Float64()
 	pnlResults.TotalVolumeUSD = pnlResults.TotalBuyVolumeUSD + pnlResults.TotalSellVolumeUSD
-	pnlResults.AverageHoldTime = time.Duration(float64(pnlResults.TotalVolumeUSD) / float64(pnlResults.TotalSell) * float64(time.Hour))
+	// Calculate average hold time based on the aggregated values
+	if totalSoldAmountAcrossTokens.Cmp(big.NewFloat(0)) > 0 {
+		totalSoldAmountFloat, _ := totalSoldAmountAcrossTokens.Float64()
+		if totalSoldAmountFloat > 0 {
+			pnlResults.AverageHoldTime = time.Duration(float64(totalHeldTimeAcrossTokens) / totalSoldAmountFloat)
+		}
+	}
 
 	response := types.AggregatedPnLResponse{
 		Results: pnlResults,
