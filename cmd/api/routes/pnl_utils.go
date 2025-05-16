@@ -21,6 +21,7 @@ func CalculateTokenPnL(
 	var buyQueue []types.TokenLot
 	var totalHeldTime time.Duration
 	var totalSoldAmount = big.NewFloat(0)
+	var totalValueRemaining = big.NewFloat(0)
 
 	// Process all swaps
 	for _, swap := range swapLogs {
@@ -78,9 +79,6 @@ func CalculateTokenPnL(
 	unrealizedPNL := new(big.Float)
 	remainingAmount := new(big.Float).Sub(totalBuyTokens, totalSellTokens)
 
-	// Initialize currentValue for active positions
-	currentValue := new(big.Float)
-
 	if remainingAmount.Cmp(big.NewFloat(0)) > 0 {
 		mostRecentPrice := new(big.Float)
 
@@ -99,17 +97,15 @@ func CalculateTokenPnL(
 			}
 		}
 
-		// Calculate the current value of remaining tokens (active positions)
-		currentValue = new(big.Float).Mul(remainingAmount, mostRecentPrice)
+		currentValue := new(big.Float).Mul(remainingAmount, mostRecentPrice)
+		totalValueRemaining = new(big.Float).Add(totalValueRemaining, currentValue)
 
-		// Calculate the cost basis of remaining tokens
 		avgBuyPrice := new(big.Float)
 		if totalBuyTokens.Cmp(big.NewFloat(0)) > 0 {
 			avgBuyPrice = new(big.Float).Quo(totalBuyValue, totalBuyTokens)
 		}
 		costBasis := new(big.Float).Mul(remainingAmount, avgBuyPrice)
 
-		// Unrealized PnL is current value minus cost basis
 		unrealizedPNL = new(big.Float).Sub(currentValue, costBasis)
 	}
 
@@ -159,5 +155,5 @@ func CalculateTokenPnL(
 		pnlResults.HoldTime = ""
 	}
 
-	return pnlResults, totalBuyValue, totalSellValue, totalBuyTokens, totalSellTokens, totalSoldAmount, totalHeldTime, currentValue
+	return pnlResults, totalBuyValue, totalSellValue, totalBuyTokens, totalSellTokens, totalSoldAmount, totalHeldTime, totalValueRemaining
 }
