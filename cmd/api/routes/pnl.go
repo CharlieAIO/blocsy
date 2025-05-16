@@ -70,6 +70,10 @@ func (h *Handler) AggregatedPnlHandler(w http.ResponseWriter, r *http.Request) {
 
 	totalInvestment := new(big.Float)
 	weightedROINumerator := new(big.Float)
+	totalBuys, totalSells := int64(0), int64(0)
+	sellVolumeUSD := new(big.Float)
+	buyVolumeUSD := new(big.Float)
+	durationsHeld := make(map[string]time.Duration)
 
 	var mu sync.Mutex
 	var wg sync.WaitGroup
@@ -78,8 +82,6 @@ func (h *Handler) AggregatedPnlHandler(w http.ResponseWriter, r *http.Request) {
 	for _, swap := range swaps {
 		tokenSwaps[swap.Token] = append(tokenSwaps[swap.Token], swap)
 	}
-
-	var totalBuys, totalSells = int64(0), int64(0)
 
 	for token, swapLogs := range tokenSwaps {
 		wg.Add(1)
@@ -117,6 +119,10 @@ func (h *Handler) AggregatedPnlHandler(w http.ResponseWriter, r *http.Request) {
 
 			hasBuyOrSell := false
 
+			var buyQueue []types.TokenLot
+			var totalHeldTime time.Duration
+			var totalSoldAmount = big.NewFloat(0)
+
 			for _, swap := range swapLogs {
 				amountOutFloat := new(big.Float).SetFloat64(swap.AmountOut)
 				amountInFloat := new(big.Float).SetFloat64(swap.AmountIn)
@@ -127,6 +133,11 @@ func (h *Handler) AggregatedPnlHandler(w http.ResponseWriter, r *http.Request) {
 						hasBuyOrSell = true
 						totalBuyValue.Add(totalBuyValue, new(big.Float).Mul(amountOutFloat, big.NewFloat(usdPrice)))
 					}
+					buyQueue = append(buyQueue, types.TokenLot{
+						Amount:    new(big.Float).Set(amountInFloat),
+						Timestamp: swap.Timestamp,
+					})
+
 				} else if swap.Action == "SELL" || swap.Action == "TRANSFER" {
 					totalSellTokens.Add(totalSellTokens, amountOutFloat)
 					if swap.Action == "SELL" {
@@ -134,11 +145,34 @@ func (h *Handler) AggregatedPnlHandler(w http.ResponseWriter, r *http.Request) {
 						hasBuyOrSell = true
 						totalSellValue.Add(totalSellValue, new(big.Float).Mul(amountInFloat, big.NewFloat(usdPrice)))
 					}
+					toSell := new(big.Float).Set(amountOutFloat)
+
+					for len(buyQueue) > 0 && toSell.Cmp(big.NewFloat(0)) > 0 {
+						currentLot := &buyQueue[0]
+						if currentLot.Amount.Cmp(toSell) <= 0 {
+							heldDuration := swap.Timestamp.Sub(currentLot.Timestamp)
+							amountFloat, _ := currentLot.Amount.Float64()
+							totalHeldTime += time.Duration(float64(heldDuration.Nanoseconds()) * amountFloat)
+
+							totalSoldAmount.Add(totalSoldAmount, currentLot.Amount)
+							toSell.Sub(toSell, currentLot.Amount)
+							buyQueue = buyQueue[1:] // remove lot
+						} else {
+							heldDuration := swap.Timestamp.Sub(currentLot.Timestamp)
+							toSellFloat, _ := toSell.Float64()
+							totalHeldTime += time.Duration(float64(heldDuration.Nanoseconds()) * toSellFloat)
+							totalSoldAmount.Add(totalSoldAmount, toSell)
+							currentLot.Amount.Sub(currentLot.Amount, toSell)
+							toSell = big.NewFloat(0)
+						}
+					}
 				}
 			}
 			if !hasBuyOrSell {
 				return
 			}
+
+			durationsHeld[token] = totalHeldTime
 
 			realizedPNL := new(big.Float)
 			if totalSellTokens.Cmp(big.NewFloat(0)) != 0 {
@@ -167,6 +201,9 @@ func (h *Handler) AggregatedPnlHandler(w http.ResponseWriter, r *http.Request) {
 
 			mu.Lock()
 			defer mu.Unlock()
+
+			buyVolumeUSD.Add(buyVolumeUSD, new(big.Float).Mul(totalBuyValue, big.NewFloat(usdPrice)))
+			sellVolumeUSD.Add(sellVolumeUSD, new(big.Float).Mul(totalSellValue, big.NewFloat(usdPrice)))
 
 			realizedPNLFloatUSD, _ := realizedPNL.Float64()
 			pnlResults.RealizedPnLUSD += realizedPNLFloatUSD
@@ -229,6 +266,11 @@ func (h *Handler) AggregatedPnlHandler(w http.ResponseWriter, r *http.Request) {
 	//log.Printf("pnl results: %+v", pnlResults)
 	pnlResults.TotalBuy = totalBuys
 	pnlResults.TotalSell = totalSells
+
+	pnlResults.TotalBuyVolumeUSD, _ = buyVolumeUSD.Float64()
+	pnlResults.TotalSellVolumeUSD, _ = sellVolumeUSD.Float64()
+	pnlResults.TotalVolumeUSD = pnlResults.TotalBuyVolumeUSD + pnlResults.TotalSellVolumeUSD
+	pnlResults.AverageHoldTime = time.Duration(float64(pnlResults.TotalVolumeUSD) / float64(pnlResults.TotalSell) * float64(time.Hour))
 
 	response := types.AggregatedPnLResponse{
 		Results: pnlResults,

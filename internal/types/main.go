@@ -2,6 +2,7 @@ package types
 
 import (
 	"database/sql"
+	"math/big"
 	"time"
 )
 
@@ -9,6 +10,11 @@ type AppError string
 
 func (e AppError) Error() string {
 	return string(e)
+}
+
+type TokenLot struct {
+	Amount    *big.Float
+	Timestamp time.Time
 }
 
 type ProcessInstructionData struct {
