@@ -237,7 +237,7 @@ LIMIT 100;`, swapLogTable)
 func (repo *TimescaleRepository) FindLatestSwap(ctx context.Context, pair string) ([]types.SwapLog, error) {
 	var query = fmt.Sprintf(`SELECT * FROM "%s" 
 WHERE pair = $1
-AND action = 'BUY' OR action = 'SELL'
+AND (action = 'BUY' OR action = 'SELL')
 ORDER BY timestamp DESC
 LIMIT 1;`, swapLogTable)
 	var swaps []types.SwapLog

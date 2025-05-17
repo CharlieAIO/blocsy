@@ -100,7 +100,7 @@ func CalculateTokenPnL(
 				} else if mostRecentSwap[0].Action == "SELL" {
 					mostRecentPrice = new(big.Float).Quo(amountInFloat, amountOutFloat)
 				}
-				log.Printf("%s | Calculated most recent price: %s", *mostRecentSwap[0].TokenSymbol, mostRecentPrice.Text('f', 18))
+				log.Printf("%s | Calculated most recent price: %s", *swapLogs[0].TokenSymbol, mostRecentPrice.Text('f', 18))
 			}
 		}
 
