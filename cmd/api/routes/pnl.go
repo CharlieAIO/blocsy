@@ -2,6 +2,7 @@ package routes
 
 import (
 	"blocsy/internal/types"
+	"fmt"
 	"github.com/goccy/go-json"
 	"log"
 	"math/big"
@@ -193,7 +194,12 @@ func (h *Handler) AggregatedPnlHandler(w http.ResponseWriter, r *http.Request) {
 	if totalSoldAmountAcrossTokens.Cmp(big.NewFloat(0)) > 0 {
 		totalSoldAmountFloat, _ := totalSoldAmountAcrossTokens.Float64()
 		if totalSoldAmountFloat > 0 {
-			pnlResults.AverageHoldTime = time.Duration(float64(totalHeldTimeAcrossTokens) / totalSoldAmountFloat)
+			avgTimeHeld := time.Duration(float64(totalHeldTimeAcrossTokens) / totalSoldAmountFloat)
+			hours := int(avgTimeHeld.Hours())
+			minutes := int(avgTimeHeld.Minutes()) % 60
+			seconds := int(avgTimeHeld.Seconds()) % 60
+			pnlResults.AverageHoldTime = fmt.Sprintf("%02d:%02d:%02d", hours, minutes, seconds)
+
 		}
 	}
 

@@ -3,6 +3,7 @@ package routes
 import (
 	"blocsy/internal/types"
 	"encoding/json"
+	"fmt"
 	"github.com/go-chi/chi/v5"
 	"log"
 	"net/http"
@@ -123,12 +124,18 @@ func (h *Handler) TokenPnlHandler(w http.ResponseWriter, r *http.Request) {
 				return
 			}
 
-			pnlResults, _, _, _, _, _, _, _ := CalculateTokenPnL(
+			pnlResults, _, _, _, _, _, totalHeldTime, _ := CalculateTokenPnL(
 				ctx,
 				swapLogs,
 				usdPrice,
 				h.swapsRepo.FindLatestSwap,
 			)
+
+			avgTimeHeld := totalHeldTime
+			hours := int(avgTimeHeld.Hours())
+			minutes := int(avgTimeHeld.Minutes()) % 60
+			seconds := int(avgTimeHeld.Seconds()) % 60
+			pnlResults.HoldTime = fmt.Sprintf("%02d:%02d:%02d", hours, minutes, seconds)
 
 			tokenSymbol := ""
 			if swapLogs[0].TokenSymbol != nil {

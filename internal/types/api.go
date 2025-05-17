@@ -1,7 +1,5 @@
 package types
 
-import "time"
-
 type PNLInfo struct {
 	Swaps              int    `json:"swaps"`
 	TotalBuyVolume     string `json:"totalBuyVolume"`
@@ -28,13 +26,13 @@ type AggregatedPnL struct {
 	PnLUSD float64 `json:"pnlUSD"`
 	ROI    float64 `json:"roi"`
 
-	RealizedPnLUSD   float64       `json:"realizedPnLUSD"`
-	RealizedROI      float64       `json:"realizedROI"`
-	UnrealizedPnLUSD float64       `json:"unrealizedPnLUSD"`
-	UnrealizedROI    float64       `json:"unrealizedROI"`
-	TokensTraded     int           `json:"tokensTraded"`
-	WinRate          float64       `json:"winRate"`
-	AverageHoldTime  time.Duration `json:"averageHoldTime"`
+	RealizedPnLUSD   float64 `json:"realizedPnLUSD"`
+	RealizedROI      float64 `json:"realizedROI"`
+	UnrealizedPnLUSD float64 `json:"unrealizedPnLUSD"`
+	UnrealizedROI    float64 `json:"unrealizedROI"`
+	TokensTraded     int     `json:"tokensTraded"`
+	WinRate          float64 `json:"winRate"`
+	AverageHoldTime  string  `json:"averageHoldTime"`
 
 	TotalBuy  int64 `json:"totalBuy"`
 	TotalSell int64 `json:"totalSell"`

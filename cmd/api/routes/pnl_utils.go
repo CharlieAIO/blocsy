@@ -43,7 +43,6 @@ func CalculateTokenPnL(
 				totalSellValue.Add(totalSellValue, new(big.Float).Mul(amountInFloat, big.NewFloat(usdPrice)))
 			}
 
-			// Calculate hold time using FIFO method
 			toSell := new(big.Float).Set(amountOutFloat)
 			for len(buyQueue) > 0 && toSell.Cmp(big.NewFloat(0)) > 0 {
 				currentLot := &buyQueue[0]
@@ -147,13 +146,6 @@ func CalculateTokenPnL(
 	// Calculate total PnL
 	pnlResults.PnLUSD = pnlResults.RealizedPnLUSD + pnlResults.UnrealizedPnLUSD
 	pnlResults.TotalTrades = len(swapLogs)
-
-	// Format hold time
-	if totalHeldTime > 0 {
-		pnlResults.HoldTime = totalHeldTime.String()
-	} else {
-		pnlResults.HoldTime = ""
-	}
 
 	return pnlResults, totalBuyValue, totalSellValue, totalBuyTokens, totalSellTokens, totalSoldAmount, totalHeldTime, totalValueRemaining
 }

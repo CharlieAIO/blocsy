@@ -590,6 +590,7 @@ func CreatePairTable(ctx context.Context, db *sqlx.DB) {
 func CreateProcessedBlocksTable(ctx context.Context, db *sqlx.DB) {
 	var query = fmt.Sprintf(`CREATE TABLE IF NOT EXISTS "%s" (
     "blockNumber" INT NOT NULL DEFAULT 0,
+	"solUsdPrice" DOUBLE PRECISION NOT NULL DEFAULT 0,
     PRIMARY KEY ("blockNumber")
 );`, blocksTable)
 
