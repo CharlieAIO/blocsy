@@ -3,7 +3,9 @@ package routes
 import (
 	"blocsy/internal/types"
 	"context"
+	"log"
 	"math/big"
+	"sort"
 	"time"
 )
 
@@ -22,6 +24,11 @@ func CalculateTokenPnL(
 	var totalHeldTime time.Duration
 	var totalSoldAmount = big.NewFloat(0)
 	var totalValueRemaining = big.NewFloat(0)
+
+	// Sort swap logs to ensure oldest first
+	sort.Slice(swapLogs, func(i, j int) bool {
+		return swapLogs[i].Timestamp.Before(swapLogs[j].Timestamp)
+	})
 
 	// Process all swaps
 	for _, swap := range swapLogs {
@@ -95,6 +102,7 @@ func CalculateTokenPnL(
 				}
 			}
 		}
+		log.Printf("%s | Calculated most recent price: %s", *swapLogs[0].TokenSymbol, mostRecentPrice.Text('f', 18))
 
 		currentValue := new(big.Float).Mul(remainingAmount, mostRecentPrice)
 		totalValueRemaining = new(big.Float).Add(totalValueRemaining, currentValue)
