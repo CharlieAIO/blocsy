@@ -4,6 +4,7 @@ import (
 	"blocsy/internal/cache"
 	"blocsy/internal/db"
 	"blocsy/internal/solana"
+	"blocsy/internal/types"
 	"blocsy/internal/utils"
 	"context"
 	"os"
@@ -74,22 +75,19 @@ func TestSwapHandler(t *testing.T) {
 	}
 
 	for _, tc := range tests {
+		tx, err := node.GetTx(ctx, tc.Signature)
+		if err != nil {
+			t.Fatalf("Error getting tx: %v", err)
+		}
 		t.Run(tc.Signature, func(t *testing.T) {
-			test_tx(ctx, node, sh, t, tf, tc.Signature, tc.Target)
+			test_tx(ctx, sh, t, tx, tc.Target)
 		})
 	}
 
 }
 
-func test_tx(ctx context.Context, node *solana.Node, sh *solana.SwapHandler, t *testing.T, tf *solana.TokenFinder, signature string, target int) {
-	tx, err := node.GetTx(ctx, signature)
-	if err != nil {
-		t.Fatalf("Error getting tx: %v", err)
-	}
+func test_tx(ctx context.Context, sh *solana.SwapHandler, t *testing.T, tx *types.SolanaTx, target int) {
 	transfers, _, _, _ := solana.ParseTransaction(tx)
-	//logs := solana.GetLogs(tx.Meta.LogMessages)
-	//pumpFunTokens := dex.HandlePumpFunNewToken(logs, solana.PUMPFUN)
-
 	swaps := sh.HandleSwaps(ctx, transfers, tx, 0, 0)
 
 	if len(swaps) != target {
