@@ -41,6 +41,7 @@ func validateSupportedDex(programId string) bool {
 		RAYDIUM_LIQ_POOL_V4,
 		PUMPFUN_AMM,
 		RAYDIUM_CONCENTRATED_LIQ,
+		RAYDIUM_LAUNCHPAD,
 		RAYDIUM_CPMM,
 		ORCA_WHIRL_PROGRAM_ID:
 		return true
@@ -84,6 +85,21 @@ func validateDexInstruction(program string, accounts []int, accountKeys []string
 			return true
 		}
 	}
+	if program == RAYDIUM_LAUNCHPAD {
+		if len(accounts) >= 15 && accountKeys[accounts[14]] == RAYDIUM_LAUNCHPAD {
+			return true
+		}
+	}
+	if program == PHOENIX {
+		if len(accounts) >= 9 && accountKeys[accounts[8]] == TOKEN_PROGRAM && accountKeys[accounts[0]] == PHOENIX {
+			return true
+		}
+	}
+	if program == LIFINITY_SWAP_V2 {
+		if len(accounts) >= 13 && accountKeys[accounts[9]] == TOKEN_PROGRAM {
+			return true
+		}
+	}
 	return false
 }
 
@@ -91,7 +107,7 @@ func validateParentProgram(programId string) bool {
 	switch programId {
 	case PUMPFUN,
 		METEORA_DLMM_PROGRAM, METEORA_POOLS_PROGRAM,
-		RAYDIUM_LIQ_POOL_V4, RAYDIUM_CONCENTRATED_LIQ, RAYDIUM_CPMM,
+		RAYDIUM_LIQ_POOL_V4, RAYDIUM_CONCENTRATED_LIQ, RAYDIUM_CPMM, RAYDIUM_LAUNCHPAD,
 		JUPITER_V6_AGGREGATOR,
 		LIFINITY_SWAP_V2, PHOENIX,
 		PUMPFUN_AMM,

@@ -175,28 +175,29 @@ func ParseTransaction(tx *types.SolanaTx) ([]types.SolTransfer, []types.SolTrans
 }
 
 func findParentProgram(ixIndex int, tx *types.SolanaTx, innerIxIndex int, innerInstructionIxIndex int, accountKeys []string) (string, []int) {
+
 	if innerIxIndex >= 0 {
 		// If inner instruction, traverse backwards within inner instructions
 		for innerI := innerInstructionIxIndex; innerI >= 0; innerI-- {
 			ix := tx.Meta.InnerInstructions[innerIxIndex].Instructions[innerI]
-
 			if validateParentProgram(accountKeys[ix.ProgramIdIndex]) {
-				var accs []int
+				var accounts []int
 				if validateDexInstruction(accountKeys[ix.ProgramIdIndex], ix.Accounts, accountKeys) {
-					accs = ix.Accounts
+					accounts = ix.Accounts
+					return accountKeys[ix.ProgramIdIndex], accounts
 				}
-				return accountKeys[ix.ProgramIdIndex], accs
 			}
 		}
 	}
 
 	baseIx := tx.Transaction.Message.Instructions[ixIndex]
 	if validateParentProgram(accountKeys[baseIx.ProgramIdIndex]) {
-		var accs []int
+		var accounts []int
 		if validateDexInstruction(accountKeys[baseIx.ProgramIdIndex], baseIx.Accounts, accountKeys) {
-			accs = baseIx.Accounts
+			accounts = baseIx.Accounts
+			return accountKeys[baseIx.ProgramIdIndex], accounts
+
 		}
-		return accountKeys[baseIx.ProgramIdIndex], accs
 	}
 
 	return "", nil

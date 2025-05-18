@@ -28,9 +28,6 @@ func (sh *SwapHandler) HandleSwaps(ctx context.Context, transfers []types.SolTra
 			continue
 		}
 		swap, inc := processTransfer(i, transfers, accountKeys)
-		if found, _ := IgnoreTokens[swap.TokenOut]; found || IgnoreTokens[swap.TokenIn] {
-			continue
-		}
 
 		if source := Programs[transfer.ParentProgramId]; source != "" {
 			swap.Source = source
@@ -77,6 +74,10 @@ func (sh *SwapHandler) HandleSwaps(ctx context.Context, transfers []types.SolTra
 
 		amountInFloat, ok := new(big.Float).SetString(swap.AmountIn)
 		if !ok {
+			continue
+		}
+
+		if found, _ := IgnoreTokens[swap.TokenOut]; found || IgnoreTokens[swap.TokenIn] {
 			continue
 		}
 
@@ -162,11 +163,11 @@ func processTransfer(index int, transfers []types.SolTransfer, accountKeys []str
 		RAYDIUM_LIQ_POOL_V4:      dex.HandleRaydiumSwaps,
 		RAYDIUM_CONCENTRATED_LIQ: dex.HandleRaydiumConcentratedSwaps,
 		RAYDIUM_CPMM:             dex.HandleRaydiumCPMMSwaps,
+		RAYDIUM_LAUNCHPAD:        dex.HandleRaydiumLaunchpadSwaps,
 		ORCA_WHIRL_PROGRAM_ID:    dex.HandleOrcaSwaps,
 		METEORA_DLMM_PROGRAM:     dex.HandleMeteoraSwaps,
-		//METEORA_POOLS_PROGRAM: dex.HandleMeteoraSwaps,
-		PUMPFUN:     dex.HandlePumpFunSwaps,
-		PUMPFUN_AMM: dex.HandlePumpFunAmmSwaps,
+		PUMPFUN:                  dex.HandlePumpFunSwaps,
+		PUMPFUN_AMM:              dex.HandlePumpFunAmmSwaps,
 	}
 
 	programId := transfers[index].ParentProgramId
