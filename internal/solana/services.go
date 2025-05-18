@@ -95,4 +95,5 @@ type Node struct {
 type BlockListener struct {
 	grpcAddress  string
 	queueHandler *QueueHandler
+	authToken    string
 }

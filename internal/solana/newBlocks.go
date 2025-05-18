@@ -16,28 +16,7 @@ import (
 	"google.golang.org/grpc/metadata"
 	"io"
 	"log"
-	"os"
 	"time"
-)
-
-var (
-	authToken  = flag.String("x-token", "", "Token for authenticating")
-	jsonInput  = flag.String("json", "", "JSON for subscription request, prefix with @ to read json from file")
-	slots      = flag.Bool("slots", false, "Subscribe to slots update")
-	blocks     = flag.Bool("blocks", false, "Subscribe to block update")
-	block_meta = flag.Bool("blocks-meta", true, "Subscribe to block metadata update")
-	signature  = flag.String("signature", "", "Subscribe to a specific transaction signature")
-
-	accounts = flag.Bool("accounts", false, "Subscribe to accounts")
-
-	transactions       = flag.Bool("transactions", true, "Subscribe to transactions, required for tx_account_include/tx_account_exclude and vote/failed.")
-	voteTransactions   = flag.Bool("transactions-vote", false, "Include vote transactions")
-	failedTransactions = flag.Bool("transactions-failed", false, "Include failed transactions")
-
-	accountsFilter              types.ArrayFlags
-	accountOwnersFilter         types.ArrayFlags
-	transactionsAccountsInclude types.ArrayFlags
-	transactionsAccountsExclude types.ArrayFlags
 )
 
 var kacp = keepalive.ClientParameters{
@@ -50,6 +29,7 @@ func NewBlockListener(grpc string, qHandler *QueueHandler) *BlockListener {
 	return &BlockListener{
 		grpcAddress:  grpc,
 		queueHandler: qHandler,
+		authToken:    "",
 	}
 }
 
@@ -110,8 +90,8 @@ func (s *BlockListener) grpcSubscribe(conn *grpc.ClientConn) error {
 	}
 
 	ctx := context.Background()
-	if *authToken != "" {
-		md := metadata.New(map[string]string{"x-token": *authToken})
+	if s.authToken != "" {
+		md := metadata.New(map[string]string{"x-token": s.authToken})
 		ctx = metadata.NewOutgoingContext(ctx, md)
 	}
 
@@ -125,17 +105,6 @@ func (s *BlockListener) grpcSubscribe(conn *grpc.ClientConn) error {
 	}
 
 	log.Printf("Subscribed to %s", s.grpcAddress)
-
-	// Check for unexpected content-type
-	header, err := stream.Header()
-	if err != nil {
-		return fmt.Errorf("failed to get header: %v", err)
-	}
-	if contentType := header.Get("content-type"); len(contentType) > 0 && contentType[0] != "application/grpc" {
-		return fmt.Errorf("unexpected content-type: %s", contentType)
-	}
-
-	log.Printf("Checked content-type: %v", header.Get("content-type"))
 
 	var blockNumber uint64
 	var blockTime int64
@@ -158,13 +127,13 @@ func (s *BlockListener) grpcSubscribe(conn *grpc.ClientConn) error {
 		if tx := resp.GetTransaction(); tx != nil {
 			blockNumber = tx.Slot
 
-			decodedSignatures := []string{}
+			var decodedSignatures []string
 			for _, sig := range tx.Transaction.Transaction.Signatures {
 				b58Sig := base58.Encode(sig)
 				decodedSignatures = append(decodedSignatures, b58Sig)
 			}
 
-			decodedAccountKeys := []string{}
+			var decodedAccountKeys []string
 			for _, key := range tx.Transaction.Transaction.Message.AccountKeys {
 				b58key := base58.Encode(key)
 				decodedAccountKeys = append(decodedAccountKeys, b58key)
@@ -221,97 +190,25 @@ func (s *BlockListener) grpcSubscribe(conn *grpc.ClientConn) error {
 }
 
 func (s *BlockListener) prepareSubscription() (*pb.SubscribeRequest, error) {
-	var subscription pb.SubscribeRequest
+	var subscription = pb.SubscribeRequest{}
 	var err error
 
-	// Read json input or JSON file prefixed with @
-	if *jsonInput != "" {
-		var jsonData []byte
-
-		if (*jsonInput)[0] == '@' {
-			jsonData, err = os.ReadFile((*jsonInput)[1:])
-			if err != nil {
-				return nil, fmt.Errorf("error reading provided json file: %v", err)
-			}
-		} else {
-			jsonData = []byte(*jsonInput)
-		}
-		err = json.Unmarshal(jsonData, &subscription)
-		if err != nil {
-			return nil, err
-		}
-	} else {
-		subscription = pb.SubscribeRequest{}
+	if subscription.BlocksMeta == nil {
+		subscription.BlocksMeta = make(map[string]*pb.SubscribeRequestFilterBlocksMeta)
 	}
+	subscription.BlocksMeta["block_meta"] = &pb.SubscribeRequestFilterBlocksMeta{}
 
-	if *slots {
-		if subscription.Slots == nil {
-			subscription.Slots = make(map[string]*pb.SubscribeRequestFilterSlots)
-		}
-
-		subscription.Slots["slots"] = &pb.SubscribeRequestFilterSlots{}
-
-	}
-
-	if *blocks {
-		if subscription.Blocks == nil {
-			subscription.Blocks = make(map[string]*pb.SubscribeRequestFilterBlocks)
-		}
-		subscription.Blocks["blocks"] = &pb.SubscribeRequestFilterBlocks{}
-	}
-
-	if *block_meta {
-		if subscription.BlocksMeta == nil {
-			subscription.BlocksMeta = make(map[string]*pb.SubscribeRequestFilterBlocksMeta)
-		}
-		subscription.BlocksMeta["block_meta"] = &pb.SubscribeRequestFilterBlocksMeta{}
-	}
-
-	if (len(accountsFilter)+len(accountOwnersFilter)) > 0 || (*accounts) {
-		if subscription.Accounts == nil {
-			subscription.Accounts = make(map[string]*pb.SubscribeRequestFilterAccounts)
-		}
-
-		subscription.Accounts["account_sub"] = &pb.SubscribeRequestFilterAccounts{}
-
-		if len(accountsFilter) > 0 {
-			subscription.Accounts["account_sub"].Account = accountsFilter
-		}
-
-		if len(accountOwnersFilter) > 0 {
-			subscription.Accounts["account_sub"].Owner = accountOwnersFilter
-		}
-	}
-
-	// Set up the transactions subscription
 	if subscription.Transactions == nil {
 		subscription.Transactions = make(map[string]*pb.SubscribeRequestFilterTransactions)
 	}
 
-	// Subscribe to a specific signature
-	if *signature != "" {
-		tr := true
-		subscription.Transactions["signature_sub"] = &pb.SubscribeRequestFilterTransactions{
-			Failed: &tr,
-			Vote:   &tr,
-		}
-
-		if *signature != "" {
-			subscription.Transactions["signature_sub"].Signature = signature
-		}
+	subscription.Transactions["transactions_sub"] = &pb.SubscribeRequestFilterTransactions{
+		Failed: new(bool),
+		Vote:   new(bool),
 	}
+	subscription.Transactions["transactions_sub"].AccountInclude = []string{}
+	subscription.Transactions["transactions_sub"].AccountExclude = []string{}
 
-	// Subscribe to generic transaction stream
-	if *transactions {
-
-		subscription.Transactions["transactions_sub"] = &pb.SubscribeRequestFilterTransactions{
-			Failed: failedTransactions,
-			Vote:   voteTransactions,
-		}
-
-		subscription.Transactions["transactions_sub"].AccountInclude = transactionsAccountsInclude
-		subscription.Transactions["transactions_sub"].AccountExclude = transactionsAccountsExclude
-	}
 	confirmed := pb.CommitmentLevel_CONFIRMED
 	subscription.Commitment = &confirmed
 	subscriptionJson, err := json.Marshal(&subscription)
@@ -320,14 +217,11 @@ func (s *BlockListener) prepareSubscription() (*pb.SubscribeRequest, error) {
 	}
 
 	log.Printf("Subscription request: %v", string(subscriptionJson))
-
 	return &subscription, nil
 
 }
 
 func (s *BlockListener) HandleTransaction(transaction types.SolanaTx, blockTime int64, block uint64) {
-
-	//log.Printf("Received transaction: %v", transaction)
 	if s.queueHandler != nil {
 		s.queueHandler.AddToSolanaQueue(types.BlockData{
 			Transactions: []types.SolanaTx{transaction},
