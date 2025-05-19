@@ -483,6 +483,22 @@ func (repo *TimescaleRepository) FindToken(ctx context.Context, address string) 
 	return &token, nil
 }
 
+func (repo *TimescaleRepository) UpdateTokenInfo(ctx context.Context, address string, metadata *types.Metadata) error {
+	var query = fmt.Sprintf(`UPDATE "%s" SET name = $1, symbol = $2, metadata = $3 WHERE address = $4`, tokensTable)
+	if _, err := repo.db.ExecContext(ctx, query, metadata.Name, metadata.Symbol, metadata.URI, address); err != nil {
+		return fmt.Errorf("cannot update token info: %w", err)
+	}
+	return nil
+}
+
+func (repo *TimescaleRepository) UpdateTokenDecimals(ctx context.Context, address string, decimals int) error {
+	var query = fmt.Sprintf(`UPDATE "%s" SET decimals = $1 WHERE address = $2`, tokensTable)
+	if _, err := repo.db.ExecContext(ctx, query, decimals, address); err != nil {
+		return fmt.Errorf("cannot update token decimals: %w", err)
+	}
+	return nil
+}
+
 func (repo *TimescaleRepository) UpdateTokenSupply(ctx context.Context, address string, changeAmount string, action string) error {
 	amount, err := strconv.ParseFloat(changeAmount, 64)
 	if err != nil {

@@ -50,6 +50,8 @@ type TokensRepo interface {
 	InsertToken(ctx context.Context, token types.Token) error
 	FindToken(ctx context.Context, address string) (*types.Token, error)
 	UpdateTokenSupply(ctx context.Context, address string, changeAmount string, action string) error
+	UpdateTokenInfo(ctx context.Context, address string, metadata *types.Metadata) error
+	UpdateTokenDecimals(ctx context.Context, address string, decimals int) error
 }
 
 type PairsRepo interface {

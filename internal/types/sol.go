@@ -49,6 +49,23 @@ type TokenProgramData struct {
 	NewAuthority  common.PublicKey
 }
 
+type Metadata struct {
+	Name, Symbol, URI string
+}
+
+type TokenEntry struct {
+	Name       string            `json:"name"`
+	Symbol     string            `json:"symbol"`
+	Address    string            `json:"address"`
+	Decimals   uint8             `json:"decimals"`
+	LogoURI    string            `json:"logoURI"`
+	Extensions map[string]string `json:"extensions"`
+}
+
+type TokenList struct {
+	Tokens map[string]TokenEntry
+}
+
 type MetaplexMetadataData struct {
 	Name      string
 	Symbol    string

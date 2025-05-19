@@ -4,7 +4,10 @@ import (
 	"blocsy/internal/types"
 	"context"
 	"fmt"
+	"github.com/blocto/solana-go-sdk/client"
+	"github.com/blocto/solana-go-sdk/rpc"
 	"log"
+	"strconv"
 	"sync"
 	"time"
 )
@@ -33,7 +36,39 @@ func (tf *TokenFinder) FindToken(ctx context.Context, address string, miss bool)
 
 	var pairs []types.Pair
 
-	if token.Address != "" {
+	if token.Address != "" && token.Name != "" && token.Symbol != "" {
+		tf.cache.PutToken(token.Address, *token)
+		return token, &pairs, nil
+	}
+
+	metadata, err := tf.solSvc.GetMetadata(ctx, address)
+	if err != nil {
+		return nil, nil, fmt.Errorf("failed to lookup token metadata: %w", err)
+	}
+
+	if token.Supply == "" || token.Supply == "0" {
+		tokenSupply := rpc.ValueWithContext[client.TokenAmount]{}
+		tokenSupply, err = tf.solSvc.GetTokenSupplyAndContext(ctx, address)
+		if err != nil {
+			return nil, nil, fmt.Errorf("failed to lookup token supply: %w", err)
+		}
+		amount := strconv.FormatUint(tokenSupply.Value.Amount, 10)
+		err = tf.repo.UpdateTokenSupply(ctx, address, amount, "mint")
+		if err != nil {
+			return nil, nil, err
+		}
+
+	}
+
+	if metadata.Name != "" && metadata.Symbol != "" {
+		err = tf.repo.UpdateTokenInfo(ctx, address, metadata)
+		if err != nil {
+			return nil, nil, err
+		}
+		token, err = tf.repo.FindToken(ctx, address)
+		if err != nil {
+			return nil, nil, fmt.Errorf("failed to lookup repo token: %w", err)
+		}
 		tf.cache.PutToken(token.Address, *token)
 		return token, &pairs, nil
 	}

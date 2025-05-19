@@ -12,7 +12,8 @@ import (
 )
 
 type SolanaService struct {
-	client *solClient.Client
+	client     *solClient.Client
+	httpClient *http.Client
 }
 
 type TokenFinder struct {
