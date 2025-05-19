@@ -60,17 +60,19 @@ func (tf *TokenFinder) FindToken(ctx context.Context, address string, miss bool)
 
 	}
 
-	if metadata.Name != "" && metadata.Symbol != "" {
-		err = tf.repo.UpdateTokenInfo(ctx, address, metadata)
-		if err != nil {
-			return nil, nil, err
+	if metadata != nil {
+		if metadata.Name != "" && metadata.Symbol != "" {
+			err = tf.repo.UpdateTokenInfo(ctx, address, metadata)
+			if err != nil {
+				return nil, nil, err
+			}
+			token, err = tf.repo.FindToken(ctx, address)
+			if err != nil {
+				return nil, nil, fmt.Errorf("failed to lookup repo token: %w", err)
+			}
+			tf.cache.PutToken(token.Address, *token)
+			return token, &pairs, nil
 		}
-		token, err = tf.repo.FindToken(ctx, address)
-		if err != nil {
-			return nil, nil, fmt.Errorf("failed to lookup repo token: %w", err)
-		}
-		tf.cache.PutToken(token.Address, *token)
-		return token, &pairs, nil
 	}
 
 	return nil, nil, fmt.Errorf("token not found")
