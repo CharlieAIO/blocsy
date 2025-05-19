@@ -53,4 +53,11 @@ type TokenPnL struct {
 	UnrealizedROI    float64 `json:"unrealizedROI"`
 	TotalTrades      int     `json:"totalTrades"`
 	HoldTime         string  `json:"holdTime"`
+
+	BoughtTokens    float64 `json:"boughtTokens"`
+	BoughtUSD       float64 `json:"boughtUSD"`
+	SoldTokens      float64 `json:"soldTokens"`
+	SoldUSD         float64 `json:"soldUSD"`
+	RemainingTokens float64 `json:"remainingTokens"`
+	RemainingUSD    float64 `json:"remainingUSD"`
 }

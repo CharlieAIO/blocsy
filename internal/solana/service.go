@@ -26,7 +26,6 @@ import (
 var (
 	METAPLEX_PROGRAM_ID   = common.PublicKeyFromString("metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s")
 	TOKEN_2022_PROGRAM_ID = common.PublicKeyFromString("TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb")
-	tokenListURL          = "https://token.jup.ag/strict"
 )
 
 const (

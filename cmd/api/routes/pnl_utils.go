@@ -155,5 +155,23 @@ func CalculateTokenPnL(
 	pnlResults.PnLUSD = pnlResults.RealizedPnLUSD + pnlResults.UnrealizedPnLUSD
 	pnlResults.TotalTrades = len(swapLogs)
 
+	boughtTokensFloat, _ := totalBuyTokens.Float64()
+	pnlResults.BoughtTokens = boughtTokensFloat
+
+	boughtUSDFloat, _ := totalBuyValue.Float64()
+	pnlResults.BoughtUSD = boughtUSDFloat
+
+	soldTokensFloat, _ := totalSellTokens.Float64()
+	pnlResults.SoldTokens = soldTokensFloat
+
+	soldUSDFloat, _ := totalSellValue.Float64()
+	pnlResults.SoldUSD = soldUSDFloat
+
+	remainingTokensFloat, _ := remainingAmount.Float64()
+	pnlResults.RemainingTokens = remainingTokensFloat
+
+	remainingUSDFloat, _ := totalValueRemaining.Float64()
+	pnlResults.RemainingUSD = remainingUSDFloat
+
 	return pnlResults, totalBuyValue, totalSellValue, totalBuyTokens, totalSellTokens, totalSoldAmount, totalHeldTime, totalValueRemaining
 }

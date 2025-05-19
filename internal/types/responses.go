@@ -96,3 +96,17 @@ type PriceLookupResponse struct {
 	Symbol   string  `json:"symbol"`
 	Currency string  `json:"currency"`
 }
+
+type ActivePosition struct {
+	BuyCount        int64   `json:"buyCount"`
+	SellCount       int64   `json:"sellCount"`
+	Token           string  `json:"token"`
+	Pair            string  `json:"pair"`
+	RemainingTokens float64 `json:"remainingTokens"`
+	SolSpent        float64 `json:"solSpent"`
+	SolReceived     float64 `json:"solReceived"`
+	UsdSpent        float64 `json:"usdSpent"`
+	UsdReceived     float64 `json:"usdReceived"`
+	TokenSymbol     string  `json:"tokenSymbol"`
+	TokenName       string  `json:"tokenName"`
+}
