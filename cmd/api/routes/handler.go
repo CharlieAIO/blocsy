@@ -54,7 +54,7 @@ func (h *Handler) GetHttpHandler() http.Handler {
 
 	r.Route("/v1", func(r chi.Router) {
 		r.Use(APIKeyMiddleware)
-		r.Use(RateLimitMiddleware)
+		//r.Use(RateLimitMiddleware)
 
 		r.Get("/health", HealthCheckHandler)
 
