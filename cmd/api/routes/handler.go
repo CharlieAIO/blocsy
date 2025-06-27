@@ -56,6 +56,8 @@ func (h *Handler) GetHttpHandler() http.Handler {
 		r.Use(APIKeyMiddleware)
 		r.Use(RateLimitMiddleware)
 
+		r.Get("/health", HealthCheckHandler)
+
 		r.Get("/search", h.SearchQueryHandler)
 
 		r.Get("/pair/{pair}", h.PairLookupHandler)
