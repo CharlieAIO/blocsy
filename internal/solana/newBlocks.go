@@ -120,14 +120,11 @@ func (s *BlockListener) grpcSubscribe(conn *grpc.ClientConn) error {
 		var capturedTS = time.Now().Unix()
 		var solanaTx types.SolanaTx
 
-		log.Printf("resp %v", resp.String())
-
 		if block := resp.GetBlockMeta(); block != nil {
 			blockTime = block.BlockTime.Timestamp
 		}
 
 		if tx := resp.GetTransaction(); tx != nil {
-			log.Printf("tx %+v", tx)
 			blockNumber = tx.Slot
 
 			var decodedSignatures []string
