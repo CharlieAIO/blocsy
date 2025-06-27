@@ -127,6 +127,7 @@ func (s *BlockListener) grpcSubscribe(conn *grpc.ClientConn) error {
 		}
 
 		if tx := resp.GetTransaction(); tx != nil {
+			log.Printf("tx %+v", tx)
 			blockNumber = tx.Slot
 
 			var decodedSignatures []string
@@ -203,13 +204,13 @@ func (s *BlockListener) prepareSubscription() (*pb.SubscribeRequest, error) {
 	if subscription.Transactions == nil {
 		subscription.Transactions = make(map[string]*pb.SubscribeRequestFilterTransactions)
 	}
-
+	var accounts []string
 	subscription.Transactions["transactions_sub"] = &pb.SubscribeRequestFilterTransactions{
 		Failed: new(bool),
 		Vote:   new(bool),
 	}
-	subscription.Transactions["transactions_sub"].AccountInclude = []string{}
-	subscription.Transactions["transactions_sub"].AccountExclude = []string{}
+	subscription.Transactions["transactions_sub"].AccountInclude = accounts
+	subscription.Transactions["transactions_sub"].AccountExclude = accounts
 
 	confirmed := pb.CommitmentLevel_CONFIRMED
 	subscription.Commitment = &confirmed
