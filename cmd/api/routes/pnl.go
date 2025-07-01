@@ -27,7 +27,7 @@ import (
 //	@Success		200			{object}	types.AggregatedPnLResponse
 //	@Failure		400			{object}	map[string]interface{}
 //	@Failure		500			{object}	map[string]interface{}
-//	@Router			/pnl/{wallet} [get]
+//	@Router			/v1/pnl/{wallet} [get]
 func (h *Handler) AggregatedPnlHandler(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 

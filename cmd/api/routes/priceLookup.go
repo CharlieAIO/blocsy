@@ -21,7 +21,7 @@ import (
 //	@Success		200		{object}	types.PriceLookupResponse
 //	@Failure		400		{object}	map[string]interface{}
 //	@Failure		500		{object}	map[string]interface{}
-//	@Router			/price/{symbol} [get]
+//	@Router			/v1/price/{symbol} [get]
 func (h *Handler) PriceLookupHandler(w http.ResponseWriter, r *http.Request) {
 	symbol := chi.URLParam(r, "symbol")
 

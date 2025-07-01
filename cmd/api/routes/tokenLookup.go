@@ -21,7 +21,7 @@ import (
 //	@Success		200		{object}	types.TokenLookupResponse
 //	@Failure		400		{object}	map[string]interface{}
 //	@Failure		500		{object}	map[string]interface{}
-//	@Router			/token/{token} [get]
+//	@Router			/v1/token/{token} [get]
 func (h *Handler) TokenLookupHandler(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 

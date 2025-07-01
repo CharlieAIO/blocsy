@@ -21,7 +21,7 @@ import (
 //	@Success		200	{object}	types.SearchQueryResponse
 //	@Failure		400	{object}	map[string]interface{}
 //	@Failure		500	{object}	map[string]interface{}
-//	@Router			/search [get]
+//	@Router			/v1/search [get]
 func (h *Handler) SearchQueryHandler(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 

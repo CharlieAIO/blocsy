@@ -21,7 +21,7 @@ import (
 //	@Success		200		{object}	types.TopRecentTokensResponse
 //	@Failure		400		{object}	map[string]interface{}
 //	@Failure		500		{object}	map[string]interface{}
-//	@Router			/top-tokens [get]
+//	@Router			/v1/top-tokens [get]
 func (h *Handler) TopTokensHandler(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 

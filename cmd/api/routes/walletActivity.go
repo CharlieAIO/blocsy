@@ -26,7 +26,7 @@ import (
 //	@Success		200		{object}	types.WalletActivityResponse
 //	@Failure		400		{object}	map[string]interface{}
 //	@Failure		500		{object}	map[string]interface{}
-//	@Router			/activity/{wallet} [get]
+//	@Router			/v1/activity/{wallet} [get]
 func (h *Handler) WalletActivityHandler(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 

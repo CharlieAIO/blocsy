@@ -21,7 +21,7 @@ import (
 //	@Success		200		{object}	types.PairLookupResponse
 //	@Failure		400		{object}	map[string]interface{}
 //	@Failure		500		{object}	map[string]interface{}
-//	@Router			/pair/{pair} [get]
+//	@Router			/v1/pair/{pair} [get]
 func (h *Handler) PairLookupHandler(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 

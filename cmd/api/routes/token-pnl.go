@@ -29,7 +29,7 @@ import (
 //	@Success		200			{object}	types.TokenPNLResponse
 //	@Failure		400			{object}	map[string]interface{}
 //	@Failure		500			{object}	map[string]interface{}
-//	@Router			/token-pnl/{wallet} [get]
+//	@Router			/v1/token-pnl/{wallet} [get]
 func (h *Handler) TokenPnlHandler(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 

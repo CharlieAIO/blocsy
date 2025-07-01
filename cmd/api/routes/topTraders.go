@@ -24,7 +24,7 @@ import (
 //	@Success		200		{object}	types.TopTradersResponse
 //	@Failure		400		{object}	map[string]interface{}
 //	@Failure		500		{object}	map[string]interface{}
-//	@Router			/top-traders/{token} [get]
+//	@Router			/v1/top-traders/{token} [get]
 func (h *Handler) TopTradersHandler(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
