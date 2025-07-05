@@ -232,7 +232,14 @@ func (s *BlockListener) prepareSubscription() (*pb.SubscribeRequest, error) {
 
 	sub := &pb.SubscribeRequest{
 		Transactions: map[string]*pb.SubscribeRequestFilterTransactions{
-			"transactions_sub": {Vote: &voteFalse, Failed: &failedFalse, AccountExclude: stringArray, AccountInclude: stringArray},
+			"xyz": {
+				Vote:            &voteFalse,
+				Failed:          &failedFalse,
+				AccountExclude:  stringArray,
+				AccountInclude:  stringArray,
+				AccountRequired: stringArray,
+				Signature:       nil,
+			},
 		},
 		BlocksMeta: map[string]*pb.SubscribeRequestFilterBlocksMeta{
 			"block_meta": {},
