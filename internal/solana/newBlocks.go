@@ -3,14 +3,13 @@ package solana
 import (
 	"blocsy/internal/types"
 	"context"
-	"crypto/tls"
 	"encoding/json"
 	"flag"
 	"fmt"
 	"github.com/mr-tron/base58"
 	pb "github.com/rpcpool/yellowstone-grpc/examples/golang/proto"
 	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials"
+	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/encoding/gzip"
 	"google.golang.org/grpc/keepalive"
 	"google.golang.org/grpc/metadata"
@@ -75,11 +74,11 @@ func (s *BlockListener) Listen() error {
 
 func (s *BlockListener) grpcConnect(addr string) (*grpc.ClientConn, error) {
 	opts := []grpc.DialOption{
-		grpc.WithTransportCredentials(credentials.NewTLS(&tls.Config{})), // TLS!
+		grpc.WithTransportCredentials(insecure.NewCredentials()),
 		grpc.WithKeepaliveParams(kacp),
-		grpc.WithPerRPCCredentials(tokenAuth{token: s.authToken}), // token on every frame
+		grpc.WithPerRPCCredentials(tokenAuth{token: s.authToken}),
 		grpc.WithDefaultCallOptions(
-			grpc.MaxCallRecvMsgSize(1024*1024*1024), // 1 GiB – plenty
+			grpc.MaxCallRecvMsgSize(1024*1024*1024),
 			grpc.UseCompressor(gzip.Name),
 		),
 	}
