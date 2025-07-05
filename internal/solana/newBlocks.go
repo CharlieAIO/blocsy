@@ -72,7 +72,7 @@ func (s *BlockListener) grpcConnect(address string, plaintext bool) *grpc.Client
 	opts = append(opts, grpc.WithKeepaliveParams(kacp))
 
 	log.Println("Starting grpc client, connecting to", address)
-	conn, err := grpc.Dial(address, opts...)
+	conn, err := grpc.NewClient(address, opts...)
 	if err != nil {
 		return nil
 	}
