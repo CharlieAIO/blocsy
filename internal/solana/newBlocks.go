@@ -14,7 +14,6 @@ import (
 	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/keepalive"
 	"google.golang.org/grpc/metadata"
-	"io"
 	"log"
 	"time"
 )
@@ -105,89 +104,101 @@ func (s *BlockListener) grpcSubscribe(conn *grpc.ClientConn) error {
 	}
 
 	log.Printf("Subscribed to %s", s.grpcAddress)
+	updateChan := make(chan *pb.SubscribeUpdate)
+	errCh := make(chan error)
+
+	go func() {
+		for {
+
+			recv, err := stream.Recv()
+			if err != nil {
+				errCh <- err
+				return
+			}
+
+			updateChan <- recv
+		}
+	}()
 
 	var blockNumber uint64
 	var blockTime int64
 
 	for {
-		resp, err := stream.Recv()
-		if err == io.EOF {
-			log.Printf("EOF received. Reconnecting...")
+		select {
+		case <-ctx.Done():
+			err = stream.Context().Err()
+			if err != nil {
+				log.Printf("Error in stream.Context().Err: %v", err)
+			}
 			return err
-		}
-		if err != nil {
-			log.Printf("Error in stream.Recv: %v", err)
-			return err
-		}
-		var capturedTS = time.Now().Unix()
-		var solanaTx types.SolanaTx
 
-		log.Printf("resp: %+v", resp)
-
-		if block := resp.GetBlockMeta(); block != nil {
-			blockTime = block.BlockTime.Timestamp
-		}
-
-		if tx := resp.GetTransaction(); tx != nil {
-			blockNumber = tx.Slot
-
-			var decodedSignatures []string
-			for _, sig := range tx.Transaction.Transaction.Signatures {
-				b58Sig := base58.Encode(sig)
-				decodedSignatures = append(decodedSignatures, b58Sig)
+		case u := <-updateChan:
+			var capturedTS = time.Now().Unix()
+			var solanaTx types.SolanaTx
+			if block := u.GetBlockMeta(); block != nil {
+				blockTime = block.BlockTime.Timestamp
 			}
+			if tx := u.GetTransaction(); tx != nil {
+				blockNumber = tx.Slot
 
-			var decodedAccountKeys []string
-			for _, key := range tx.Transaction.Transaction.Message.AccountKeys {
-				b58key := base58.Encode(key)
-				decodedAccountKeys = append(decodedAccountKeys, b58key)
-			}
-
-			for i, atl := range tx.Transaction.Transaction.Message.AddressTableLookups {
-				if i >= len(solanaTx.Transaction.Message.AddressTableLookups) {
-					solanaTx.Transaction.Message.AddressTableLookups = append(solanaTx.Transaction.Message.AddressTableLookups, types.AddressTableLookup{})
+				var decodedSignatures []string
+				for _, sig := range tx.Transaction.Transaction.Signatures {
+					b58Sig := base58.Encode(sig)
+					decodedSignatures = append(decodedSignatures, b58Sig)
 				}
-				solanaTx.Transaction.Message.AddressTableLookups[i] = types.AddressTableLookup{
-					AccountKey:      base58.Encode(atl.AccountKey),
-					WritableIndexes: convertToIntSlice(atl.WritableIndexes),
-					ReadonlyIndexes: convertToIntSlice(atl.ReadonlyIndexes),
+
+				var decodedAccountKeys []string
+				for _, key := range tx.Transaction.Transaction.Message.AccountKeys {
+					b58key := base58.Encode(key)
+					decodedAccountKeys = append(decodedAccountKeys, b58key)
 				}
-			}
 
-			solanaTx.Transaction.Signatures = decodedSignatures
-			solanaTx.Transaction.Message.AccountKeys = decodedAccountKeys
-			solanaTx.Transaction.Message.RecentBlockhash = base58.Encode(tx.Transaction.Transaction.Message.RecentBlockhash)
-			solanaTx.Transaction.Message.Instructions = make([]types.Instruction, len(tx.Transaction.Transaction.Message.Instructions))
-			solanaTx.Transaction.Message.Instructions = convertToInstructions(tx.Transaction.Transaction.Message.Instructions)
-
-			solanaTx.Meta.LogMessages = tx.Transaction.Meta.LogMessages
-			solanaTx.Meta.LoadedAddresses = types.LoadedAddresses{
-				Readonly: convertToBase58Strings(tx.Transaction.Meta.LoadedReadonlyAddresses),
-				Writable: convertToBase58Strings(tx.Transaction.Meta.LoadedWritableAddresses),
-			}
-			solanaTx.Meta.PreTokenBalances = convertToTokenBalanceSlice(tx.Transaction.Meta.PreTokenBalances)
-			solanaTx.Meta.PostTokenBalances = convertToTokenBalanceSlice(tx.Transaction.Meta.PostTokenBalances)
-			solanaTx.Meta.PreBalances = tx.Transaction.Meta.PreBalances
-			solanaTx.Meta.PostBalances = tx.Transaction.Meta.PostBalances
-			solanaTx.Meta.Fee = int64(tx.Transaction.Meta.Fee)
-			solanaTx.Meta.Err = &types.TransactionError{}
-
-			solanaTx.Meta.InnerInstructions = make([]types.InnerInstruction, len(tx.Transaction.Meta.InnerInstructions))
-			for i, instr := range tx.Transaction.Meta.InnerInstructions {
-				solanaTx.Meta.InnerInstructions[i] = types.InnerInstruction{
-					Index:        int(instr.Index),
-					Instructions: convertToInnerInstructions(instr.Instructions),
+				for i, atl := range tx.Transaction.Transaction.Message.AddressTableLookups {
+					if i >= len(solanaTx.Transaction.Message.AddressTableLookups) {
+						solanaTx.Transaction.Message.AddressTableLookups = append(solanaTx.Transaction.Message.AddressTableLookups, types.AddressTableLookup{})
+					}
+					solanaTx.Transaction.Message.AddressTableLookups[i] = types.AddressTableLookup{
+						AccountKey:      base58.Encode(atl.AccountKey),
+						WritableIndexes: convertToIntSlice(atl.WritableIndexes),
+						ReadonlyIndexes: convertToIntSlice(atl.ReadonlyIndexes),
+					}
 				}
+
+				solanaTx.Transaction.Signatures = decodedSignatures
+				solanaTx.Transaction.Message.AccountKeys = decodedAccountKeys
+				solanaTx.Transaction.Message.RecentBlockhash = base58.Encode(tx.Transaction.Transaction.Message.RecentBlockhash)
+				solanaTx.Transaction.Message.Instructions = make([]types.Instruction, len(tx.Transaction.Transaction.Message.Instructions))
+				solanaTx.Transaction.Message.Instructions = convertToInstructions(tx.Transaction.Transaction.Message.Instructions)
+
+				solanaTx.Meta.LogMessages = tx.Transaction.Meta.LogMessages
+				solanaTx.Meta.LoadedAddresses = types.LoadedAddresses{
+					Readonly: convertToBase58Strings(tx.Transaction.Meta.LoadedReadonlyAddresses),
+					Writable: convertToBase58Strings(tx.Transaction.Meta.LoadedWritableAddresses),
+				}
+				solanaTx.Meta.PreTokenBalances = convertToTokenBalanceSlice(tx.Transaction.Meta.PreTokenBalances)
+				solanaTx.Meta.PostTokenBalances = convertToTokenBalanceSlice(tx.Transaction.Meta.PostTokenBalances)
+				solanaTx.Meta.PreBalances = tx.Transaction.Meta.PreBalances
+				solanaTx.Meta.PostBalances = tx.Transaction.Meta.PostBalances
+				solanaTx.Meta.Fee = int64(tx.Transaction.Meta.Fee)
+				solanaTx.Meta.Err = &types.TransactionError{}
+
+				solanaTx.Meta.InnerInstructions = make([]types.InnerInstruction, len(tx.Transaction.Meta.InnerInstructions))
+				for i, instr := range tx.Transaction.Meta.InnerInstructions {
+					solanaTx.Meta.InnerInstructions[i] = types.InnerInstruction{
+						Index:        int(instr.Index),
+						Instructions: convertToInnerInstructions(instr.Instructions),
+					}
+				}
+
 			}
 
-		}
+			if len(solanaTx.Transaction.Signatures) > 0 {
+				if blockTime == 0 {
+					blockTime = capturedTS
+				}
 
-		if len(solanaTx.Transaction.Signatures) > 0 {
-			if blockTime == 0 {
-				blockTime = capturedTS
+				s.HandleTransaction(solanaTx, blockTime, blockNumber)
 			}
-
-			s.HandleTransaction(solanaTx, blockTime, blockNumber)
 		}
 	}
 
