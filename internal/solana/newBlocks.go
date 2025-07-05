@@ -228,13 +228,14 @@ func (s *BlockListener) keepAlive(ctx context.Context) {
 
 func (s *BlockListener) prepareSubscription() (*pb.SubscribeRequest, error) {
 	voteFalse, failedFalse := false, false
+	stringArray := make([]string, 0)
 
 	sub := &pb.SubscribeRequest{
 		Transactions: map[string]*pb.SubscribeRequestFilterTransactions{
-			"tx": {Vote: &voteFalse, Failed: &failedFalse},
+			"transactions_sub": {Vote: &voteFalse, Failed: &failedFalse, AccountExclude: stringArray, AccountInclude: stringArray},
 		},
 		BlocksMeta: map[string]*pb.SubscribeRequestFilterBlocksMeta{
-			"meta": {},
+			"block_meta": {},
 		},
 	}
 	confirmed := pb.CommitmentLevel_CONFIRMED
