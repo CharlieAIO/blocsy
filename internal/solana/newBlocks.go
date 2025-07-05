@@ -3,13 +3,14 @@ package solana
 import (
 	"blocsy/internal/types"
 	"context"
+	"crypto/x509"
 	"encoding/json"
 	"flag"
 	"fmt"
 	"github.com/mr-tron/base58"
 	pb "github.com/rpcpool/yellowstone-grpc/examples/golang/proto"
 	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials/insecure"
+	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/encoding/gzip"
 	"google.golang.org/grpc/keepalive"
 	"google.golang.org/grpc/metadata"
@@ -20,7 +21,7 @@ import (
 type tokenAuth struct{ token string }
 
 func (t tokenAuth) GetRequestMetadata(context.Context, ...string) (map[string]string, error) {
-	return map[string]string{"x-token": t.token}, nil // header name expected by QuickNode/Shyft
+	return map[string]string{"x-token": t.token}, nil
 }
 func (t tokenAuth) RequireTransportSecurity() bool { return true }
 
@@ -30,13 +31,13 @@ var kacp = keepalive.ClientParameters{
 	PermitWithoutStream: true,
 }
 
-func NewBlockListener(grpc string, qHandler *QueueHandler) *BlockListener {
+func NewBlockListener(grpc string, qHandler *QueueHandler, authToken string) *BlockListener {
 	return &BlockListener{
 		Client:       nil,
 		Subscription: nil,
 		grpcAddress:  grpc,
 		queueHandler: qHandler,
-		authToken:    "",
+		authToken:    authToken,
 		pingId:       0,
 	}
 }
@@ -73,10 +74,11 @@ func (s *BlockListener) Listen() error {
 }
 
 func (s *BlockListener) grpcConnect(addr string) (*grpc.ClientConn, error) {
+	pool, _ := x509.SystemCertPool()
 	opts := []grpc.DialOption{
-		grpc.WithTransportCredentials(insecure.NewCredentials()),
+		grpc.WithTransportCredentials(credentials.NewClientTLSFromCert(pool, "")),
 		grpc.WithKeepaliveParams(kacp),
-		//grpc.WithPerRPCCredentials(tokenAuth{token: s.authToken}),
+		grpc.WithPerRPCCredentials(tokenAuth{token: s.authToken}),
 		grpc.WithDefaultCallOptions(
 			grpc.MaxCallRecvMsgSize(1024*1024*1024),
 			grpc.UseCompressor(gzip.Name),
@@ -234,7 +236,7 @@ func (s *BlockListener) prepareSubscription() (*pb.SubscribeRequest, error) {
 
 	sub := &pb.SubscribeRequest{
 		Transactions: map[string]*pb.SubscribeRequestFilterTransactions{
-			"xyz": {
+			"tx_sub": {
 				Vote:            &voteFalse,
 				Failed:          &failedFalse,
 				AccountExclude:  stringArray,

@@ -29,8 +29,10 @@ func solanaListener(ctx context.Context) {
 		log.Fatalf("SOL_GRPC is required")
 	}
 
+	authToken := os.Getenv("SOL_GRPC_AUTH_TOKEN")
+
 	queueHandler := solana.NewSolanaQueueHandler(nil, nil)
-	sbl := solana.NewBlockListener(grpcAddress, queueHandler)
+	sbl := solana.NewBlockListener(grpcAddress, queueHandler, authToken)
 
 	go func() {
 		log.Println("Listening for new blocks (solana)...")
