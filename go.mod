@@ -19,7 +19,7 @@ require (
 	github.com/mr-tron/base58 v1.2.0
 	github.com/near/borsh-go v0.3.2-0.20220516180422-1ff87d108454
 	github.com/patrickmn/go-cache v2.1.0+incompatible
-	github.com/rpcpool/yellowstone-grpc/examples/golang v0.0.0-20241216215941-6bfff923478c
+	github.com/rpcpool/yellowstone-grpc/examples/golang v0.0.0-20250702014422-ea2a0d2ad00f
 	github.com/streadway/amqp v1.1.0
 	github.com/swaggo/http-swagger v1.3.4
 	go.mongodb.org/mongo-driver v1.17.1

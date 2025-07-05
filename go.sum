@@ -135,6 +135,8 @@ github.com/rogpeppe/go-internal v1.14.1 h1:UQB4HGPB6osV0SQTLymcB4TgvyWu6ZyliaW0t
 github.com/rogpeppe/go-internal v1.14.1/go.mod h1:MaRKkUm5W0goXpeCfT7UZI6fk/L7L7so1lCWt35ZSgc=
 github.com/rpcpool/yellowstone-grpc/examples/golang v0.0.0-20241216215941-6bfff923478c h1:m45h+ZyLUBcDliLrfHN3DB5hhtIbYvtOrnA0f9fVeIQ=
 github.com/rpcpool/yellowstone-grpc/examples/golang v0.0.0-20241216215941-6bfff923478c/go.mod h1:dDiynCK1mRAhOOqTVuWYd+MpR2TVq47yVHwGL/lR+iM=
+github.com/rpcpool/yellowstone-grpc/examples/golang v0.0.0-20250702014422-ea2a0d2ad00f h1:wkNA1heygXe7jMBGGbnZquxBUE5j3K7xVWEJDZZCmuk=
+github.com/rpcpool/yellowstone-grpc/examples/golang v0.0.0-20250702014422-ea2a0d2ad00f/go.mod h1:dDiynCK1mRAhOOqTVuWYd+MpR2TVq47yVHwGL/lR+iM=
 github.com/shopspring/decimal v1.3.1 h1:2Usl1nmF/WZucqkFZhnfFYxxxu8LG21F6nPQBE5gKV8=
 github.com/shopspring/decimal v1.3.1/go.mod h1:DKyhrW/HYNuLGql+MJL6WCR6knT2jwCFRcu2hWCYk4o=
 github.com/streadway/amqp v1.1.0 h1:py12iX8XSyI7aN/3dUT8DFIDJazNJsVJdxNVEpnQTZM=
