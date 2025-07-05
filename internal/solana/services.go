@@ -5,6 +5,7 @@ import (
 	"blocsy/internal/types"
 	"context"
 	solClient "github.com/blocto/solana-go-sdk/client"
+	"github.com/rpcpool/yellowstone-grpc/examples/golang/proto"
 	"github.com/streadway/amqp"
 	"net/http"
 	"sync"
@@ -94,7 +95,10 @@ type Node struct {
 }
 
 type BlockListener struct {
+	Client       proto.GeyserClient
+	Subscription proto.Geyser_SubscribeClient
 	grpcAddress  string
 	queueHandler *QueueHandler
 	authToken    string
+	pingId       int32
 }

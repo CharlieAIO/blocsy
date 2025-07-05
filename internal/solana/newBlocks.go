@@ -3,7 +3,7 @@ package solana
 import (
 	"blocsy/internal/types"
 	"context"
-	"crypto/x509"
+	"crypto/tls"
 	"encoding/json"
 	"flag"
 	"fmt"
@@ -11,12 +11,19 @@ import (
 	pb "github.com/rpcpool/yellowstone-grpc/examples/golang/proto"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
-	"google.golang.org/grpc/credentials/insecure"
+	"google.golang.org/grpc/encoding/gzip"
 	"google.golang.org/grpc/keepalive"
 	"google.golang.org/grpc/metadata"
 	"log"
 	"time"
 )
+
+type tokenAuth struct{ token string }
+
+func (t tokenAuth) GetRequestMetadata(context.Context, ...string) (map[string]string, error) {
+	return map[string]string{"x-token": t.token}, nil // header name expected by QuickNode/Shyft
+}
+func (t tokenAuth) RequireTransportSecurity() bool { return true }
 
 var kacp = keepalive.ClientParameters{
 	Time:                10 * time.Second, // send pings every 10 seconds if there is no activity
@@ -26,9 +33,12 @@ var kacp = keepalive.ClientParameters{
 
 func NewBlockListener(grpc string, qHandler *QueueHandler) *BlockListener {
 	return &BlockListener{
+		Client:       nil,
+		Subscription: nil,
 		grpcAddress:  grpc,
 		queueHandler: qHandler,
 		authToken:    "",
+		pingId:       0,
 	}
 }
 
@@ -37,14 +47,19 @@ func (s *BlockListener) Listen() error {
 	flag.Parse()
 
 	for {
-		conn := s.grpcConnect(s.grpcAddress, true)
+		conn, err := s.grpcConnect(s.grpcAddress)
+		if err != nil {
+			log.Printf("Failed to connect to %s. Retrying...", s.grpcAddress)
+			time.Sleep(5 * time.Second)
+			continue
+		}
 		if conn == nil {
 			log.Printf("Failed to connect to %s. Retrying...", s.grpcAddress)
 			time.Sleep(5 * time.Second)
 			continue
 		}
 
-		err := s.grpcSubscribe(conn)
+		err = s.grpcSubscribe(conn)
 		if err != nil {
 			log.Printf("Error in grpcSubscribe: %v. Reconnecting...", err)
 			conn.Close()
@@ -58,30 +73,23 @@ func (s *BlockListener) Listen() error {
 	return nil
 }
 
-func (s *BlockListener) grpcConnect(address string, plaintext bool) *grpc.ClientConn {
-	var opts []grpc.DialOption
-	if plaintext {
-		opts = append(opts, grpc.WithTransportCredentials(insecure.NewCredentials()))
-	} else {
-		pool, _ := x509.SystemCertPool()
-		creds := credentials.NewClientTLSFromCert(pool, "")
-		opts = append(opts, grpc.WithTransportCredentials(creds))
+func (s *BlockListener) grpcConnect(addr string) (*grpc.ClientConn, error) {
+	opts := []grpc.DialOption{
+		grpc.WithTransportCredentials(credentials.NewTLS(&tls.Config{})), // TLS!
+		grpc.WithKeepaliveParams(kacp),
+		grpc.WithPerRPCCredentials(tokenAuth{token: s.authToken}), // token on every frame
+		grpc.WithDefaultCallOptions(
+			grpc.MaxCallRecvMsgSize(1024*1024*1024), // 1 GiB – plenty
+			grpc.UseCompressor(gzip.Name),
+		),
 	}
-
-	opts = append(opts, grpc.WithKeepaliveParams(kacp))
-
-	log.Println("Starting grpc client, connecting to", address)
-	conn, err := grpc.NewClient(address, opts...)
-	if err != nil {
-		return nil
-	}
-
-	return conn
+	return grpc.NewClient(addr, opts...)
 }
 
 func (s *BlockListener) grpcSubscribe(conn *grpc.ClientConn) error {
 	var err error
 	client := pb.NewGeyserClient(conn)
+	s.Client = client
 
 	subscription, err := s.prepareSubscription()
 	if err != nil {
@@ -94,146 +102,148 @@ func (s *BlockListener) grpcSubscribe(conn *grpc.ClientConn) error {
 		ctx = metadata.NewOutgoingContext(ctx, md)
 	}
 
-	stream, err := client.Subscribe(ctx)
+	stream, err := client.Subscribe(context.Background())
 	if err != nil {
-		return fmt.Errorf("subscribe: %v", err)
+		return err
 	}
-	err = stream.Send(subscription)
-	if err != nil {
-		return fmt.Errorf("send: %v", err)
+	if err = stream.Send(subscription); err != nil {
+		return err
 	}
 
+	s.Subscription = stream
+	go s.keepAlive(ctx)
 	log.Printf("Subscribed to %s", s.grpcAddress)
-	updateChan := make(chan *pb.SubscribeUpdate)
-	errCh := make(chan error)
-
-	go func() {
-		for {
-
-			recv, err := stream.Recv()
-			if err != nil {
-				errCh <- err
-				return
-			}
-
-			updateChan <- recv
-		}
-	}()
-
 	var blockNumber uint64
 	var blockTime int64
 
 	for {
-		select {
-		case <-ctx.Done():
-			err = stream.Context().Err()
-			if err != nil {
-				log.Printf("Error in stream.Context().Err: %v", err)
-			}
-			return err
 
-		case u := <-updateChan:
-			var capturedTS = time.Now().Unix()
-			var solanaTx types.SolanaTx
-			if block := u.GetBlockMeta(); block != nil {
-				blockTime = block.BlockTime.Timestamp
-			}
-			if tx := u.GetTransaction(); tx != nil {
-				blockNumber = tx.Slot
+		upd, err := stream.Recv()
+		if err != nil {
+			return err // reconnect outside
+		}
 
-				var decodedSignatures []string
-				for _, sig := range tx.Transaction.Transaction.Signatures {
-					b58Sig := base58.Encode(sig)
-					decodedSignatures = append(decodedSignatures, b58Sig)
-				}
+		var capturedTS = time.Now().Unix()
+		var solanaTx types.SolanaTx
 
-				var decodedAccountKeys []string
-				for _, key := range tx.Transaction.Transaction.Message.AccountKeys {
-					b58key := base58.Encode(key)
-					decodedAccountKeys = append(decodedAccountKeys, b58key)
-				}
+		if tx := upd.GetTransaction(); tx != nil {
+			log.Println("TX", base58.Encode(tx.Transaction.Signature), "slot", tx.Slot)
+			blockNumber = tx.Slot
 
-				for i, atl := range tx.Transaction.Transaction.Message.AddressTableLookups {
-					if i >= len(solanaTx.Transaction.Message.AddressTableLookups) {
-						solanaTx.Transaction.Message.AddressTableLookups = append(solanaTx.Transaction.Message.AddressTableLookups, types.AddressTableLookup{})
-					}
-					solanaTx.Transaction.Message.AddressTableLookups[i] = types.AddressTableLookup{
-						AccountKey:      base58.Encode(atl.AccountKey),
-						WritableIndexes: convertToIntSlice(atl.WritableIndexes),
-						ReadonlyIndexes: convertToIntSlice(atl.ReadonlyIndexes),
-					}
-				}
-
-				solanaTx.Transaction.Signatures = decodedSignatures
-				solanaTx.Transaction.Message.AccountKeys = decodedAccountKeys
-				solanaTx.Transaction.Message.RecentBlockhash = base58.Encode(tx.Transaction.Transaction.Message.RecentBlockhash)
-				solanaTx.Transaction.Message.Instructions = make([]types.Instruction, len(tx.Transaction.Transaction.Message.Instructions))
-				solanaTx.Transaction.Message.Instructions = convertToInstructions(tx.Transaction.Transaction.Message.Instructions)
-
-				solanaTx.Meta.LogMessages = tx.Transaction.Meta.LogMessages
-				solanaTx.Meta.LoadedAddresses = types.LoadedAddresses{
-					Readonly: convertToBase58Strings(tx.Transaction.Meta.LoadedReadonlyAddresses),
-					Writable: convertToBase58Strings(tx.Transaction.Meta.LoadedWritableAddresses),
-				}
-				solanaTx.Meta.PreTokenBalances = convertToTokenBalanceSlice(tx.Transaction.Meta.PreTokenBalances)
-				solanaTx.Meta.PostTokenBalances = convertToTokenBalanceSlice(tx.Transaction.Meta.PostTokenBalances)
-				solanaTx.Meta.PreBalances = tx.Transaction.Meta.PreBalances
-				solanaTx.Meta.PostBalances = tx.Transaction.Meta.PostBalances
-				solanaTx.Meta.Fee = int64(tx.Transaction.Meta.Fee)
-				solanaTx.Meta.Err = &types.TransactionError{}
-
-				solanaTx.Meta.InnerInstructions = make([]types.InnerInstruction, len(tx.Transaction.Meta.InnerInstructions))
-				for i, instr := range tx.Transaction.Meta.InnerInstructions {
-					solanaTx.Meta.InnerInstructions[i] = types.InnerInstruction{
-						Index:        int(instr.Index),
-						Instructions: convertToInnerInstructions(instr.Instructions),
-					}
-				}
-
+			var decodedSignatures []string
+			for _, sig := range tx.Transaction.Transaction.Signatures {
+				b58Sig := base58.Encode(sig)
+				decodedSignatures = append(decodedSignatures, b58Sig)
 			}
 
-			if len(solanaTx.Transaction.Signatures) > 0 {
-				if blockTime == 0 {
-					blockTime = capturedTS
-				}
-
-				s.HandleTransaction(solanaTx, blockTime, blockNumber)
+			var decodedAccountKeys []string
+			for _, key := range tx.Transaction.Transaction.Message.AccountKeys {
+				b58key := base58.Encode(key)
+				decodedAccountKeys = append(decodedAccountKeys, b58key)
 			}
+
+			for i, atl := range tx.Transaction.Transaction.Message.AddressTableLookups {
+				if i >= len(solanaTx.Transaction.Message.AddressTableLookups) {
+					solanaTx.Transaction.Message.AddressTableLookups = append(solanaTx.Transaction.Message.AddressTableLookups, types.AddressTableLookup{})
+				}
+				solanaTx.Transaction.Message.AddressTableLookups[i] = types.AddressTableLookup{
+					AccountKey:      base58.Encode(atl.AccountKey),
+					WritableIndexes: convertToIntSlice(atl.WritableIndexes),
+					ReadonlyIndexes: convertToIntSlice(atl.ReadonlyIndexes),
+				}
+			}
+
+			solanaTx.Transaction.Signatures = decodedSignatures
+			solanaTx.Transaction.Message.AccountKeys = decodedAccountKeys
+			solanaTx.Transaction.Message.RecentBlockhash = base58.Encode(tx.Transaction.Transaction.Message.RecentBlockhash)
+			solanaTx.Transaction.Message.Instructions = make([]types.Instruction, len(tx.Transaction.Transaction.Message.Instructions))
+			solanaTx.Transaction.Message.Instructions = convertToInstructions(tx.Transaction.Transaction.Message.Instructions)
+
+			solanaTx.Meta.LogMessages = tx.Transaction.Meta.LogMessages
+			solanaTx.Meta.LoadedAddresses = types.LoadedAddresses{
+				Readonly: convertToBase58Strings(tx.Transaction.Meta.LoadedReadonlyAddresses),
+				Writable: convertToBase58Strings(tx.Transaction.Meta.LoadedWritableAddresses),
+			}
+			solanaTx.Meta.PreTokenBalances = convertToTokenBalanceSlice(tx.Transaction.Meta.PreTokenBalances)
+			solanaTx.Meta.PostTokenBalances = convertToTokenBalanceSlice(tx.Transaction.Meta.PostTokenBalances)
+			solanaTx.Meta.PreBalances = tx.Transaction.Meta.PreBalances
+			solanaTx.Meta.PostBalances = tx.Transaction.Meta.PostBalances
+			solanaTx.Meta.Fee = int64(tx.Transaction.Meta.Fee)
+			solanaTx.Meta.Err = &types.TransactionError{}
+
+			solanaTx.Meta.InnerInstructions = make([]types.InnerInstruction, len(tx.Transaction.Meta.InnerInstructions))
+			for i, instr := range tx.Transaction.Meta.InnerInstructions {
+				solanaTx.Meta.InnerInstructions[i] = types.InnerInstruction{
+					Index:        int(instr.Index),
+					Instructions: convertToInnerInstructions(instr.Instructions),
+				}
+			}
+		}
+		if bm := upd.GetBlockMeta(); bm != nil {
+			log.Println("META", bm.Slot, bm.BlockTime.Timestamp)
+			blockTime = bm.BlockTime.Timestamp
+		}
+
+		if len(solanaTx.Transaction.Signatures) > 0 {
+			if blockTime == 0 {
+				blockTime = capturedTS
+			}
+
+			s.HandleTransaction(solanaTx, blockTime, blockNumber)
 		}
 	}
 
 }
 
+func (s *BlockListener) keepAlive(ctx context.Context) {
+	ticker := time.NewTicker(10 * time.Second)
+	defer ticker.Stop()
+
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case <-ticker.C:
+			if s.Subscription != nil {
+				s.pingId++
+				ping := &pb.SubscribeRequest{
+					Ping: &pb.SubscribeRequestPing{
+						Id: s.pingId,
+					},
+				}
+				err := s.Subscription.Send(ping)
+				if err != nil {
+					return
+				}
+
+				_, err = s.Client.Ping(ctx, &pb.PingRequest{
+					Count: s.pingId,
+				})
+				if err != nil {
+					return
+				}
+			}
+		}
+	}
+}
+
 func (s *BlockListener) prepareSubscription() (*pb.SubscribeRequest, error) {
-	var subscription = pb.SubscribeRequest{}
-	var err error
+	voteFalse, failedFalse := false, false
 
-	if subscription.BlocksMeta == nil {
-		subscription.BlocksMeta = make(map[string]*pb.SubscribeRequestFilterBlocksMeta)
+	sub := &pb.SubscribeRequest{
+		Transactions: map[string]*pb.SubscribeRequestFilterTransactions{
+			"tx": {Vote: &voteFalse, Failed: &failedFalse},
+		},
+		BlocksMeta: map[string]*pb.SubscribeRequestFilterBlocksMeta{
+			"meta": {},
+		},
 	}
-	subscription.BlocksMeta["block_meta"] = &pb.SubscribeRequestFilterBlocksMeta{}
-
-	if subscription.Transactions == nil {
-		subscription.Transactions = make(map[string]*pb.SubscribeRequestFilterTransactions)
-	}
-	var accounts []string
-	subscription.Transactions["transactions_sub"] = &pb.SubscribeRequestFilterTransactions{
-		Failed: new(bool),
-		Vote:   new(bool),
-	}
-	subscription.Transactions["transactions_sub"].AccountInclude = accounts
-	subscription.Transactions["transactions_sub"].AccountExclude = accounts
-
 	confirmed := pb.CommitmentLevel_CONFIRMED
-	subscription.Commitment = &confirmed
-	subscriptionJson, err := json.Marshal(&subscription)
-	if err != nil {
-		return nil, fmt.Errorf("failed to marshal subscription request: %v", err)
-	}
+	sub.Commitment = &confirmed
 
-	log.Printf("Subscription request: %v", string(subscriptionJson))
-	return &subscription, nil
-
+	b, _ := json.Marshal(sub)
+	log.Printf("Subscription request: %s", b)
+	return sub, nil
 }
 
 func (s *BlockListener) HandleTransaction(transaction types.SolanaTx, blockTime int64, block uint64) {
