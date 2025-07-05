@@ -124,13 +124,11 @@ func (s *BlockListener) grpcSubscribe(conn *grpc.ClientConn) error {
 			log.Printf("Error in grpcSubscribe: %v. Reconnecting...", err)
 			return err // reconnect outside
 		}
-		log.Printf("Received update: %v", upd)
 
 		var capturedTS = time.Now().Unix()
 		var solanaTx types.SolanaTx
 
 		if tx := upd.GetTransaction(); tx != nil {
-			log.Println("TX", base58.Encode(tx.Transaction.Signature), "slot", tx.Slot)
 			blockNumber = tx.Slot
 
 			var decodedSignatures []string
@@ -183,7 +181,6 @@ func (s *BlockListener) grpcSubscribe(conn *grpc.ClientConn) error {
 			}
 		}
 		if bm := upd.GetBlockMeta(); bm != nil {
-			log.Println("META", bm.Slot, bm.BlockTime.Timestamp)
 			blockTime = bm.BlockTime.Timestamp
 		}
 
