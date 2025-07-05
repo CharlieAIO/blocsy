@@ -119,8 +119,10 @@ func (s *BlockListener) grpcSubscribe(conn *grpc.ClientConn) error {
 
 		upd, err := stream.Recv()
 		if err != nil {
+			log.Printf("Error in grpcSubscribe: %v. Reconnecting...", err)
 			return err // reconnect outside
 		}
+		log.Printf("Received update: %v", upd)
 
 		var capturedTS = time.Now().Unix()
 		var solanaTx types.SolanaTx
@@ -228,7 +230,7 @@ func (s *BlockListener) keepAlive(ctx context.Context) {
 
 func (s *BlockListener) prepareSubscription() (*pb.SubscribeRequest, error) {
 	voteFalse, failedFalse := false, false
-	stringArray := make([]string, 0)
+	var stringArray []string
 
 	sub := &pb.SubscribeRequest{
 		Transactions: map[string]*pb.SubscribeRequestFilterTransactions{
