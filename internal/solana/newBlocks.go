@@ -48,7 +48,7 @@ func (s *BlockListener) Listen() error {
 	for {
 		conn, err := s.grpcConnect(s.grpcAddress)
 		if err != nil {
-			log.Printf("Failed to connect to %s. Retrying...", s.grpcAddress)
+			log.Printf("Failed to connect to %s. Retrying... | err: %v", s.grpcAddress, err)
 			time.Sleep(5 * time.Second)
 			continue
 		}
@@ -76,7 +76,7 @@ func (s *BlockListener) grpcConnect(addr string) (*grpc.ClientConn, error) {
 	opts := []grpc.DialOption{
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
 		grpc.WithKeepaliveParams(kacp),
-		grpc.WithPerRPCCredentials(tokenAuth{token: s.authToken}),
+		//grpc.WithPerRPCCredentials(tokenAuth{token: s.authToken}),
 		grpc.WithDefaultCallOptions(
 			grpc.MaxCallRecvMsgSize(1024*1024*1024),
 			grpc.UseCompressor(gzip.Name),
