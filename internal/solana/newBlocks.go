@@ -112,13 +112,17 @@ func (s *BlockListener) grpcSubscribe(conn *grpc.ClientConn) error {
 	for {
 		resp, err := stream.Recv()
 		if err == io.EOF {
+			log.Printf("EOF received. Reconnecting...")
 			return err
 		}
 		if err != nil {
+			log.Printf("Error in stream.Recv: %v", err)
 			return err
 		}
 		var capturedTS = time.Now().Unix()
 		var solanaTx types.SolanaTx
+
+		log.Printf("resp: %+v", resp)
 
 		if block := resp.GetBlockMeta(); block != nil {
 			blockTime = block.BlockTime.Timestamp
